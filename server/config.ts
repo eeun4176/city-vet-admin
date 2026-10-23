@@ -7,6 +7,7 @@ const schema = z.object({
   ALLOWED_ORIGINS: z.string().default(''),
   NODE_ENV: z.string().default('development'),
   SESSION_HOURS: z.coerce.number().int().min(1).max(24).default(8),
+  SALIN_SESSION_DAYS: z.coerce.number().int().min(1).max(30).default(14),
   LOGIN_IP_MAX_FAILURES: z.coerce.number().int().min(3).max(1000).default(20),
   FILE_STORAGE_DRIVER: z.enum(['database', 'supabase']).optional(),
   SUPABASE_URL: z.string().optional(),
@@ -20,6 +21,7 @@ export interface Config {
   allowedOrigins: string[];
   isProd: boolean;
   sessionHours: number;
+  salinSessionDays: number;
   loginIpMaxFailures: number;
   fileStorageDriver: 'database' | 'supabase';
   supabaseUrl: string;
@@ -55,6 +57,7 @@ export function config(): Config {
       allowedOrigins: e.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
       isProd: e.NODE_ENV === 'production',
       sessionHours: e.SESSION_HOURS,
+      salinSessionDays: e.SALIN_SESSION_DAYS,
       loginIpMaxFailures: e.LOGIN_IP_MAX_FAILURES,
       fileStorageDriver,
       supabaseUrl: (e.SUPABASE_URL ?? '').replace(/\/$/, ''),

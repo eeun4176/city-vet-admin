@@ -129,7 +129,7 @@ export function route(handlers: Partial<Record<Method, Handler>>, opts: { cache?
         cors['Access-Control-Allow-Credentials'] = 'true';
         cors['Vary'] = 'Origin';
       }
-      if (method === 'OPTIONS') return send(204, undefined, { ...cors, 'Access-Control-Allow-Methods': Object.keys(handlers).join(', '), 'Access-Control-Allow-Headers': 'Content-Type, X-Nav-Node' });
+      if (method === 'OPTIONS') return send(204, undefined, { ...cors, 'Access-Control-Allow-Methods': Object.keys(handlers).join(', '), 'Access-Control-Allow-Headers': 'Content-Type, X-Nav-Node, Authorization' });
       const h = handlers[method as Method];
       if (!h) return send(405, { error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.', requestId: id } }, { Allow: Object.keys(handlers).join(', ') });
       if (method !== 'GET') checkOrigin(req);

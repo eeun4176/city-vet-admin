@@ -9,7 +9,9 @@ SUPABASE_URL=https://PROJECT_REF.supabase.co
 SUPABASE_SECRET_KEY=REPLACE_WITH_SERVER_SECRET_KEY_FROM_SUPABASE_API_KEYS
 SUPABASE_STORAGE_BUCKET=ekapon-private
 SESSION_HOURS=8
+# How long a Salin (paravet app) sign-in lasts, in days (1-30), so paravets can work offline.
+SALIN_SESSION_DAYS=14
 LOGIN_IP_MAX_FAILURES=20
-# Same-origin access works automatically. Leave empty unless a second exact origin is needed.
-ALLOWED_ORIGINS=
+# Same-origin access works automatically. Add the Salin app's exact origin so paravets can sign in from it.
+ALLOWED_ORIGINS=https://salin-puce.vercel.app
 # Vercel supplies NODE_ENV=production; do not use LOCAL_TEST_MODE or TEST_DATABASE_URL.

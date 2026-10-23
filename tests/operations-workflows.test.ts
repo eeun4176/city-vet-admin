@@ -94,7 +94,7 @@ describe('Paravet account creation from records', () => {
     });
 
     const firstSignin = await call('POST', '/api/v1/auth/first-signin', {
-      json: { accountKey: created.json.accountKey, temporaryPassword: created.json.temporaryPassword },
+      json: { client: 'salin', accountKey: created.json.accountKey, temporaryPassword: created.json.temporaryPassword },
     });
     expect(firstSignin.status).toBe(200);
     expect(firstSignin.json.mustCreatePassword).toBe(true);
@@ -480,10 +480,10 @@ describe('Paravet temporary-password renewal', () => {
     expect(renewed.status).toBe(200);
     expect(renewed.json.temporaryPassword).not.toBe(first.json.temporaryPassword);
     expect((await call('POST', '/api/v1/auth/first-signin', {
-      json: { accountKey: paravet.account_key, temporaryPassword: first.json.temporaryPassword },
+      json: { client: 'salin', accountKey: paravet.account_key, temporaryPassword: first.json.temporaryPassword },
     })).status).toBe(401);
     const signIn = await call('POST', '/api/v1/auth/first-signin', {
-      json: { accountKey: paravet.account_key, temporaryPassword: renewed.json.temporaryPassword },
+      json: { client: 'salin', accountKey: paravet.account_key, temporaryPassword: renewed.json.temporaryPassword },
     });
     expect(signIn.status).toBe(200);
     expect(signIn.json.mustCreatePassword).toBe(true);

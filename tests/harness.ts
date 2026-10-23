@@ -11,12 +11,18 @@ export async function startServer() {
   return { base, close: () => new Promise<void>((ok) => server.close(() => ok())) };
 }
 
+const isParavetSession = (cookie: string) => {
+  try { return JSON.parse(Buffer.from(cookie.split('=')[1].split('.')[1], 'base64url').toString()).typ === 'Paravet'; } catch { return false; }
+};
+
 export interface Resp { status: number; json: any; cookie: string | null; setCookie: string | null; headers: Headers }
 
 export function client(base: string) {
   return async (method: string, p: string, o: { json?: unknown; cookie?: string | null; origin?: string; ip?: string;headers?:Record<string,string> } = {}): Promise<Resp> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', Origin: o.origin ?? base,...o.headers };
-    if (o.cookie) headers.Cookie = o.cookie;
+    // Paravets reach the API only from Salin, which sends the same session as a Bearer token.
+    if (o.cookie && isParavetSession(o.cookie)) headers.Authorization = `Bearer ${o.cookie.slice(o.cookie.indexOf('=') + 1)}`;
+    else if (o.cookie) headers.Cookie = o.cookie;
     if (o.ip) headers['x-real-ip'] = o.ip;
     const r = await fetch(base + p, { method, headers, body: o.json === undefined ? undefined : JSON.stringify(o.json) });
     const text = await r.text();

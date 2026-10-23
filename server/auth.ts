@@ -22,21 +22,31 @@ export interface Session {
   locale: 'en' | 'fil';
   /** Active, unexpired grants that apply everywhere (barangay-scoped grants are checked per route). */
   grants: GrantPermission[];
+  /** 'salin': the session came as a Bearer token from the Salin field app; 'web': the dashboard cookie. */
+  client?: 'web' | 'salin';
 }
 
 const secret = () => new TextEncoder().encode(config().jwtSecret);
 const RESET_SECONDS = 600;
 
+const signSession = (account: { id: number; type: string }, scope: Scope, ttl: number) => new SignJWT({ typ: account.type, scope })
+  .setProtectedHeader({ alg: 'HS256' })
+  .setSubject(String(account.id))
+  .setIssuedAt()
+  .setExpirationTime(`${ttl}s`)
+  .sign(secret());
+
 export async function sessionCookie(account: { id: number; type: string }, scope: Scope): Promise<string> {
   const cfg = config();
   const ttl = scope === 'full' ? cfg.sessionHours * 3600 : RESET_SECONDS;
-  const jwt = await new SignJWT({ typ: account.type, scope })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setSubject(String(account.id))
-    .setIssuedAt()
-    .setExpirationTime(`${ttl}s`)
-    .sign(secret());
+  const jwt = await signSession(account, scope, ttl);
   return `${COOKIE}=${jwt}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${ttl}${cfg.isProd ? '; Secure' : ''}`;
+}
+
+/** Salin gets the session in the response body and sends it back as a Bearer token; it lasts SALIN_SESSION_DAYS so paravets can work offline in the field. */
+export async function sessionToken(account: { id: number; type: string }, scope: Scope): Promise<{ token: string; expiresAt: string }> {
+  const ttl = scope === 'full' ? config().salinSessionDays * 86400 : RESET_SECONDS;
+  return { token: await signSession(account, scope, ttl), expiresAt: new Date(Date.now() + ttl * 1000).toISOString() };
 }
 
 export const clearCookie = () => `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${config().isProd ? '; Secure' : ''}`;
@@ -51,13 +61,19 @@ function readCookie(req: IncomingMessage): string | null {
   return null;
 }
 
+function readBearer(req: IncomingMessage): string | null {
+  const raw = req.headers.authorization;
+  return raw?.startsWith('Bearer ') ? raw.slice(7).trim() || null : null;
+}
+
 /**
- * Verifies the session cookie AND re-checks the account in the database on every request,
+ * Verifies the session cookie (or Salin's Bearer token) AND re-checks the account in the database on every request,
  * so putting an account on hold, disabling, locking or archiving it takes effect immediately.
  * Feature switches are applied from `req.appFeature`, which the dispatcher sets per route.
  */
 export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountType[]; scope?: Scope; allowMaintenance?: boolean } = {}): Promise<Session> {
-  const token = readCookie(req);
+  const bearer = readBearer(req);
+  const token = bearer ?? readCookie(req);
   if (!token) throw unauthenticated();
   let payload;
   try {
@@ -82,6 +98,7 @@ export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountT
   const expected = wantScope === 'full' ? 'Active' : 'Password reset required';
   if (!a || a.status !== expected) throw unauthenticated('Your session is no longer valid. Please sign in again.');
   if (a.type === 'User') throw unauthenticated('Resident access has been retired. Contact staff for assistance.');
+  if (a.type === 'Paravet' && !bearer) throw new AppError(401, 'USE_SALIN', 'Paravets sign in with the Salin app.');
   if (opts.roles && !opts.roles.includes(a.type)) throw forbidden();
   if (wantScope === 'full' && a.type !== 'SuperAdmin' && !opts.allowMaintenance) {
     const [maintenance] = await sql()`
@@ -109,6 +126,7 @@ export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountT
     barangay: a.barangay,
     locale: a.locale,
     grants: a.grants,
+    client: bearer ? 'salin' : 'web',
   };
   const navNode=req.headers['x-nav-node'];
   if(req.method==='GET'&&wantScope==='full'&&typeof navNode==='string'&&navNode!=='inbox'){

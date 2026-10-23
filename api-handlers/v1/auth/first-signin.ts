@@ -1,19 +1,22 @@
 import { z } from 'zod';
 import { route, ok, parse } from '../../../server/http';
 import { sql, tx } from '../../../server/db';
-import { sessionCookie } from '../../../server/auth';
+import { sessionToken } from '../../../server/auth';
 import { AppError } from '../../../server/errors';
 import { config } from '../../../server/config';
+import { PARAVET_POLICY_VERSION, paravetPolicy } from '../../../shared/paravetPolicy';
 
-const body = z.object({ accountKey: z.string().trim().min(5).max(40), temporaryPassword: z.string().min(1).max(40) });
+const body = z.object({ accountKey: z.string().trim().min(5).max(40), temporaryPassword: z.string().min(1).max(40), client: z.enum(['web', 'salin']).default('web') });
 
 /**
  * Step 1 for Paravets and users: the one-time temporary password (valid 15 minutes, 3 tries).
  * Success returns a restricted 10-minute session that can ONLY be used to create the permanent password.
+ * Only account-key accounts (Paravets) use it, and they sign in with Salin: the web is refused before the one-time password is spent.
  */
 export default route({
   POST: async (c) => {
-    const { accountKey, temporaryPassword } = parse(body, c.body);
+    const { accountKey, temporaryPassword, client } = parse(body, c.body);
+    if (client === 'web') throw new AppError(403, 'USE_SALIN', 'Paravets sign in with the Salin app.');
     if (c.ip) {
       const [{ n }] = await sql()`select ekapon.recent_failed_logins(${c.ip}::inet, 15) as n`;
       if (n >= config().loginIpMaxFailures) throw new AppError(429, 'TOO_MANY_ATTEMPTS', 'Too many failed attempts. Please wait 15 minutes and try again.');
@@ -26,6 +29,6 @@ export default route({
     }
     const [a] = await sql()`select id, account_type::text as type from ekapon.accounts where id = ${r.o_account_id}`;
     if (a.type === 'User') throw new AppError(403, 'USER_ACCESS_REMOVED', 'Resident sign-in has been retired. Contact staff for assistance.');
-    return ok({ mustCreatePassword: true }, { 'Set-Cookie': await sessionCookie({ id: a.id, type: a.type }, 'reset') });
+    return ok({ mustCreatePassword: true, ...(await sessionToken({ id: a.id, type: a.type }, 'reset')), policy: { version: PARAVET_POLICY_VERSION, ...paravetPolicy } });
   },
 });

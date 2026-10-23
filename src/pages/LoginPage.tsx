@@ -1,9 +1,10 @@
 import { ParavetAgreement } from '../components/ParavetAgreement';
+import { SALIN_URL } from '../components/DocumentReaderButton';
 import { PARAVET_POLICY_VERSION } from '../../shared/paravetPolicy';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useT } from '../i18n';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { landingPageForRole, type Role } from '../../shared/permissions';
 
@@ -53,7 +54,6 @@ export function LoginPage() {
         navigate(from === '/dashboard' ? landingPageForRole(current.account.type) : from, { replace: true });
       }
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'FIRST_SIGN_IN_REQUIRED') setStep('first');
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setBusy(false);
@@ -111,12 +111,8 @@ export function LoginPage() {
           </button>
         </form>
 
-        {step !== 'password' && (
-          <button type="button" onClick={() => { setError(''); setStep(step === 'signin' ? 'first' : 'signin'); }}
-            className="mt-4 w-full text-center text-sm text-brand-700 hover:underline dark:text-brand-200">
-            {step === 'signin' ? t('login.useFirst') : t('login.useNormal')}
-          </button>
-        )}
+        {/* Paravets (first sign-in included) use the Salin app; this page is for staff. */}
+        <a href={SALIN_URL} className="mt-4 block w-full text-center text-sm text-brand-700 hover:underline dark:text-brand-200">{t('login.useSalin')}</a>
       </div>
     </div>
   );

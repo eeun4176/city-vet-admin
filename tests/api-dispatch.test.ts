@@ -40,6 +40,7 @@ const paths = [
   '/api/v1/auth/me',
   '/api/v1/auth/preferences',
   '/api/v1/auth/profile',
+  '/api/v1/auth/renew',
   '/api/v1/auth/set-password',
   '/api/v1/barangays',
   '/api/v1/search',

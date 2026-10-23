@@ -29,7 +29,7 @@ try {
   const port = await freePort();
   socketServer = new PGLiteSocketServer({ db: database, host: '127.0.0.1', port, maxConnections: 4 });
   await socketServer.start();
-  Object.assign(process.env, { LOCAL_TEST_MODE: '1', NODE_ENV: 'test', DATABASE_URL: `postgres://postgres:postgres@127.0.0.1:${port}/postgres`, JWT_SECRET: acceptance ? `disposable-acceptance-${randomUUID()}` : 'local-stub-preview-only-never-for-deployment', ALLOWED_ORIGINS: `http://127.0.0.1:${uiPort}` });
+  Object.assign(process.env, { LOCAL_TEST_MODE: '1', NODE_ENV: 'test', DATABASE_URL: `postgres://postgres:postgres@127.0.0.1:${port}/postgres`, JWT_SECRET: acceptance ? `disposable-acceptance-${randomUUID()}` : 'local-stub-preview-only-never-for-deployment', ALLOWED_ORIGINS: [`http://127.0.0.1:${uiPort}`, process.env.ALLOWED_ORIGINS].filter(Boolean).join(',') });
   const { dispatchApi } = await import('../server/api-dispatch.ts');
   const { sessionCookie } = await import('../server/auth.ts');
   const { closeDb } = await import('../server/db.ts');
@@ -47,8 +47,10 @@ try {
   await database.query('insert into ekapon.program_interest_allowed_barangays(campaign_id,barangay_id,added_by) values ($1,$2,$3)', [campaign.id, host.id, admin.id]);
   const adminCookie = (await sessionCookie({ id: admin.id, type: 'SuperAdmin' }, 'full')).split(';')[0];
   const paravetCookie = (await sessionCookie({ id: paravet.id, type: 'Paravet' }, 'full')).split(';')[0];
+  // Paravets reach the API only from Salin, which sends the session as a Bearer token.
+  const auth = (cookie) => cookie === paravetCookie ? { Authorization: `Bearer ${cookie.split('=')[1]}` } : { Cookie: cookie };
   async function action(body, cookie = adminCookie) {
-    const result = await fetch(`${apiBase}/api/v1/stub-workflow`, { method: 'POST', headers: { Origin: apiBase, Cookie: cookie, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const result = await fetch(`${apiBase}/api/v1/stub-workflow`, { method: 'POST', headers: { Origin: apiBase, ...auth(cookie), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const payload = await result.json();
     if (!result.ok) throw new Error(JSON.stringify(payload));
     return payload;
@@ -79,7 +81,7 @@ try {
   }
   if(process.argv.includes('--registry')){
     // Synthetic census records exercise the same approval API and publication triggers as production.
-    const r=await fetch(`${apiBase}/api/v1/census/submissions`,{method:'POST',headers:{Origin:apiBase,Cookie:paravetCookie,'Content-Type':'application/json'},body:JSON.stringify({label:'Practice census for approval',censusDate:today,source:'csv',householdsVisited:1,owners:[{ownerName:'Practice Census Owner',address:'Synthetic practice address',pets:[{petName:'Practice Mochi',species:'Cat',sex:'Female',ageMonths:24,sterilized:null,vaccine1st:null,vaccine2nd:null,vaccine3rd:null,booster:null,laps:null}]}]})});
+    const r=await fetch(`${apiBase}/api/v1/census/submissions`,{method:'POST',headers:{Origin:apiBase,...auth(paravetCookie),'Content-Type':'application/json'},body:JSON.stringify({label:'Practice census for approval',censusDate:today,source:'csv',householdsVisited:1,owners:[{ownerName:'Practice Census Owner',address:'Synthetic practice address',pets:[{petName:'Practice Mochi',species:'Cat',sex:'Female',ageMonths:24,sterilized:null,vaccine1st:null,vaccine2nd:null,vaccine3rd:null,booster:null,laps:null}]}]})});
     if(!r.ok)throw new Error(`Census preview seed failed: ${r.status}`);
     const {submission}=await r.json();
     const details=await (await fetch(`${apiBase}/api/v1/census/submissions/${submission.id}`,{headers:{Cookie:adminCookie}})).json();
@@ -87,7 +89,7 @@ try {
       if(suffix==='review')body.reviewToken=(await (await fetch(`${apiBase}/api/v1/census/submissions/${submission.id}/decisions`,{headers:{Cookie:adminCookie}})).json()).token;
       const saved=await fetch(`${apiBase}/api/v1/census/submissions/${submission.id}/${suffix}`,{method:suffix==='decisions'?'PUT':'POST',headers:{Origin:apiBase,Cookie:adminCookie,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!saved.ok)throw new Error(`Census preview approval failed: ${saved.status}`);
     }
-    const practice=await fetch(`${apiBase}/api/v1/census/submissions`,{method:'POST',headers:{Origin:apiBase,Cookie:paravetCookie,'Content-Type':'application/json'},body:JSON.stringify({label:'Practice census review — match and new owner',censusDate:today,source:'csv',householdsVisited:2,owners:[{ownerName:'Practice Census Owner',address:'Synthetic updated practice address',contact:'09171234567',pets:[{petName:'Practice Mochi',species:'Cat',sex:'Female',ageMonths:25,sterilized:null,vaccine1st:true,vaccine2nd:null,vaccine3rd:null,booster:null,laps:null}]},{ownerName:'Practice New Owner',address:'Synthetic new owner address',pets:[{petName:'Practice Bantay',species:'Dog',sex:'Male',ageMonths:0,sterilized:null,vaccine1st:null,vaccine2nd:false,vaccine3rd:null,booster:null,laps:null}]}]})});
+    const practice=await fetch(`${apiBase}/api/v1/census/submissions`,{method:'POST',headers:{Origin:apiBase,...auth(paravetCookie),'Content-Type':'application/json'},body:JSON.stringify({label:'Practice census review — match and new owner',censusDate:today,source:'csv',householdsVisited:2,owners:[{ownerName:'Practice Census Owner',address:'Synthetic updated practice address',contact:'09171234567',pets:[{petName:'Practice Mochi',species:'Cat',sex:'Female',ageMonths:25,sterilized:null,vaccine1st:true,vaccine2nd:null,vaccine3rd:null,booster:null,laps:null}]},{ownerName:'Practice New Owner',address:'Synthetic new owner address',pets:[{petName:'Practice Bantay',species:'Dog',sex:'Male',ageMonths:0,sterilized:null,vaccine1st:null,vaccine2nd:false,vaccine3rd:null,booster:null,laps:null}]}]})});
     if(!practice.ok)throw new Error(`Census review practice seed failed: ${practice.status}`);
     censusReviewSubmissionId=(await practice.json()).submission.id;
     // Give sidebar badges both a current task and changes attributed to another synthetic staff member.

@@ -82,6 +82,16 @@ describe('sign-in and sessions', () => {
     expect(r.json.account.type).toBe('SuperAdmin');
     const me = await call('GET', '/api/v1/auth/me', { cookie: r.cookie }); expect(me.json.account.username).toBe('admin');
   });
+  it('gives Salin a Bearer token instead of the cookie, for staff too', async () => {
+    const r = await call('POST', '/api/v1/auth/login', { json: { identifier: 'admin', password: 'ChangeMe-123', client: 'salin' } });
+    expect(r.status).toBe(200); expect(r.cookie).toBeNull(); expect(Date.parse(r.json.expiresAt)).toBeGreaterThan(Date.now() + 13 * 86400_000);
+    const me = await call('GET', '/api/v1/auth/me', { headers: { Authorization: `Bearer ${r.json.token}` } }); expect(me.json.account.username).toBe('admin');
+    const renewed = await call('POST', '/api/v1/auth/renew', { headers: { Authorization: `Bearer ${r.json.token}` } });
+    expect(renewed.status).toBe(200); expect(renewed.json.account.username).toBe('admin'); expect(Date.parse(renewed.json.expiresAt)).toBeGreaterThanOrEqual(Date.parse(r.json.expiresAt));
+    expect((await call('POST', '/api/v1/auth/renew', { cookie: admin })).status).toBe(403);
+    const preflight = await fetch(base + '/api/v1/auth/me', { method: 'OPTIONS' });
+    expect(preflight.headers.get('access-control-allow-headers')).toContain('Authorization');
+  });
   it('blocks cross-site writes', async () => {
     const r = await call('POST', '/api/v1/auth/logout', { origin: 'https://evil.example', cookie: admin });
     expect(r.status).toBe(403); expect(r.json.error.code).toBe('BAD_ORIGIN');
@@ -157,27 +167,29 @@ describe('accounts', () => {
     const [{ leak }] = await sql()`select count(*)::int as leak from ekapon.audit_log where new_data ? 'password_hash'`; expect(leak).toBe(0);
   });
   it('first sign-in: wrong passwords count down, then the account locks', async () => {
-    const a = await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: 'wrong-pass1' } });
+    const a = await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: 'wrong-pass1' } });
     expect(a.status).toBe(401); expect(a.json.error.details.attemptsLeft).toBe(2);
-    await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: 'wrong-pass2' } });
-    const c = await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: 'wrong-pass3' } });
+    await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: 'wrong-pass2' } });
+    const c = await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: 'wrong-pass3' } });
     expect(c.status).toBe(423);
-    expect((await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: tmp } })).status).toBe(423);
+    expect((await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: tmp } })).status).toBe(423);
   });
   it('admin reset unlocks with a new temporary password; the old one is dead', async () => {
     const r = await call('POST', `/api/v1/accounts/${acct.key}/reset-password`, { cookie: admin });
     expect(r.status).toBe(200); expect(r.json.temporaryPassword).not.toBe(tmp);
-    const old = await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: tmp } }); expect(old.status).toBe(401);
+    const old = await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: tmp } }); expect(old.status).toBe(401);
     tmp = r.json.temporaryPassword;
   });
   let reset: string;
   it('temporary password works once and only unlocks the Create New Password step', async () => {
-    const r = await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: tmp } });
-    expect(r.status).toBe(200); expect(r.json.mustCreatePassword).toBe(true); reset = r.cookie!;
+    // The dashboard refuses Paravet first sign-in before the one-time password is spent.
+    expect((await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: tmp } })).json.error.code).toBe('USE_SALIN');
+    const r = await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: tmp } });
+    expect(r.status).toBe(200); expect(r.json.mustCreatePassword).toBe(true); expect(r.cookie).toBeNull(); expect(r.json.policy.version).toBe(PARAVET_POLICY_VERSION); reset = `ekapon_session=${r.json.token}`;
     expect((await call('GET', '/api/v1/auth/me', { cookie: reset })).status).toBe(401);
     expect((await call('GET', '/api/v1/accounts', { cookie: reset })).status).toBe(401);
-    expect((await call('POST', '/api/v1/auth/first-signin', { json: { accountKey: acct.key, temporaryPassword: tmp } })).status).toBe(401);
-    expect((await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: tmp } })).json.error.code).toBe('FIRST_SIGN_IN_REQUIRED');
+    expect((await call('POST', '/api/v1/auth/first-signin', { json: { client: 'salin', accountKey: acct.key, temporaryPassword: tmp } })).status).toBe(401);
+    expect((await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: tmp } })).json.error.code).toBe('FIRST_SIGN_IN_REQUIRED');
   });
   it('enforces the new-password rules, then opens a full session', async () => {
     expect((await call('POST', '/api/v1/auth/set-password', { cookie: reset, json: { newPassword: 'abcdefgh', confirmPassword: 'abcdefgh' } })).status).toBe(422);
@@ -186,16 +198,20 @@ describe('accounts', () => {
     expect((await call('POST','/api/v1/auth/set-password',{cookie:reset,json:{newPassword:'Strong-Pass-1',confirmPassword:'Strong-Pass-1'}})).json.error.code).toBe('AGREEMENT_REQUIRED');
     const ok = await call('POST', '/api/v1/auth/set-password', { cookie: reset, json: { newPassword: 'Strong-Pass-1', confirmPassword: 'Strong-Pass-1',acceptedTerms:true,acknowledgedPrivacy:true,policyVersion:PARAVET_POLICY_VERSION,policyLanguage:'fil' } });
     expect(ok.status).toBe(200);
-    const me = await call('GET', '/api/v1/auth/me', { cookie: ok.cookie }); expect(me.json.account.type).toBe('Paravet');
-    expect((await call('GET', '/api/v1/accounts', { cookie: ok.cookie })).status).toBe(403);
-    const login = await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Strong-Pass-1' } }); expect(login.status).toBe(200);
+    const session = `ekapon_session=${ok.json.token}`;
+    const me = await call('GET', '/api/v1/auth/me', { cookie: session }); expect(me.json.account.type).toBe('Paravet');
+    expect((await call('GET', '/api/v1/accounts', { cookie: session })).status).toBe(403);
+    // The dashboard refuses Paravets: they sign in with Salin, which sends the session as a Bearer token.
+    expect((await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Strong-Pass-1' } })).json.error.code).toBe('USE_SALIN');
+    expect((await call('GET', '/api/v1/auth/me', { headers: { Cookie: session } })).json.error.code).toBe('USE_SALIN');
+    const login = await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: 'Strong-Pass-1' } }); expect(login.status).toBe(200);
   });
   it('locks the account for 15 minutes after 5 wrong permanent passwords', async () => {
-    for (let i = 0; i < 5; i++) expect((await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Wrong-Pass-' + i } })).status).toBe(401);
-    const locked = await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Strong-Pass-1' } });
+    for (let i = 0; i < 5; i++) expect((await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: 'Wrong-Pass-' + i } })).status).toBe(401);
+    const locked = await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: 'Strong-Pass-1' } });
     expect(locked.status).toBe(423); expect(locked.json.error.code).toBe('ACCOUNT_LOCKED');
     await sql()`update ekapon.accounts set locked_until = null, failed_login_count = 0 where id = ${acct.id}`;
-    expect((await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Strong-Pass-1' } })).status).toBe(200);
+    expect((await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: 'Strong-Pass-1' } })).status).toBe(200);
   });
   it('lists with search, filters, sorting, month/year and pagination', async () => {
     for (let i = 0; i < 2; i++) await call('POST', '/api/v1/accounts', { cookie: admin, json: { ...body(), firstName: 'Extra' + i, mobile: '09170000000' } });
@@ -232,7 +248,7 @@ describe('accounts', () => {
     const a = await call('POST', '/api/v1/accounts/archive', { cookie: admin, json: { ids: [acct.id] } }); expect(a.json.changed).toBe(1);
     expect((await call('GET', `/api/v1/accounts?q=${LAST}`, { cookie: admin })).json.total).toBe(2);
     expect((await call('GET', `/api/v1/accounts?q=${LAST}&archived=true`, { cookie: admin })).json.total).toBe(1);
-    expect((await call('POST', '/api/v1/auth/login', { json: { identifier: acct.key, password: 'Strong-Pass-1' } })).status).toBe(401);
+    expect((await call('POST', '/api/v1/auth/login', { json: { client: 'salin', identifier: acct.key, password: 'Strong-Pass-1' } })).status).toBe(401);
     const b = await call('POST', '/api/v1/accounts/archive', { cookie: admin, json: { ids: [acct.id], restore: true } }); expect(b.json.changed).toBe(1);
     const [{ id: adminId }] = await sql()`select id from ekapon.accounts where username = 'admin'`;
     expect((await call('POST', '/api/v1/accounts/archive', { cookie: admin, json: { ids: [adminId] } })).status).toBe(403);

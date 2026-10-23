@@ -118,7 +118,7 @@ try {
   async function request(spec,index=0) {
     const a=staff[index],p=programs.find(p=>Number(p.area)===(a.barangay_id??1));
     const started=performance.now();
-    const response=await fetch(`${base}/api/v1${spec.path(a,p)}`,{headers:{Cookie:cookies[index]}});
+    const response=await fetch(`${base}/api/v1${spec.path(a,p)}`,{headers:a.account_type==='Paravet'?{Authorization:`Bearer ${cookies[index].split('=')[1]}`}:{Cookie:cookies[index]}});
     const body=await response.text();
     if(!response.ok) throw new Error(`${spec.name}: ${response.status} ${body}`);
     const result=JSON.parse(body);

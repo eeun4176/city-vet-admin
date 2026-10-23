@@ -12,7 +12,7 @@ const checks = [];
 const cookies = {};
 async function request(role, path, body, method = body ? 'POST' : 'GET', expected = 200) {
   const response = await fetch(`${practice.baseUrl}/api/v1${path}`, {
-    method, headers: { Origin: practice.baseUrl, ...(cookies[role] ? { Cookie: cookies[role] } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    method, headers: { Origin: practice.baseUrl, ...(cookies[role] ? (cookies[role].startsWith('Bearer ') ? { Authorization: cookies[role] } : { Cookie: cookies[role] }) : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const value = await response.json();
@@ -24,8 +24,10 @@ async function action(role, body, expected = 200) { return (await request(role, 
 function passed(name) { checks.push(name); console.log(`PASS ${name}`); }
 
 for (const [role, account] of Object.entries(practice.accounts)) {
-  const { response, value } = await request(role, '/auth/login', { identifier: account.identifier, password: practice.password });
-  cookies[role] = response.headers.get('set-cookie').split(';')[0];
+  // Paravets sign in as Salin does: a token in the reply instead of the dashboard cookie.
+  const salin = /paravet/i.test(role);
+  const { response, value } = await request(role, '/auth/login', { identifier: account.identifier, password: practice.password, ...(salin ? { client: 'salin' } : {}) });
+  cookies[role] = salin ? `Bearer ${value.token}` : response.headers.get('set-cookie').split(';')[0];
   assert.equal(value.account.id, account.id);
 }
 passed('Real password sign-in: Admin, Super Admin, assigned Paravet, other-barangay Paravet');

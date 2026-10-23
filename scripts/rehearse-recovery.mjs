@@ -60,7 +60,7 @@ try {
     field: (await sessionCookie({ id: field.id, type: 'Paravet' }, 'full')).split(';')[0],
   };
   async function call(role, path, body, method = body ? 'POST' : 'GET', expected = [200, 201]) {
-    const response = await fetch(`${base}/api/v1${path}`, { method, headers: { Origin: base, Cookie: cookies[role], 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const response = await fetch(`${base}/api/v1${path}`, { method, headers: { Origin: base, ...(role === 'field' ? { Authorization: `Bearer ${cookies.field.split('=')[1]}` } : { Cookie: cookies[role] }), 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
     const value = await response.json();
     assert.ok(expected.includes(response.status), `${path}: ${response.status} ${JSON.stringify(value)}`);
     return value;

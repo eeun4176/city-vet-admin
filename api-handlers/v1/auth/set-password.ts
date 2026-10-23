@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { route, ok, parse } from '../../../server/http';
 import { tx } from '../../../server/db';
-import { requireAuth, sessionCookie } from '../../../server/auth';
+import { requireAuth, sessionCookie, sessionToken } from '../../../server/auth';
 import { PARAVET_POLICY_VERSION } from '../../../shared/paravetPolicy';
 import { unprocessable } from '../../../server/errors';
 
@@ -18,6 +18,8 @@ export default route({
       await q`select ekapon.set_permanent_password(${s.id}::bigint, ${b.newPassword})`;
       if(s.type==='Paravet')await q`insert into ekapon.policy_acceptances(account_id,policy_version,language) values(${s.id},${PARAVET_POLICY_VERSION},${b.policyLanguage})`;
     });
-    return ok({ account: { id: s.id, type: s.type, name: s.name, accountKey: s.key } }, { 'Set-Cookie': await sessionCookie({ id: s.id, type: s.type }, 'full') });
+    const account = { id: s.id, type: s.type, name: s.name, accountKey: s.key, barangayId: s.barangayId, barangay: s.barangay };
+    if (s.client === 'salin') return ok({ account, ...(await sessionToken({ id: s.id, type: s.type }, 'full')) });
+    return ok({ account }, { 'Set-Cookie': await sessionCookie({ id: s.id, type: s.type }, 'full') });
   },
 });
