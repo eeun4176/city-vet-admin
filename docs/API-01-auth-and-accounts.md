@@ -1,0 +1,41 @@
+# API v1 — Modules 1–2
+
+> **Historical API snapshot.** This document may not reflect the current handlers and role/capability map. For current Module A work, use [the Module A brief](./modules/Module%20A.md) and verify the live contract in source and tests. If this document conflicts with current code or the module integration guide, the code and module guide take precedence.
+
+Base path `/api/v1`. JSON in, JSON out. Errors: `{"error":{"code","message","details?","requestId"}}`.
+Cookie session (`ekapon_session`). Non-GET requests need an `Origin` header matching the site (browsers send it; with curl add `-H "Origin: http://localhost:3000"`).
+
+## Auth
+Staff roles are `SuperAdmin`, `Admin`, and `Paravet`. The existing-install role migration maps old `Admin` accounts to `SuperAdmin` and old `Encoder` accounts to `Admin`.
+
+| Method & path | Who | Body → result |
+|---|---|---|
+| `POST /auth/login` | anyone | `{identifier, password}` → `{account}` + cookie. Staff: username. Paravet/User: account key. Errors: 401 `INVALID_CREDENTIALS`, 423 `ACCOUNT_LOCKED`, 403 `FIRST_SIGN_IN_REQUIRED`, 429 `TOO_MANY_ATTEMPTS` |
+| `POST /auth/first-signin` | Paravet/User | `{accountKey, temporaryPassword}` → `{mustCreatePassword:true}` + 10-minute restricted cookie. 401 (with `details.attemptsLeft`), 410 `TEMP_PASSWORD_EXPIRED`, 423 locked after 3 wrong tries |
+| `POST /auth/set-password` | restricted cookie only | `{newPassword, confirmPassword}` → `{account}` + full cookie. Rules: 8+ chars, a letter and a number |
+| `POST /auth/logout` | any | clears the cookie |
+| `GET /auth/me` | signed in | `{account:{id,type,name,username,accountKey}}` |
+| `GET /health` | anyone | `{ok:true}` (checks the database) |
+
+## Barangays
+`GET /barangays?q=&district=1|2` — public, cached 1 hour. → `{data:[{id,acronym,name,district,zip}], total}` (62 rows without filters).
+
+## Accounts (SuperAdmin only)
+`GET /auth/profile` and `PATCH /auth/profile` let any signed-in account read or change only its own first, middle, and last name and suffix. This self-service route does not permit role, username/account key, mobile, barangay, or password changes.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /accounts` | List. Query: `page, pageSize (≤500), sort (name\|key\|type\|barangay\|status\|created), dir, q, type, barangay, status, year, month, archived` → `{data,page,pageSize,total}` |
+| `POST /accounts` | Create `{accountType:'Paravet'\|'User', firstName, middleName?, lastName, suffix?, mobile, barangay, paravetId?, ownerId?}` → 201 `{account, temporaryPassword, expiresInMinutes:15}` (password shown once). Key e.g. `PV2026-TMP001-3023`. 409 `DUPLICATE_ACCOUNT`, 422 `UNKNOWN_BARANGAY` |
+| `GET /accounts/{key or id}` | Detail |
+| `PATCH /accounts/{key or id}` | Edit names and mobile (the key never changes). Paravet/User accounts may also change barangay; staff accounts cannot be assigned to a barangay here. Account type, login ID, and password remain unchanged. |
+| `DELETE /accounts/{key or id}` | Delete a Paravet/User account (not yourself, not staff). 409 `ACCOUNT_IN_USE` → archive instead |
+| `POST /accounts/{key}/reset-password` | New temporary password (also unlocks) |
+| `POST /accounts/archive` | `{ids:[...], restore?:false}` batch archive/restore |
+
+Example (local):
+```
+curl -c jar -H "Origin: http://localhost:3000" -H "Content-Type: application/json" \
+  -d '{"identifier":"admin","password":"..."}' http://localhost:3000/api/v1/auth/login
+curl -b jar "http://localhost:3000/api/v1/accounts?type=Paravet&sort=created&dir=desc"
+```

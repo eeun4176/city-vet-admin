@@ -1,0 +1,70 @@
+{
+  "name": "ekapon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CityVet e-Kapon: City Veterinary Office dashboard (React + Vercel serverless API + Supabase PostgreSQL)",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:test": "node scripts/dev-test.mjs",
+    "dev:api": "tsx scripts/dev-server.ts",
+    "dev:api:test": "node --import tsx scripts/dev-server-local-test.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "preview:stubs": "node --import tsx scripts/preview-stub-workflow.mjs",
+    "preview:programs": "node --import tsx scripts/preview-stub-workflow.mjs",
+    "preview:insights": "node --import tsx scripts/preview-stub-workflow.mjs --insights",
+    "preview:registry": "node --import tsx scripts/preview-stub-workflow.mjs --insights --registry",
+    "preview:acceptance": "node --import tsx scripts/preview-stub-workflow.mjs --insights --registry --acceptance",
+    "check:acceptance": "node --import tsx scripts/check-acceptance.mjs",
+    "rehearse:recovery": "node --import tsx scripts/rehearse-recovery.mjs",
+    "benchmark:performance": "node --import tsx scripts/benchmark-performance.mjs",
+    "benchmark:daily": "node --import tsx scripts/benchmark-daily.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.app.json --noEmit",
+    "test": "node scripts/test-local.mjs",
+    "test:vitest": "vitest run",
+    "db:setup-local": "node scripts/prepare-local-db.mjs",
+    "db:local": "node scripts/local-db-server.mjs",
+    "db:seed-reference": "node scripts/replace-local-reference-data.mjs",
+    "db:cleanup-local-mocks": "node scripts/cleanup-local-mocks.mjs",
+    "hosting:schema": "node scripts/prepare-hosting-schema.mjs",
+    "hosting:package": "node scripts/package-hosting.mjs",
+    "hosting:check": "node scripts/check-hosting.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "jose": "^5.9.6",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^0.468.0",
+    "postgres": "^3.4.5",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "zod": "^3.23.8"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@electric-sql/pglite-socket": "^0.2.12",
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vercel/node": "^3.2.29",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

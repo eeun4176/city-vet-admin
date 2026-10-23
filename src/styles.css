@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :focus-visible { outline-color: theme('colors.brand.500'); }
+  .page-transition { animation: page-enter 160ms ease-out both; }
+  .ui-modal-overlay { animation: modal-fade 130ms ease-out both; }
+  .ui-modal-panel { animation: modal-enter 170ms ease-out both; }
+  .ui-toast { animation: toast-enter 160ms ease-out both; }
+  @keyframes toast-enter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modal-enter { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes page-enter {
+    from { opacity: 0.75; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  input, select, textarea { max-width: 100%; }
+  input[type="checkbox"] { accent-color: theme('colors.brand.600'); min-width: 1rem; min-height: 1rem; }
+  button, a, input, select, textarea { touch-action: manipulation; }
+  @media (max-width: 767px) {
+    button:not([role="switch"]), select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { min-height: 44px; }
+    input, select, textarea { font-size: 16px; }
+    #main { padding: 1rem; }
+    .ui-modal-panel { overscroll-behavior: contain; }
+    td, th { padding: .65rem; }
+  }
+  @media print {
+    table { max-width: 100%; }
+    thead { display: table-header-group; }
+    tr, article { break-inside: avoid; }
+  }
+}

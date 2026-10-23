@@ -1,0 +1,15 @@
+# TEMPLATE ONLY. Enter actual values in Vercel Settings > Environment Variables.
+# Every variable is SERVER ONLY. Never add a VITE_ prefix.
+# Use Production scope only. Preview must use a separate database/bucket/secrets.
+DATABASE_URL=postgresql://ekapon_api.PROJECT_REF:URL_ENCODED_PASSWORD@EXACT_POOLER_HOST:6543/postgres
+JWT_SECRET=REPLACE_WITH_AN_INDEPENDENT_RANDOM_SECRET_AT_LEAST_32_CHARACTERS
+CRON_SECRET=REPLACE_WITH_ANOTHER_INDEPENDENT_RANDOM_SECRET_AT_LEAST_32_CHARACTERS
+FILE_STORAGE_DRIVER=supabase
+SUPABASE_URL=https://PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=REPLACE_WITH_SERVER_SECRET_KEY_FROM_SUPABASE_API_KEYS
+SUPABASE_STORAGE_BUCKET=ekapon-private
+SESSION_HOURS=8
+LOGIN_IP_MAX_FAILURES=20
+# Same-origin access works automatically. Leave empty unless a second exact origin is needed.
+ALLOWED_ORIGINS=
+# Vercel supplies NODE_ENV=production; do not use LOCAL_TEST_MODE or TEST_DATABASE_URL.

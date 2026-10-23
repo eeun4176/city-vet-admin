@@ -1,0 +1,30 @@
+# Hosting handoff — October 20, 2026
+
+Status: deployment files prepared locally; no Git push, deployment or remote migration performed. Follow [hosting/README.md](./hosting/README.md) for the current setup. The Supabase project and remote GitHub layout remain unverified.
+
+## Prepared
+
+- Current schema through migration 024, generated from reviewed SQL with source hashes.
+- Fresh installation refuses an existing ekapon schema or API login. No default accounts or operational records.
+- Private operator template provisions the restricted API login and one real SuperAdmin, with distinct chosen credentials.
+- Private Supabase Storage for profile/census photos and stub PDFs; record/role/barangay checks remain in the API.
+- Bounded orphan cleanup; resubmission file references preserve shared photos.
+- Node 24.x, one API function, 60-second duration, one daily cron, workbook logo explicitly included.
+- Upload/import requests bounded for Vercel's payload ceiling; one database connection per warm function.
+- Server environment template and a source package allowlist excluding local databases, supplied datasets, outputs, old static scripts and backups.
+- No build-time migration, seed, cloud provisioning, secrets or browser Supabase client.
+
+## Operator steps before launch
+
+1. Confirm Hobby eligibility for the intended use. Vercel Hobby is personal/non-commercial; institutional operation needs provider confirmation or a suitable plan.
+2. Inspect the Supabase project with hosting/00-inspect-existing-project.sql. Preserve any existing installation and use an empty project for this fresh start.
+3. Back up and verify restoration of database and Storage files. The selected-record JSON export is not complete recovery. Free Supabase has no automatic backup entitlement.
+4. Run hosting/01-fresh-schema.sql, privately customize/run 02-configure-access.sql, then run 03-private-storage.sql. Do not use legacy default credentials or local seed scripts.
+5. Keep ekapon outside the exposed Data API schemas; verify the API role cannot read password hashes or create objects. Keep Storage private without broad anon/authenticated policies.
+6. Add the server-only variables from hosting/vercel-env.example.txt to Vercel Production. Use the exact transaction-pooler endpoint and restricted role. Do not share these values or set VITE_ secrets.
+7. Use a separate database/bucket/secrets for Preview, or disable Preview. Confirm repository root, production branch and function region before publishing to the connected repository.
+8. Resolve/review the two moderate React Router dependency advisories and the recorded account-existence timing behavior. A major dependency upgrade was not silently applied.
+9. Supply the official privacy contact/retention rules and approve the Paravet policy before real personal data is entered.
+10. Run local checks and then the hosted smoke tests in the guide on an isolated environment. Verify the actual API artifact, authentication, file permissions, exports, cron and provider quotas/availability. Local checks do not establish hosted validation.
+
+Verification details and advisory links: [hosting/VERIFICATION.md](./hosting/VERIFICATION.md).

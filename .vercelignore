@@ -1,0 +1,20 @@
+tests
+docs
+db
+samples
+public/samples
+.env
+.env.*
+!.env.example
+
+.local-test-db
+output
+tmp
+Backup Files
+hosting
+scripts
+*.tar.gz
+*.zip
+*.log
+database-test.*
+schema.prisma

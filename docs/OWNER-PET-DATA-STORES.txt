@@ -1,0 +1,274 @@
+OWNER AND PET DATA: CURRENT STORES, RISKS, AND OPTIONS
+=====================================================
+
+Purpose
+-------
+This note explains why the project has two owner/pet data models, how the
+current census approval process uses them, what can go wrong, and what should
+be decided before the project is treated as one unified registry.
+
+Scope and source files
+----------------------
+This describes the React/Vite application in Modules/local-test-copy, not the
+legacy application at the repository root or the sibling project copies.
+
+Relevant implementation:
+
+  db/000_ekapon_schema.sql
+      Defines ekapon.dashboard_records.
+
+  db/007_operations.sql
+      Defines normalized registry, census submission, submitted-owner,
+      submitted-pet, and attachment tables; also defines the approval function
+      and census report view/function.
+
+  server/dashboard.ts
+      Defines the accepted JSONB dashboard dataset names and validates
+      dashboard records.
+
+  api-handlers/v1/records/[dataset].ts
+      Reads/writes dashboard records.
+
+  server/census.ts
+      Defines census owner/pet input validation and submission helpers.
+
+  api-handlers/v1/census/submissions.ts
+  api-handlers/v1/census/submissions/[id]/decisions.ts
+  api-handlers/v1/census/submissions/[id]/review.ts
+      Create/list submissions, save staff decisions, and finalize review.
+
+  db/007_operations.sql, function ekapon.decide_census_submission(...)
+      Applies approved owner/pet decisions to the normalized registry.
+
+  api-handlers/v1/census/summary.ts
+      Reads the census summary view over the normalized registry.
+
+Current data model
+------------------
+
+1. Dashboard records: flexible JSONB records
+
+Table: ekapon.dashboard_records
+
+Important columns:
+
+  dataset       text, limited to owners, pets, paravets, respondents,
+                households, animals, stubs, services, programs, participants
+  record_id     text, 1 to 100 characters
+  record_data   JSONB object which must contain an "id" equal to record_id
+  archived     boolean
+  created_at, updated_at
+
+The primary key is (dataset, record_id). There is no relational owner_id
+foreign key between a row in dataset "pets" and a row in dataset "owners".
+Any relationship between those JSON objects is a convention in their
+record_data, not a PostgreSQL-enforced relationship. Fields can differ from
+one record to another. The handler validates basic IDs, record size, date-like
+values, and PH mobile-number fields, but this table is not the normalized
+owner/pet schema.
+
+The general dashboard UI and /api/v1/records/{dataset} work with this store.
+Staff dashboard writes/imports affect this table.
+
+2. Census intake: pending, normalized submission data
+
+Tables:
+
+  ekapon.census_submissions
+      One Paravet census batch: barangay, submitter attribution, date, source,
+      status, reviewer, review note, and related metadata.
+
+  ekapon.census_owners
+      Owner rows submitted in a particular census batch. Each row references
+      its parent submission and may have a review decision and matched
+      normalized registry owner.
+
+  ekapon.census_pets
+      Pet rows belonging to a submitted census owner.
+
+  ekapon.census_attachments
+      Optional paper-sheet image bytes belonging to a submission.
+
+These are not user-account tables. A submission references the submitting
+account for attribution; that is a foreign-key relationship, not shared
+storage. The submission and its owner/pet rows remain review data until a
+staff decision is finalized.
+
+3. Approved census registry: normalized owner and pet tables
+
+Tables:
+
+  ekapon.registry_owners
+      UUID owner ID, barangay_id, owner_name, address, contact,
+      source_submission_id, timestamps, and archived_at.
+
+  ekapon.registry_pets
+      UUID pet ID, owner_id foreign key, pet_name, species, sex, age_months,
+      breed_type, color, sterilization/confinement/vaccine fields, remarks,
+      timestamps, and archived_at.
+
+Unlike dashboard_records, registry_pets.owner_id is a database-enforced
+relationship to registry_owners.id. The census summary view
+ekapon.census_summary_v reads the normalized approved registry.
+
+Current workflow
+----------------
+1. A Paravet submits a census batch. The server derives the submitting account
+   and barangay from the signed-in session; the client must not choose another
+   person's identity or barangay.
+2. Owner and pet input is written to census_submissions, census_owners, and
+   census_pets. It is not immediately written to dashboard_records or the
+   approved registry.
+3. An Admin or SuperAdmin reviews each submitted owner. Choices include new,
+   merge, replace, keep, and reject. Choices requiring a match must point to an
+   active registry owner in the same barangay.
+4. Final approval runs ekapon.decide_census_submission transactionally. "new"
+   creates a registry owner. "merge" and "replace" update a matched normalized
+   owner and its same-name/species pets according to the SQL function.
+   "keep" and "reject" skip that submitted owner. Approval does not copy the
+   result to dashboard_records.
+5. Census summary/front-page calculations use normalized registry data, not
+   arbitrary JSONB dashboard rows.
+
+Important nuance: current "replace" behavior is not a complete snapshot
+replacement. The SQL function updates the matched owner and matching pets,
+and inserts submitted pets that did not match. It does not purge every
+existing pet merely because that pet was absent from the submitted sheet.
+The owner-level "keep" decision skips that submitted owner. Do not promise a
+stronger delete/replace meaning than the implementation provides.
+
+What is and is not synchronized
+-------------------------------
+There is no general automatic synchronization between:
+
+  dashboard_records(dataset = 'owners' or 'pets')
+
+and:
+
+  registry_owners / registry_pets
+
+The approval function writes the normalized registry only. Ordinary
+dashboard-record CRUD/import writes the JSONB table only. A name such as
+"owners" or "pets" does not make the records the same entity or store.
+
+Consequences and unfavorable outcomes
+--------------------------------------
+1. Divergent records: editing an owner in one workflow may leave the other
+   workflow with the old address, contact number, or pet details.
+2. Missed matches and duplicates: census matching checks registry_owners.
+   An owner that exists only in dashboard_records is not necessarily found
+   during census review, so staff might create a second representation.
+3. Inconsistent screens and reports: a general list backed by dashboard JSONB
+   can disagree with a census report backed by the normalized registry.
+4. Unclear editing authority: staff may not know which screen is authoritative
+   or whether changes should be made through registry CRUD or census review.
+5. Inconsistent identity: the dashboard stores text IDs and loosely shaped
+   JSON. The normalized registry stores UUIDs and explicit owner-pet links.
+   There is no guaranteed one-to-one mapping between them.
+6. Risky consolidation: combining stores later requires matching IDs, mapping
+   different field names/formats, finding duplicates, resolving conflicting
+   values, and preserving audit/history and barangay ownership.
+7. Misleading totals: totals from one store cannot safely be combined with
+   totals from the other as if they were one deduplicated population.
+
+These are risks when the two stores are treated as one unified registry. They
+are not proof that every screen currently reads both stores or that every
+record is duplicated.
+
+Options
+-------
+
+OPTION A - Keep both stores, declare separate purposes (short-term containment)
+
+  - Explicitly label dashboard_records as legacy/operational UI data and the
+    normalized registry as the approved owner/pet source for census.
+  - Do not show combined owner/pet counts unless the query explicitly handles
+    overlap and identifies its source.
+  - Define which screens can edit each store and communicate that distinction
+    to staff.
+  - Add clear source labels and cross-links where useful.
+
+  Advantages: least disruptive; preserves existing screens and workflows.
+  Disadvantages: data can still diverge; two owner/pet views remain.
+
+OPTION B - Make the normalized registry the single canonical owner/pet store
+           (recommended target if the product is intended to have one registry)
+
+  - Treat registry_owners and registry_pets as the canonical approved data.
+  - Change the general owner/pet UI and APIs to read/write that model through
+    explicit, authorized endpoints.
+  - Keep census_submissions/census_owners/census_pets as the pending review
+    layer; staff approval applies reviewed changes to the canonical registry.
+  - Keep dashboard_records for non-owner/pet operational datasets only, then
+    retire its owners/pets datasets after data migration and validation.
+
+  Advantages: one approved owner/pet source; relationships and constraints are
+  enforced relationally; census reports and general registry screens can
+  agree.
+  Disadvantages: requires a deliberate migration, API/UI changes, permission
+  review, and careful historical-data reconciliation.
+
+OPTION C - Keep JSONB as the canonical store and adapt census to it
+
+  - Route census matching and approval to dashboard_records instead of the
+    normalized registry.
+  - Define a stable JSONB owner/pet field contract and relationship convention.
+
+  Advantages: fewer stores for the current dashboard.
+  Disadvantages: weak relational integrity, harder reliable matching and
+  reporting, and significant rewrite of the existing normalized review SQL.
+  Not recommended for the long-term canonical registry.
+
+OPTION D - Synchronize both stores
+
+  - Write to both models on every change or build a synchronization process.
+  - Define conflict resolution, retries, deletion/archive semantics, ordering,
+    and reconciliation reporting.
+
+  Advantages: both existing consumers could continue to use their current
+  model during transition.
+  Disadvantages: adds dual-write failure modes and ongoing operational
+  complexity; without a clear owner/source-of-truth rule, divergence becomes
+  harder to diagnose. Avoid as a permanent design.
+
+Recommendation
+--------------
+Use Option A as a temporary safety rule and plan toward Option B if the
+requirement is one unified owner/pet registry. Do not implement bulk dual-write
+synchronization as a quick fix.
+
+Before changing code, agree that:
+
+  1. registry_owners/registry_pets are the canonical approved owner/pet data;
+  2. census_submissions and their child rows are review/staging data only;
+  3. the general owners/pets screens will eventually use the normalized
+     registry (not dashboard_records);
+  4. other dashboard datasets remain in JSONB until separately modeled;
+  5. current dashboard owner/pet rows need a reviewed one-time reconciliation
+     and migration, not blind copying;
+  6. "merge", "replace", "keep", and archive/delete behavior have written,
+     testable definitions.
+
+Safe implementation sequence (after that decision)
+---------------------------------------------------
+1. Inventory owner/pet JSONB records and normalized registry rows using only a
+   local/test copy. Record counts and field/ID patterns; do not expose real
+   personal data in logs or reports.
+2. Design an explicit mapping, including how dashboard string IDs map to
+   registry UUIDs, how pet rows map to owners, how barangay is established,
+   how duplicates/conflicts are resolved, and how archive/history is retained.
+3. Build a dry-run reconciliation report and test it with synthetic fixtures.
+   Require staff review of ambiguous matches; do not auto-merge by name alone.
+4. Add a new ordered migration/backfill plan. Do not rewrite db/007_operations
+   or run destructive schema changes against staging/production as part of
+   ordinary feature work.
+5. Update the server API, permissions, registry UI, census matching/review,
+   summary/report queries, tests, and module documentation together.
+6. Verify that every owner/pet screen and report reads the intended canonical
+   store. Add tests proving census approval and ordinary registry updates
+   remain consistent and that duplicate creation is controlled.
+7. Only after local reconciliation and user acceptance, plan deployment and
+   migration separately, with a backup/rollback strategy.
+
+No data migration, synchronization, schema modification, or hosting operation
+is authorized by this explanatory note.

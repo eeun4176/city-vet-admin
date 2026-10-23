@@ -1,0 +1,92 @@
+{
+  "format": "ekapon-empty-hosting-schema-v1",
+  "schemaSha256": "c5d2873bb95b5a9de351c56ec055dec80da67c652c2d4733f5039f559fcec3c0",
+  "sources": [
+    {
+      "file": "000_ekapon_schema.sql",
+      "sha256": "2380d96ed1c1ce74c398f647ab1a486c596c3db92d277e0ed19f3452f2521078"
+    },
+    {
+      "file": "005_census_submissions.sql",
+      "sha256": "36ac57146d9b60111d6dbe0eb859446c0c48058d0c7bdbcedc5ca5b6a04d2f5a"
+    },
+    {
+      "file": "006_census_submitter_retention.sql",
+      "sha256": "13190d8bf5a0661ffd5d99f534aee3c9ae13c6034d4880298196437b60adacbc"
+    },
+    {
+      "file": "008_profile_preferences_undo.sql",
+      "sha256": "6a033dfc4b93e58a12f7a7b55148a015598bb07d3d6b4ab01a1468806957a01e"
+    },
+    {
+      "file": "007_operations.sql",
+      "sha256": "c5d1f9b4eea7227345b026211add05044ae8c5ac930c26bd68cc06a7d6b86517"
+    },
+    {
+      "file": "009_notification_archive.sql",
+      "sha256": "6e8dabe1300cd960325b78d23c7eb921e8f0674f92f495eb313c1f57e6ceefa5"
+    },
+    {
+      "file": "010_reporting_workflows.sql",
+      "sha256": "4fb8e05de7cf277fc598d970f421a8bfc9656cea1c6438c2018a16fb51dcb78f"
+    },
+    {
+      "file": "011_program_interest.sql",
+      "sha256": "f104565184b6910ef3d41e480e5cd262e3bc0ea23e38b927f9046cefe1952cc5"
+    },
+    {
+      "file": "012_qr_stubs.sql",
+      "sha256": "8a312c8613021e65103f7deca32505f4c8ca0cf29584500d2d08318d3a0285fb"
+    },
+    {
+      "file": "013_program_workspace.sql",
+      "sha256": "87e580de1321ebb4ec99a70e79db3dcf89235e0dbe0e6f27a2c99c64a091e98b"
+    },
+    {
+      "file": "014_read_performance_indexes.sql",
+      "sha256": "9a8f726efa1f89e6e15a2cf5670b70f3da07a9e267364e622c471d1f2f9c8277"
+    },
+    {
+      "file": "015_data_quality_reviews.sql",
+      "sha256": "50a0a6d0fce32ff3fae0bd1567a17e773a7322bf2871ef7fd0847be3d5f6f98e"
+    },
+    {
+      "file": "016_registry_workspace.sql",
+      "sha256": "17f3b29629d8f04bc8c555b2a1f4aa1653d2ff58fab120b323b049bdc3c42d7c"
+    },
+    {
+      "file": "017_census_registry_bridge.sql",
+      "sha256": "678d31b30a952c473aa3dfb2d26b7ee8411bcaa384673ad05ded1bdf7df6aa27"
+    },
+    {
+      "file": "018_census_unknown_fields.sql",
+      "sha256": "29921f8de6a8a8702aba3883ac19071fb7524b8fa9c40041102398d9ed26e0cd"
+    },
+    {
+      "file": "019_census_review_consistency.sql",
+      "sha256": "eb9c56975248d3b79c6ee0af03a8b0dc695be01e0cd953f28419cab289b641b6"
+    },
+    {
+      "file": "020_navigation_badges.sql",
+      "sha256": "d7a1fb04e0b1a526e37427246cf1e5a35962df7984909c128eefcea178132f54"
+    },
+    {
+      "file": "021_field_record_consistency.sql",
+      "sha256": "29c3583d1787498dd3139e9acaee4d8a0398f5fd8cd38c2f07565875b50f6a9f"
+    },
+    {
+      "file": "022_daily_read_indexes.sql",
+      "sha256": "cc9e9932d0d56e74381ae0705fe3d1943e9d72177faa71b574b870e82e13b077"
+    },
+    {
+      "file": "023_workflow_redesign.sql",
+      "sha256": "939d4a03abd68ee0651a03bd8f57376415999cc73b68e92d83197cea3bd5fdbf"
+    },
+    {
+      "file": "024_private_file_storage.sql",
+      "sha256": "37e9c79a54a5d61f0b7ebfcaad195734058074e05241edcd666538fe22f33d12"
+    }
+  ],
+  "accounts": 0,
+  "operationalRecords": 0
+}

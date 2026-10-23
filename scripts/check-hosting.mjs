@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { buildHostingSchema } from './hosting-schema.mjs';
+
+const expected = await buildHostingSchema();
+assert.equal(await readFile('hosting/01-fresh-schema.sql','utf8'),expected.sql,'Regenerate with npm run hosting:schema.');
+assert.deepEqual(JSON.parse(await readFile('hosting/schema-manifest.json','utf8')),expected.manifest);
+assert(!expected.sql.includes("'$2a$12$HEx1") && !expected.sql.includes('CHANGE_ME_TO_A_LONG_RANDOM_PASSWORD'),'Default credentials must not be shipped in the hosting schema.');
+const vercel=JSON.parse(await readFile('vercel.json','utf8'));
+assert.equal(vercel.functions['api/index.ts'].maxDuration,60);
+assert.equal(vercel.functions['api/index.ts'].includeFiles,'public/images.jpg');
+assert.equal(vercel.crons.length,1);
+assert.equal(vercel.installCommand,'npm ci');
+const pkg=JSON.parse(await readFile('package.json','utf8'));
+const lock=JSON.parse(await readFile('package-lock.json','utf8'));
+assert.equal(pkg.engines.node,'24.x');assert.equal(lock.packages[''].engines.node,pkg.engines.node);
+assert.equal(pkg.scripts.build,'vite build','Build must not migrate or seed a database.');
+assert.deepEqual(Object.keys(pkg.dependencies).sort(),Object.keys(lock.packages[''].dependencies).sort());
+const ignored=await readFile('.vercelignore','utf8');
+for(const path of ['.local-test-db','Backup Files','tmp','output','samples','tests','hosting'])assert(ignored.split(/\r?\n/).includes(path),`${path} must be excluded from deployment.`);
+console.log('Hosting schema, runtime, single-function routing, payload configuration and local-data exclusions verified. No remote service was contacted.');

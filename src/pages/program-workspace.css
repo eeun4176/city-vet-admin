@@ -1,0 +1,2 @@
+.program-card{min-height:210px}
+@media(prefers-reduced-motion:no-preference){.program-view-enter{animation:programViewEnter .16s ease-out}@keyframes programViewEnter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
