@@ -120,10 +120,11 @@ export function route(handlers: Partial<Record<Method, Handler>>, opts: { cache?
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.end(JSON.stringify(body));
     };
+    // Error replies carry the CORS headers too, or a cross-origin client (Salin) can't read why it failed.
+    const cors: Record<string, string> = {};
     try {
       const method = (req.method ?? 'GET').toUpperCase() as Method | 'OPTIONS';
       const origin = header(req, 'origin');
-      const cors: Record<string, string> = {};
       if (origin && config().allowedOrigins.includes(origin)) {
         cors['Access-Control-Allow-Origin'] = origin;
         cors['Access-Control-Allow-Credentials'] = 'true';
@@ -163,8 +164,8 @@ export function route(handlers: Partial<Record<Method, Handler>>, opts: { cache?
         ...(e instanceof ConfigurationError ? { configurationFields: e.configurationFields } : {}),
         ...(typeof databaseCode === 'string' && /^[0-9A-Z]{5}$/.test(databaseCode) ? { databaseCode } : {}),
       }));
-      if (app) return send(app.status, { error: { code: app.code, message: app.message, details: app.details, requestId: id } });
-      send(500, { error: { code: 'INTERNAL', message: 'Something went wrong on the server.', requestId: id } });
+      if (app) return send(app.status, { error: { code: app.code, message: app.message, details: app.details, requestId: id } }, cors);
+      send(500, { error: { code: 'INTERNAL', message: 'Something went wrong on the server.', requestId: id } }, cors);
     }
   };
 }
