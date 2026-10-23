@@ -174,6 +174,12 @@ const base = {
   'reports.noHeatmap': 'No dated anti-rabies or Kapon service completions are available for this source and year.',
   'reports.fewerCompletions': 'Fewer recorded completions',
   'reports.moreCompletions': 'More recorded completions',
+  'db.active': 'Database active',
+  'db.loading': 'Checking database…',
+  'db.error': 'Database error',
+  'db.offline': 'Offline',
+  'db.title': 'API and database health',
+  'db.lastError': 'Last API error: {message}',
 } as const;
 
 const en = { ...base, ...censusEn };
@@ -354,6 +360,12 @@ const fil: Record<MessageKey, string> = {
   'reports.noHeatmap': 'Walang petsadong nakumpletong anti-rabies o kapon para sa pinagmulan at taong ito.',
   'reports.fewerCompletions': 'Mas kaunting naitalang completion',
   'reports.moreCompletions': 'Mas maraming naitalang completion',
+  'db.active': 'Aktibo ang database',
+  'db.loading': 'Sinusuri ang database…',
+  'db.error': 'May error sa database',
+  'db.offline': 'Offline',
+  'db.title': 'Kalagayan ng API at database',
+  'db.lastError': 'Huling error ng API: {message}',
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { en, fil };

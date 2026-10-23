@@ -13,6 +13,7 @@ import { useReportBasket } from '../lib/reportBasket';
 import { Loading, Spinner } from './ui';
 import { isAbort,readQueries } from '../lib/readQueries';
 import { useNavigationBadges } from '../lib/useNavigationBadges';
+import { databaseStatus } from '../lib/databaseStatus';
 import { UniversalSearch,type SearchResult } from './UniversalSearch';
 import { previewSection } from '../../shared/search';
 import { PageErrorBoundary } from './PageErrorBoundary';
@@ -55,7 +56,8 @@ export function AppShell() {
   const changeHistory=(value:boolean)=>{setIncludeHistory(value);setSearchResults([]);setSearchLoading(search.trim().length>=2);};
   useEffect(()=>readQueries.subscribe(()=>setSearchRevision(v=>v+1)),[]);
   useEffect(()=>{setSearch('');setSearchResults([]);setIncludeHistory(false);},[account?.id]);
-  const [dbState, setDbState] = useState<'checking' | 'connected' | 'offline'>('checking');
+  const [dbState, setDbState] = useState<'checking' | 'connected' | 'failed'>('checking');
+  const [online, setOnline] = useState(() => navigator.onLine);
   const [errorLog, setErrorLog] = useState('');
   const navUpdates=useNavigationBadges();
   const unread=navUpdates.badges.inbox?.pending??0;
@@ -63,18 +65,22 @@ export function AppShell() {
   const [pendingWrites, setPendingWrites] = useState(0);
   const [showReturnTop, setShowReturnTop] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const db = databaseStatus(online, dbState);
+  const dbDot = <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${db === 'active' ? 'bg-emerald-500' : db === 'loading' ? 'bg-amber-500 motion-safe:animate-pulse' : db === 'error' ? 'bg-red-600' : 'bg-slate-400'}`} />;
 
   useEffect(() => {
     let live = true;
     const check = async () => {
       try { await api('GET', '/health'); if (live) setDbState('connected'); }
-      catch { if (live) setDbState('offline'); }
+      catch { if (live) setDbState('failed'); }
     };
     void check();
     const timer = window.setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || !navigator.onLine) return;
       void check();
     }, 60000);
+    const onOnline = () => { setOnline(true); setDbState('checking'); void check(); };
+    const onOffline = () => setOnline(false);
     const onError = (event: Event) => {
       const detail = (event as CustomEvent<{ message?: string; status?: number }>).detail;
       const message = `${new Date().toLocaleTimeString()} · ${detail?.status ?? 'API'} · ${detail?.message ?? 'Request failed'}`;
@@ -84,6 +90,8 @@ export function AppShell() {
     const onSuccess = (event: Event) => { const detail = (event as CustomEvent<{ message?: string; undoToken?: string;undoLabel?:string }>).detail; setToast({ message: detail?.message ?? 'Action completed successfully.', kind: 'success', undoToken: detail?.undoToken,undoLabel:detail?.undoLabel }); };
     const onRequestStart = () => setPendingWrites((count) => count + 1);
     const onRequestEnd = () => setPendingWrites((count) => Math.max(0, count - 1));
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
     window.addEventListener('cv:api-error', onError);
     window.addEventListener('cv:api-success', onSuccess);
     window.addEventListener('cv:api-request-start', onRequestStart);
@@ -91,6 +99,8 @@ export function AppShell() {
     return () => {
       live = false;
       window.clearInterval(timer);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
       window.removeEventListener('cv:api-error', onError);
       window.removeEventListener('cv:api-success', onSuccess);
       window.removeEventListener('cv:api-request-start', onRequestStart);
@@ -172,13 +182,14 @@ export function AppShell() {
           <p className="hidden truncate text-sm font-semibold sm:block">{t('app.name')}</p>
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
           <Link to="/report-basket" className="relative rounded-lg border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200">Basket{reportItems.length > 0 && <span className="ml-1 rounded-full bg-brand-700 px-1.5 text-white">{reportItems.length}</span>}</Link>
+          <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : t(`db.${db}`)} className="inline-flex shrink-0 items-center p-1">{dbDot}</span>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative shrink-0 rounded-xl p-2.5 text-slate-600 dark:text-slate-300"><Bell aria-hidden className="h-5 w-5"/>{unread>0&&<span className="absolute right-0 top-0 rounded-full bg-red-600 px-1 text-[10px] text-white">{unread}</span>}</Link>
         </header>
         <header className="mb-3 hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-panel dark:border-slate-800 dark:bg-surface-dark md:flex print:hidden">
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
           <Link to="/report-basket" className="relative rounded-lg border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200">Report basket{reportItems.length > 0 && <span className="ml-1 rounded-full bg-brand-700 px-1.5 text-white">{reportItems.length}</span>}</Link>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"><Bell aria-hidden className="h-5 w-5" />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] text-white">{unread}</span>}</Link>
-          <span title={errorLog ? `Last API error: ${errorLog}` : 'API and database health'} className={`rounded-full px-2.5 py-1 text-xs ${dbState === 'connected' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : dbState === 'offline' ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-amber-50 text-amber-700'}`}>Database {dbState}</span>
+          <span role="status" title={errorLog ? t('db.lastError', { message: errorLog }) : t('db.title')} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">{dbDot}{t(`db.${db}`)}</span>
         </header>
         <main id="main" className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-panel dark:border-slate-800 dark:bg-surface-dark md:p-8 print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none">
           {!['/dashboard', '/programs', '/program-day'].includes(location.pathname) && <div className="mb-4 print:hidden"><button type="button" onClick={() => navigate(-1)} className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300 dark:hover:bg-slate-800"><ArrowLeft aria-hidden className="h-4 w-4" />{t('common.back')}</button></div>}

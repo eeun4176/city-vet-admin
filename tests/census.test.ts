@@ -209,6 +209,7 @@ describe('census submissions', () => {
     const summary = await call('GET', `/api/v1/census/summary?barangayId=${brgA.id}`, { cookie: admin });
     const juan = summary.json.data.find((row: any) => row.owner_name === `Juan ${tag}`);
     expect(juan).toMatchObject({ dogs: 2, cats: 1, castrated_dogs: 1 });
+    expect(juan.remarks.split('; ').sort()).toEqual(['Booster', 'Laps', 'Registered 2026']);
     const front = await call('GET', `/api/v1/census/front-page?barangayId=${brgA.id}&year=${today.slice(0, 4)}`, { cookie: superAdmin });
     expect(front.json.barangay.name).toBe(brgA.name);
     expect(front.json.totals.households).toBeGreaterThanOrEqual(30);

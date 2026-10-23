@@ -36,5 +36,9 @@
     table { max-width: 100%; }
     thead { display: table-header-group; }
     tr, article { break-inside: avoid; }
+    html, body { background: #fff !important; }
+    /* printOnly(): hide everything beside the chosen document and drop the screen layout of its wrappers */
+    [data-print-hidden] { display: none !important; }
+    [data-print-path] { display: block !important; position: static !important; overflow: visible !important; height: auto !important; max-height: none !important; max-width: none !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; transform: none !important; animation: none !important; }
   }
 }
