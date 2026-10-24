@@ -9,6 +9,7 @@ import type { NavNode } from '../nav/nav';
 import { NavRail, NavTree, useOpenGroups } from './NavTree';
 import { NavigationBadge } from './NavigationBadge';
 import type { NavigationBadges } from '../../shared/navigationBadges';
+import { roleLabel } from '../../shared/permissions';
 
 interface SidebarProps {
   badges:NavigationBadges;
@@ -35,7 +36,7 @@ export function Sidebar({ nodes, activeId, activeAncestors, collapsed, onToggleC
   const [theme, toggleTheme] = useTheme();
   const { open, toggle } = useOpenGroups(activeAncestors);
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const secondLine = account?.type === 'Paravet' ? (account.barangay ?? account.type) : account?.type;
+  const secondLine = account?.type === 'Paravet' ? (account.barangay ?? account.type) : roleLabel(account?.type ?? '');
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-panel dark:border-slate-800 dark:bg-surface-dark">
