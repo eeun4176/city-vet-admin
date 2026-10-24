@@ -2549,6 +2549,8 @@ CREATE INDEX IF NOT EXISTS stub_tickets_interest_person_idx ON ekapon.stub_ticke
 -- existing SuperAdmins are unchanged. Account creation already offers Paravet
 -- only, so no new Admin accounts are made. The 'Admin' enum value stays for old
 -- audit rows and is simply no longer used.
+-- Not in the local test schema (scripts/local-schema.mjs): the tests still sign in
+-- as the seeded Admin to cover the old role checks.
 -- Idempotent: safe to run twice. Apply after 027.
 
 UPDATE ekapon.accounts SET account_type = 'SuperAdmin' WHERE account_type = 'Admin';
@@ -2556,6 +2558,18 @@ UPDATE ekapon.accounts SET account_type = 'SuperAdmin' WHERE account_type = 'Adm
 -- Rollback: not automatic. Before running, note the Admin accounts with
 --   SELECT id, username FROM ekapon.accounts WHERE account_type = 'Admin';
 -- and set those ids back to 'Admin' if needed.
+
+-- SOURCE: db/029_census_request_id.sql
+-- 029: Salin sends census submissions from its outbox and may resend one after
+-- a dropped connection; request_id makes the resend return the first
+-- submission instead of creating a duplicate.
+-- Additive and idempotent: safe to run twice. Apply after 028.
+
+ALTER TABLE ekapon.census_submissions ADD COLUMN IF NOT EXISTS request_id uuid;
+CREATE UNIQUE INDEX IF NOT EXISTS census_submissions_request_uq ON ekapon.census_submissions(request_id) WHERE request_id IS NOT NULL;
+
+-- Rollback:
+--   BEGIN; DROP INDEX IF EXISTS ekapon.census_submissions_request_uq; ALTER TABLE ekapon.census_submissions DROP COLUMN IF EXISTS request_id; COMMIT;
 
 -- No database password is embedded. Enable the API login separately in the SQL Editor.
 CREATE ROLE ekapon_api NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
@@ -2601,5 +2615,6 @@ INSERT INTO ekapon.schema_migrations(file,sha256) VALUES
 ('024_private_file_storage.sql','37e9c79a54a5d61f0b7ebfcaad195734058074e05241edcd666538fe22f33d12'),
 ('026_salin_integration.sql','897f00132f7c07b4dc9612bae1d3432eb7bd74c379ce42ed7f338b05e21442d9'),
 ('027_salin_stubs.sql','9afa45b8119940479a1b3c1ab0b0c0b41595b39a8a8e9527ee4802c1f59bac7c'),
-('028_superadmin_only.sql','30b6246870df86361c97e077ed78dd78dbcac0c0c4cc89c486360627407011cb');
+('028_superadmin_only.sql','9effbbf8818a09070023787b9302a180d217a6e89a8cd495bf6ba2d48b254fc8'),
+('029_census_request_id.sql','52696ab24862d703c2412c5477b162892c6291a6c8b71b5954fa70bdb6e45caf');
 COMMIT;

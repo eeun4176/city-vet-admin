@@ -3,7 +3,7 @@ import { route, ok, created, parse } from '../../../server/http';
 import { sql, tx } from '../../../server/db';
 import { requireAuth } from '../../../server/auth';
 import { listQuery } from '../../../server/listing';
-import { forbidden } from '../../../server/errors';
+import { conflict, forbidden } from '../../../server/errors';
 import { createBody, fetchSubmission, submissionOut, writeContent } from '../../../server/census';
 
 const query = listQuery.pick({ page: true, pageSize: true }).extend({
@@ -59,11 +59,18 @@ export default route({
     const session = await requireAuth(c.req, { roles: ['Paravet'] });
     if (!session.barangayId) throw forbidden('Your account must be assigned to a barangay before submitting census data.');
     const body = parse(createBody, c.body);
+    // Salin resends from its outbox after a dropped reply: the same requestId returns the first submission.
+    const { requestId } = parse(z.object({ requestId: z.string().uuid().optional() }), c.body);
     const barangayId = session.barangayId;
     const id = await tx(session.id, async (q) => {
+      if (requestId) {
+        const [prior] = await q`select id, submitted_by from ekapon.census_submissions where request_id = ${requestId}::uuid`;
+        if (prior && Number(prior.submitted_by) !== session.id) throw conflict('REQUEST_ID_REUSED', 'This request reference already belongs to another submission.');
+        if (prior) return prior.id as string;
+      }
       const [row] = await q`
-        insert into ekapon.census_submissions (barangay_id, submitted_by, submitter_name, source, census_date, label, households_visited)
-        values (${barangayId}, ${session.id}, ${session.name}, ${body.source}, ${body.censusDate}::date, ${body.label}, ${body.householdsVisited})
+        insert into ekapon.census_submissions (barangay_id, submitted_by, submitter_name, source, census_date, label, households_visited, request_id)
+        values (${barangayId}, ${session.id}, ${session.name}, ${body.source}, ${body.censusDate}::date, ${body.label}, ${body.householdsVisited}, ${requestId ?? null})
         returning id`;
       await writeContent(q, row.id, body.owners);
       await q`select ekapon.notify_census_submitted(${row.id}::uuid)`;

@@ -1,6 +1,6 @@
 {
   "format": "ekapon-empty-hosting-schema-v1",
-  "schemaSha256": "a1d93e3184339f4c032d1980d5b1aa68f5dfe4b5167500ed85ee381c9f66f00b",
+  "schemaSha256": "8758489fec847b5405f278d06ce5d43758f936f665f3d90fa394680bcd72d7d2",
   "sources": [
     {
       "file": "000_ekapon_schema.sql",
@@ -96,7 +96,11 @@
     },
     {
       "file": "028_superadmin_only.sql",
-      "sha256": "30b6246870df86361c97e077ed78dd78dbcac0c0c4cc89c486360627407011cb"
+      "sha256": "9effbbf8818a09070023787b9302a180d217a6e89a8cd495bf6ba2d48b254fc8"
+    },
+    {
+      "file": "029_census_request_id.sql",
+      "sha256": "52696ab24862d703c2412c5477b162892c6291a6c8b71b5954fa70bdb6e45caf"
     }
   ],
   "accounts": 0,

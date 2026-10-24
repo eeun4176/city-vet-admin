@@ -74,6 +74,16 @@ describe('census submissions', () => {
     expect(detail.json.owners[0].pets).toHaveLength(2);
   });
 
+  it('returns the first submission when Salin resends the same requestId', async () => {
+    const requestId = crypto.randomUUID();
+    const first = await call('POST', '/api/v1/census/submissions', { cookie: paravetA, json: body([owner('Resend', [pet('Rex')])], { requestId }) });
+    const again = await call('POST', '/api/v1/census/submissions', { cookie: paravetA, json: body([owner('Resend', [pet('Rex')])], { requestId }) });
+    expect(again.json.submission.id).toBe(first.json.submission.id);
+    const [{ n }] = await sql()`select count(*)::int as n from ekapon.census_submissions where request_id = ${requestId}::uuid`;
+    expect(n).toBe(1);
+    expect((await call('POST', '/api/v1/census/submissions', { cookie: paravetB, json: body([owner('Resend', [pet('Rex')])], { requestId }) })).json.error.code).toBe('REQUEST_ID_REUSED');
+  });
+
   it('notifies staff when a census is submitted', async () => {
     const [{ n }] = await sql()`select count(*)::int as n from ekapon.notifications where kind = 'census' and body like ${`%Census ${tag}%`}`;
     expect(n).toBeGreaterThan(0);
