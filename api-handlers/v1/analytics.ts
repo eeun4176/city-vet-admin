@@ -53,7 +53,7 @@ export default route({
     const session = await requireAuth(c.req, { roles: ['SuperAdmin', 'Admin', 'Paravet'] });
     const filters = parse(query, c.query);
     if (filters.source === 'sample' && session.type === 'Paravet') {
-      throw forbidden('Sample analytics are available to Admin and SuperAdmin only.');
+      throw forbidden('Sample analytics are available to Admin only.');
     }
     const sample = filters.source === 'sample';
     const citywide = session.type !== 'Paravet';

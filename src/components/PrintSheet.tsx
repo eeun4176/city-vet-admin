@@ -38,11 +38,12 @@ export function SheetFooter() {
   );
 }
 
-export function Signature({ label, caption }: { label: string; caption: string }) {
+export function Signature({ label, caption, name }: { label: string; caption: string; name?: string }) {
   return (
     <div className="w-64 text-center text-sm">
       <p className="text-left text-xs italic">{label}</p>
-      <div className="mt-10 border-t border-slate-800" />
+      {name && <p className="mt-5 font-medium">{name}</p>}
+      <div className={`${name ? '' : 'mt-10 '}border-t border-slate-800`} />
       <p className="mt-1">{caption}</p>
     </div>
   );
@@ -58,7 +59,7 @@ const sheetTh = 'border border-black px-0.5 py-0.5 text-center font-normal';
 const sheetTd = 'h-[18px] border border-black px-0.5 text-center tabular-nums';
 
 /** Dog & Cat Summary of Census in the office workbook's layout (as Salin exports it): 20 owners a sheet, TOTAL on the last sheet counts everyone. */
-export function CensusSummarySheet({ barangay, censusDate, rows }: { barangay: string; censusDate?: string; rows: CensusSummaryRow[] }) {
+export function CensusSummarySheet({ barangay, censusDate, rows, preparedBy }: { barangay: string; censusDate?: string; rows: CensusSummaryRow[]; preparedBy?: string }) {
   const pages = Array.from({ length: Math.max(1, Math.ceil(rows.length / SUMMARY_ROWS_PER_SHEET)) }, (_, page) => rows.slice(page * SUMMARY_ROWS_PER_SHEET, (page + 1) * SUMMARY_ROWS_PER_SHEET));
   const total = censusSummaryTotal(rows);
   return <>{pages.map((pageRows, page) => <section key={page} className="text-black [font-family:Arial,sans-serif] [&:not(:last-child)]:mb-10 [&:not(:last-child)]:break-after-page">
@@ -85,6 +86,6 @@ export function CensusSummarySheet({ barangay, censusDate, rows }: { barangay: s
           {total.pairs.flatMap(([dogs, cats], pair) => [<td key={`${pair}-d`} className={sheetTd}>{dogs}</td>, <td key={`${pair}-c`} className={sheetTd}>{cats}</td>])}{total.vaccines.map((count, year) => <td key={year} className={sheetTd}>{count}</td>)}<td className={sheetTd} /></tr>}
       </tbody>
     </table>
-    <div className="mt-6 flex justify-between"><Signature label="Prepared By:" caption="Paravet" /><Signature label="Noted By:" caption="Barangay Chairman" /></div>
+    <div className="mt-6 flex justify-between"><Signature label="Prepared By:" caption="Paravet" name={preparedBy} /><Signature label="Noted By:" caption="Barangay Chairman" /></div>
   </section>)}</>;
 }

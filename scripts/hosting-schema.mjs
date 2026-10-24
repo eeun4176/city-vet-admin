@@ -8,7 +8,7 @@ export const schemaFiles = [
   '013_program_workspace.sql', '014_read_performance_indexes.sql', '015_data_quality_reviews.sql',
   '016_registry_workspace.sql', '017_census_registry_bridge.sql', '018_census_unknown_fields.sql',
   '019_census_review_consistency.sql', '020_navigation_badges.sql', '021_field_record_consistency.sql',
-  '022_daily_read_indexes.sql', '023_workflow_redesign.sql', '024_private_file_storage.sql',
+  '022_daily_read_indexes.sql', '023_workflow_redesign.sql', '024_private_file_storage.sql', '026_salin_integration.sql', '027_salin_stubs.sql', '028_superadmin_only.sql',
 ];
 const sha = value => createHash('sha256').update(value).digest('hex');
 

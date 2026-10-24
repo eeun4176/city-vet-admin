@@ -9,15 +9,15 @@ type Owner = SubmissionDetail['owners'][number];
 const th = 'border border-slate-400 px-1 py-1 text-center font-semibold';
 const td = 'border border-slate-300 px-1 py-0.5 text-center tabular-nums';
 
-function SummaryForm({ owners, barangay, censusDate }: { owners: Owner[]; barangay: string; censusDate: string }) {
+function SummaryForm({ owners, barangay, censusDate, preparedBy }: { owners: Owner[]; barangay: string; censusDate: string; preparedBy: string }) {
   return <div className="bg-white">
-    <CensusSummarySheet barangay={barangay} censusDate={censusDate} rows={owners.map((owner) => censusSummaryRow(owner.ownerName, owner.pets))} />
+    <CensusSummarySheet barangay={barangay} censusDate={censusDate} preparedBy={preparedBy} rows={owners.map((owner) => censusSummaryRow(owner.ownerName, owner.pets))} />
     {!owners.length && <p className="mt-3 text-sm text-slate-500">No owner or pet records are attached to this submission.</p>}
   </div>;
 }
 
-function DoorToDoorForm({ owners, barangay, censusDate, householdsVisited }: {
-  owners: Owner[]; barangay: string; censusDate: string; householdsVisited: number;
+function DoorToDoorForm({ owners, barangay, censusDate, householdsVisited, preparedBy }: {
+  owners: Owner[]; barangay: string; censusDate: string; householdsVisited: number; preparedBy: string;
 }) {
   return <div className="bg-white text-slate-900 print:text-black">
     <Letterhead title="Door-to-Door Census Form" />
@@ -51,7 +51,7 @@ function DoorToDoorForm({ owners, barangay, censusDate, householdsVisited }: {
       </section>)}
       {!owners.length && <p className="border border-slate-300 p-5 text-center text-sm text-slate-500">No owner or pet records are attached to this submission.</p>}
     </div>
-    <div className="mt-10 flex justify-between"><Signature label="Prepared By:" caption="Paravet" /><Signature label="Noted By:" caption="Barangay Chairman" /></div>
+    <div className="mt-10 flex justify-between"><Signature label="Prepared By:" caption="Paravet" name={preparedBy} /><Signature label="Noted By:" caption="Barangay Chairman" /></div>
     <SheetFooter />
   </div>;
 }
@@ -74,9 +74,9 @@ export function SubmissionForms({ detail }: { detail: SubmissionDetail }) {
     <div role="tabpanel" ref={sheet}>
       <style media="print">{'@page { size: A4 landscape; margin: 10mm; }'}</style>
       {active === 'summary'
-        ? <SummaryForm owners={detail.owners} barangay={detail.submission.barangay} censusDate={detail.submission.censusDate} />
+        ? <SummaryForm owners={detail.owners} barangay={detail.submission.barangay} censusDate={detail.submission.censusDate} preparedBy={detail.submission.submitter} />
         : <DoorToDoorForm owners={detail.owners} barangay={detail.submission.barangay}
-          censusDate={detail.submission.censusDate} householdsVisited={detail.submission.householdsVisited} />}
+          censusDate={detail.submission.censusDate} householdsVisited={detail.submission.householdsVisited} preparedBy={detail.submission.submitter} />}
     </div>
   </section>;
 }

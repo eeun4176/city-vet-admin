@@ -6,6 +6,7 @@ import { sql, tx, type Tx } from '../../../server/db';
 import { requireAuth, type Session } from '../../../server/auth';
 import { conflict, forbidden, notFound, unprocessable } from '../../../server/errors';
 import { normalizeProgramStatus, programProcessesFrom, PROGRAM_PROCESSES } from '../../../shared/programs';
+import { cancelInterestStubs, syncInterestStubs } from '../../../server/stubWorkflow';
 const processes = z.array(z.enum(PROGRAM_PROCESSES)).min(1).max(3);
 const pet = z.object({
   name: z.string().trim().min(1).max(80),
@@ -19,9 +20,10 @@ const actions = z.discriminatedUnion('action', [
   z.object({action:z.literal('cancel-demand'),campaignId:z.number().int().positive(),expectedRevision:z.number().int().positive(),reason:z.string().trim().min(3).max(1000)}),
   z.object({ action: z.literal('create-demand'), hostBarangayId: z.number().int().positive().optional(), targetPeople: z.number().int().min(1).max(100000).default(100), processes, note: z.string().trim().max(1000).optional() }),
   z.object({ action: z.literal('create-program-day'), programRecordId: z.number().int().positive() }),
-  z.object({ action: z.literal('add-interest'), campaignId: z.number().int().positive(), registryOwnerId:z.string().max(100).optional(), ownerName: z.string().trim().min(1).max(120), mobile: z.string().trim().max(20).optional().default(''), residenceBarangayId: z.number().int().positive(), pets: z.array(pet).max(10).default([]), confirmDistinct: z.boolean().default(false) }),
-  z.object({ action: z.literal('update-interest'), campaignId: z.number().int().positive(), personId: z.number().int().positive(), registryOwnerId:z.string().max(100).optional(), ownerName: z.string().trim().min(1).max(120), mobile: z.string().trim().max(20).optional().default(''), residenceBarangayId: z.number().int().positive(), pets: z.array(pet).max(10), confirmDistinct: z.boolean().default(false) }),
-  z.object({ action: z.literal('withdraw-interest'), campaignId: z.number().int().positive(), personId: z.number().int().positive() }),
+  z.object({ action: z.literal('add-interest'), requestId: z.string().uuid().optional(), campaignId: z.number().int().positive(), registryOwnerId:z.string().max(100).optional(), ownerName: z.string().trim().min(1).max(120), mobile: z.string().trim().max(20).optional().default(''), residenceBarangayId: z.number().int().positive(), pets: z.array(pet).max(10).default([]), confirmDistinct: z.boolean().default(false) }),
+  z.object({ action: z.literal('update-interest'), campaignId: z.number().int().positive(), personId: z.number().int().positive(), registryOwnerId:z.string().max(100).optional(), ownerName: z.string().trim().min(1).max(120), mobile: z.string().trim().max(20).optional().default(''), residenceBarangayId: z.number().int().positive(), pets: z.array(pet).max(10), confirmDistinct: z.boolean().default(false), expectedUpdatedAt: z.string().datetime({ offset: true }).optional() }),
+  z.object({ action: z.literal('withdraw-interest'), campaignId: z.number().int().positive(), personId: z.number().int().positive(), expectedUpdatedAt: z.string().datetime({ offset: true }).optional() }),
+  z.object({ action: z.literal('merge-requests'), targetId: z.number().int().positive(), expectedRevision: z.number().int().positive(), sources: z.array(z.object({ id: z.number().int().positive(), expectedRevision: z.number().int().positive() })).min(1).max(61) }),
   z.object({ action: z.literal('submit-request'), campaignId: z.number().int().positive() }),
   z.object({ action: z.literal('review-request'), campaignId: z.number().int().positive(), decision: z.enum(['approve', 'reject']), approvedTargetPeople: z.number().int().min(1).max(100000).optional(), allowedBarangayIds: z.array(z.number().int().positive()).max(62).default([]), note: z.string().trim().max(1000).optional().default('') }),
   z.object({ action: z.literal('schedule'), campaignId: z.number().int().positive(), programRecordId: z.number().int().positive() }),
@@ -38,6 +40,8 @@ type CampaignRow = {
   owner_count: number; pet_count: number; allowed_barangays: Array<{ id: number; name: string }>;
   program_slots: number | null; program_slots_used: number | null; program_duration_minutes: number | null;
   assigned_paravets: Array<{ id: number; name: string; accountKey: string; barangayId: number; barangay: string }>;
+  created_by_name: string | null; submitted_by_name: string | null; last_activity_name: string | null; last_activity_at: Date | string | null;
+  merged_into_id: number | null; merged_into_reference: string | null; merged_into_host: string | null;
 };
 const normalizePhone = (value: string) => value.replace(/\D/g, '');
 const outputCampaign = (row: CampaignRow) => ({
@@ -71,6 +75,12 @@ const outputCampaign = (row: CampaignRow) => ({
   programSlotsUsed: row.program_slots_used,
   programDurationMinutes: row.program_duration_minutes,
   assignedParavets: row.assigned_paravets,
+  createdByName: row.created_by_name,
+  submittedByName: row.submitted_by_name,
+  lastEditedBy: row.last_activity_name,
+  lastEditedAt: row.last_activity_at,
+  mergedIntoId: row.merged_into_id,
+  mergedInto: row.merged_into_id ? { reference: row.merged_into_reference, hostBarangay: row.merged_into_host } : null,
 });
 async function getCampaign(q: any, id: number): Promise<CampaignRow | undefined> {
   const rows = await q`
@@ -108,9 +118,17 @@ async function getCampaign(q: any, id: number): Promise<CampaignRow | undefined>
                         and (b.id = c.host_barangay_id or exists (
                           select 1 from ekapon.program_interest_allowed_barangays pa
                            where pa.campaign_id = c.id and pa.barangay_id = b.id))), '[]'::jsonb) as assigned_paravets
+           ,ca.full_name as created_by_name,
+           (select act.actor_name from ekapon.program_interest_activity act where act.campaign_id = c.id and act.action = 'request-submitted' order by act.created_at desc, act.id desc limit 1) as submitted_by_name,
+           (select act.actor_name from ekapon.program_interest_activity act where act.campaign_id = c.id order by act.created_at desc, act.id desc limit 1) as last_activity_name,
+           (select act.created_at from ekapon.program_interest_activity act where act.campaign_id = c.id order by act.created_at desc, act.id desc limit 1) as last_activity_at,
+           c.merged_into_id, mc.reference as merged_into_reference, mhb.name as merged_into_host
       from ekapon.program_interest_campaigns c
       join ekapon.barangays hb on hb.id = c.host_barangay_id
       left join ekapon.dashboard_records d on d.id = c.program_record_id
+      left join ekapon.accounts ca on ca.id = c.created_by
+      left join ekapon.program_interest_campaigns mc on mc.id = c.merged_into_id
+      left join ekapon.barangays mhb on mhb.id = mc.host_barangay_id
      where c.id = ${id}`;
   return rows[0] as CampaignRow | undefined;
 }
@@ -139,6 +157,18 @@ async function logAction(q: Tx, session: Session, campaignId: number, personId: 
   await q`
     insert into ekapon.program_interest_activity (campaign_id, person_id, actor_id, actor_name, action)
     values (${campaignId}, ${personId}, ${session.id}, ${session.name}, ${action})`;
+}
+/** Why an entry could not be changed: someone else saved it since it was read (STALE_EDIT), or it is gone or out of scope. */
+async function staleOrGone(q: Tx, session: Session, campaignId: number, personId: number): Promise<never> {
+  const [entry] = await q`select updated_at from ekapon.program_interest_people
+     where id = ${personId} and campaign_id = ${campaignId} and status = 'interested'
+       and (${session.type !== 'Paravet'} or residence_barangay_id = ${session.barangayId ?? -1})`;
+  if (entry) throw conflict('STALE_EDIT', 'Another Paravet changed this owner since you opened it. Review their changes and try again.', { updatedAt: entry.updated_at });
+  throw notFound('This interest entry is no longer available.');
+}
+/** Requests merged into `targetId` end with it (closed, rejected or cancelled). */
+async function finishMerged(q: Tx, targetId: number, status: 'closed' | 'rejected' | 'cancelled') {
+  await q`update ekapon.program_interest_campaigns set status = ${status}, closed_at = now(), revision = revision + 1 where merged_into_id = ${targetId} and status = 'merged'`;
 }
 async function resolveProgram(q: any, programRecordId: number) {
   const [row] = await q`
@@ -177,7 +207,9 @@ export default route({
       await requireCampaignScope(sql(), session, id);
       const [people, activity] = await Promise.all([
         sql()`select p.id, p.registry_owner_id, p.owner_name, p.mobile, p.residence_barangay_id, b.name as residence_barangay,
-                    p.pets, p.status, p.duplicate_confirmed, p.created_at
+                    p.pets, p.status, p.duplicate_confirmed, p.created_at, p.updated_at,
+                    (select a.full_name from ekapon.accounts a where a.id = p.created_by) as added_by_name,
+                    (select act.actor_name from ekapon.program_interest_activity act where act.person_id = p.id and act.action = 'interest-updated' order by act.created_at desc, act.id desc limit 1) as updated_by_name
                from ekapon.program_interest_people p
                join ekapon.barangays b on b.id = p.residence_barangay_id
               where p.campaign_id = ${id}
@@ -221,14 +253,22 @@ export default route({
                                and (b.id = c.host_barangay_id or exists (
                                  select 1 from ekapon.program_interest_allowed_barangays pa
                                   where pa.campaign_id = c.id and pa.barangay_id = b.id))), '[]'::jsonb) as assigned_paravets
+                  ,ca.full_name as created_by_name,
+           (select act.actor_name from ekapon.program_interest_activity act where act.campaign_id = c.id and act.action = 'request-submitted' order by act.created_at desc, act.id desc limit 1) as submitted_by_name,
+           (select act.actor_name from ekapon.program_interest_activity act where act.campaign_id = c.id order by act.created_at desc, act.id desc limit 1) as last_activity_name,
+           (select act.created_at from ekapon.program_interest_activity act where act.campaign_id = c.id order by act.created_at desc, act.id desc limit 1) as last_activity_at,
+           c.merged_into_id, mc.reference as merged_into_reference, mhb.name as merged_into_host
              from ekapon.program_interest_campaigns c
              join ekapon.barangays hb on hb.id = c.host_barangay_id
              left join ekapon.dashboard_records d on d.id = c.program_record_id
+      left join ekapon.accounts ca on ca.id = c.created_by
+      left join ekapon.program_interest_campaigns mc on mc.id = c.merged_into_id
+      left join ekapon.barangays mhb on mhb.id = mc.host_barangay_id
             where ${session.type !== 'Paravet'}
                or c.host_barangay_id = ${session.barangayId ?? -1}
                or exists (select 1 from ekapon.program_interest_allowed_barangays a
                            where a.campaign_id = c.id and a.barangay_id = ${session.barangayId ?? -1})
-            order by case c.status when 'requested' then 0 when 'gathering' then 1 when 'approved' then 2 else 3 end,
+            order by case c.status when 'requested' then 0 when 'gathering' then 1 when 'approved' then 2 when 'merged' then 3 else 4 end,
                      c.created_at desc limit 200`,
       sql()`select id, name from ekapon.barangays
              where ${session.type !== 'Paravet'} or id = ${session.barangayId ?? -1}
@@ -285,6 +325,7 @@ export default route({
         if(locked.revision!==body.expectedRevision)throw conflict('REQUEST_CHANGED','Another Paravet changed this request. Refresh before continuing.');
         if(body.action==='cancel-demand'){
           await q`update ekapon.program_interest_campaigns set status='cancelled',revision=revision+1,request_note=${body.reason},closed_at=now() where id=${body.campaignId}`;
+          await finishMerged(q,body.campaignId,'cancelled');
           await logAction(q,session,body.campaignId,null,'request-cancelled');
         }else{
           const [invalid]=await q`select id from ekapon.program_interest_people p where campaign_id=${body.campaignId} and status='interested' and exists(select 1 from jsonb_array_elements(p.pets) pet cross join lateral jsonb_array_elements_text(pet->'processes') process(value) where not(process.value=any(${q.array(body.processes)}::text[]))) limit 1`;
@@ -306,8 +347,8 @@ export default route({
       const reference = `PI-${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }).slice(0, 4)}-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;
       const campaignId = await tx(session.id, async (q) => {
         await q`select pg_advisory_xact_lock(73023,${hostId}::int)`;
-        const [active]=await q`select id,reference from ekapon.program_interest_campaigns where host_barangay_id=${hostId} and campaign_type='program_request' and status in ('gathering','requested','approved','scheduled') limit 1`;
-        if(active)throw conflict('ACTIVE_DEMAND_EXISTS',`An active request already exists: ${active.reference}. Open it to collaborate.`,{campaignId:active.id});
+        const [active]=await q`select c.id,c.reference,c.status,a.full_name as filed_by from ekapon.program_interest_campaigns c left join ekapon.accounts a on a.id=c.created_by where c.host_barangay_id=${hostId} and c.campaign_type='program_request' and c.status in ('gathering','requested','approved','scheduled','merged') limit 1`;
+        if(active)throw conflict('ACTIVE_DEMAND_EXISTS',`An active request already exists: ${active.reference}. Open it to collaborate.`,{campaignId:active.id,reference:active.reference,status:active.status,filedBy:active.filed_by});
         const [row] = await q`
           insert into ekapon.program_interest_campaigns
             (reference, campaign_type, host_barangay_id, requested_target_people, processes, status, request_note, created_by)
@@ -364,6 +405,11 @@ export default route({
       const phoneKey = normalizePhone(mobile);
       const pets = body.pets.map((item) => ({ ...item, processes: [...new Set(item.processes)] }));
       const personId = await tx(session.id, async (q) => {
+        if (body.requestId) {
+          const [prior] = await q`select id, created_by from ekapon.program_interest_people where request_id = ${body.requestId}::uuid`;
+          if (prior && Number(prior.created_by) !== session.id) throw conflict('REQUEST_ID_REUSED', 'This request reference already belongs to another entry.');
+          if (prior) return prior.id as number;
+        }
         const [locked] = await q`select status, program_record_id from ekapon.program_interest_campaigns where id = ${body.campaignId} for update`;
         if (!locked || !['gathering', 'scheduled'].includes(locked.status)) throw conflict('LIST_CLOSED', 'This interest list is no longer accepting entries.');
         await q`select pg_advisory_xact_lock(hashtextextended(${'program-interest:' + body.campaignId}, 0))`;
@@ -386,8 +432,8 @@ export default route({
         }
         const [row] = await q`
           insert into ekapon.program_interest_people
-            (campaign_id, owner_name, mobile, residence_barangay_id, pets, duplicate_confirmed, created_by)
-          values (${body.campaignId}, ${body.ownerName}, ${mobile || null}, ${body.residenceBarangayId}, ${q.json(pets)}, ${candidates.length > 0}, ${session.id})
+            (campaign_id, owner_name, mobile, residence_barangay_id, pets, duplicate_confirmed, created_by, request_id)
+          values (${body.campaignId}, ${body.ownerName}, ${mobile || null}, ${body.residenceBarangayId}, ${q.json(pets)}, ${candidates.length > 0}, ${session.id}, ${body.requestId ?? null})
           returning id`;
         await logOwnerLink(q,session,body.registryOwnerId,'interest-linked',`Interest ${row.id} · campaign ${body.campaignId}`,{name:body.ownerName,barangayId:body.residenceBarangayId});
         if(body.registryOwnerId)await q`update ekapon.program_interest_people set registry_owner_id=${body.registryOwnerId} where id=${row.id}`;
@@ -432,10 +478,13 @@ export default route({
                  residence_barangay_id = ${body.residenceBarangayId}, pets = ${q.json(body.pets)},
                  duplicate_confirmed = duplicate_confirmed or ${candidates.length > 0}, updated_at = now()
            where id = ${body.personId} and campaign_id = ${body.campaignId} and status = 'interested'
+             and (${session.type !== 'Paravet'} or residence_barangay_id = ${session.barangayId ?? -1})
+             and (${body.expectedUpdatedAt ?? null}::timestamptz is null or date_trunc('milliseconds', updated_at) = ${body.expectedUpdatedAt ?? null}::timestamptz)
           returning id`;
-        if (!updated) throw notFound('This interest entry is no longer available.');
+        if (!updated) await staleOrGone(q, session, body.campaignId, body.personId);
         await logOwnerLink(q,session,body.registryOwnerId,'interest-linked',`Interest ${body.personId} updated · campaign ${body.campaignId}`,{name:body.ownerName,barangayId:body.residenceBarangayId});
         if(body.registryOwnerId)await q`update ekapon.program_interest_people set registry_owner_id=${body.registryOwnerId} where id=${body.personId}`;
+        await syncInterestStubs(q, session, body.personId, { name: body.ownerName, mobile }, body.pets);
         await logAction(q, session, body.campaignId, body.personId, 'interest-updated');
       });
       return ok({ saved: true });
@@ -452,8 +501,10 @@ export default route({
              set status = 'withdrawn', updated_at = now()
            where id = ${body.personId} and campaign_id = ${body.campaignId} and status = 'interested'
              and (${session.type !== 'Paravet'} or residence_barangay_id = ${session.barangayId ?? -1})
+             and (${body.expectedUpdatedAt ?? null}::timestamptz is null or date_trunc('milliseconds', updated_at) = ${body.expectedUpdatedAt ?? null}::timestamptz)
           returning id`;
-        if (!entry) throw notFound('This interest entry is no longer available.');
+        if (!entry) await staleOrGone(q, session, body.campaignId, body.personId);
+        await cancelInterestStubs(q, session, body.personId);
         await logAction(q, session, body.campaignId, body.personId, 'interest-withdrawn');
       });
       return ok({ saved: true });
@@ -479,7 +530,7 @@ export default route({
       return ok({ submitted: true });
     }
     if (body.action === 'review-request') {
-      if (session.type === 'Paravet') throw forbidden('Only Admin or Super Admin can review program requests.');
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can review program requests.');
       const campaign = await getCampaign(sql(), body.campaignId);
       if (!campaign) throw notFound('Program request not found.');
       if (campaign.campaign_type !== 'program_request' || campaign.status !== 'requested') throw conflict('REQUEST_NOT_REVIEWABLE', 'This request is not waiting for review.');
@@ -506,12 +557,13 @@ export default route({
                     values (${body.campaignId}, ${barangayId}, ${session.id})`;
           }
         }
+        if (body.decision === 'reject') await finishMerged(q, body.campaignId, 'rejected');
         await logAction(q, session, body.campaignId, null, body.decision === 'approve' ? 'request-approved' : 'request-rejected');
       });
       return ok({ reviewed: true, allowedBarangays: eligibleIds, approvedTargetPeople: body.decision === 'approve' ? target : null });
     }
     if (body.action === 'schedule') {
-      if (session.type === 'Paravet') throw forbidden('Only Admin or Super Admin can schedule an approved request.');
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can schedule an approved request.');
       const campaign = await getCampaign(sql(), body.campaignId);
       if (!campaign || campaign.campaign_type !== 'program_request' || campaign.status !== 'approved') throw conflict('REQUEST_NOT_APPROVED', 'Approve the program request before scheduling it.');
       const program = await resolveProgram(sql(), body.programRecordId);
@@ -530,19 +582,20 @@ export default route({
       return ok({ scheduled: true });
     }
     if (body.action === 'close') {
-      if (session.type === 'Paravet') throw forbidden('Only Admin or Super Admin can close a program interest list.');
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can close a program interest list.');
       const campaign = await getCampaign(sql(), body.campaignId);
       if (!campaign || campaign.status !== 'scheduled') throw conflict('PROGRAM_NOT_ACTIVE', 'Only a scheduled program list can be closed.');
       await tx(session.id, async (q) => {
         const [locked] = await q`select status from ekapon.program_interest_campaigns where id = ${body.campaignId} for update`;
         if (!locked || locked.status !== 'scheduled') throw conflict('PROGRAM_NOT_ACTIVE', 'This interest list has already changed. Refresh and try again.');
         await q`update ekapon.program_interest_campaigns set status = 'closed', closed_at = now() where id = ${body.campaignId} and status = 'scheduled'`;
+        await finishMerged(q, body.campaignId, 'closed');
         await logAction(q, session, body.campaignId, null, 'closed');
       });
       return ok({ closed: true });
     }
     if (body.action === 'reopen') {
-      if (session.type === 'Paravet') throw forbidden('Only Admin or Super Admin can reopen a program interest list.');
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can reopen a program interest list.');
       const campaign = await getCampaign(sql(), body.campaignId);
       if (!campaign || campaign.status !== 'closed' || !campaign.program_record_id) {
         throw conflict('PROGRAM_NOT_REOPENABLE', 'Only a closed program day can be reopened.');
@@ -557,8 +610,45 @@ export default route({
       });
       return ok({ reopened: true });
     }
+    if (body.action === 'merge-requests') {
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can merge program requests.');
+      const ids = [body.targetId, ...body.sources.map((source) => source.id)];
+      if (new Set(ids).size !== ids.length) throw unprocessable('INVALID_MERGE', 'Choose different requests to merge.');
+      const result = await tx(session.id, async (q) => {
+        const rows = await q`select id, campaign_type, status, revision, host_barangay_id, processes, requested_target_people, approved_target_people
+                               from ekapon.program_interest_campaigns where id = any(${q.array(ids, 20)}::bigint[]) order by id for update`;
+        const byId = new Map(rows.map((row) => [Number(row.id), row]));
+        const expected = new Map([[body.targetId, body.expectedRevision], ...body.sources.map((source) => [source.id, source.expectedRevision] as [number, number])]);
+        for (const id of ids) {
+          const row = byId.get(id);
+          if (!row) throw notFound('A program request to merge was not found.');
+          if (row.campaign_type !== 'program_request' || !['requested', 'approved'].includes(row.status)) throw conflict('REQUEST_NOT_MERGEABLE', 'Only sent or approved requests can be merged.');
+          if (row.revision !== expected.get(id)) throw conflict('REQUEST_CHANGED', 'A request changed since you opened it. Refresh before merging.');
+        }
+        const target = byId.get(body.targetId)!;
+        const sources = body.sources.map((source) => byId.get(source.id)!);
+        const processes = [...new Set([target, ...sources].flatMap((row) => row.processes as string[]))];
+        const requested = sources.reduce((sum, row) => sum + row.requested_target_people, target.requested_target_people);
+        const approved = target.status === 'approved' ? sources.reduce((sum, row) => sum + (row.approved_target_people ?? row.requested_target_people), target.approved_target_people ?? target.requested_target_people) : null;
+        const sourceIds = sources.map((row) => Number(row.id));
+        await q`update ekapon.program_interest_people set campaign_id = ${body.targetId}, updated_at = now() where campaign_id = any(${q.array(sourceIds, 20)}::bigint[])`;
+        await q`insert into ekapon.program_interest_allowed_barangays (campaign_id, barangay_id, added_by)
+                select distinct ${body.targetId}::bigint, a.barangay_id, ${session.id}::bigint from ekapon.program_interest_allowed_barangays a
+                 where a.campaign_id = any(${q.array(sourceIds, 20)}::bigint[])
+                on conflict (campaign_id, barangay_id) do nothing`;
+        await q`update ekapon.program_interest_campaigns set status = 'merged', merged_into_id = ${body.targetId}, revision = revision + 1 where id = any(${q.array(sourceIds, 20)}::bigint[])`;
+        await q`update ekapon.program_interest_campaigns
+                   set processes = ${q.array(processes)}, requested_target_people = ${Math.min(requested, 100000)},
+                       approved_target_people = ${approved === null ? null : Math.min(approved, 100000)}, revision = revision + 1
+                 where id = ${body.targetId}`;
+        for (const id of sourceIds) await logAction(q, session, id, null, 'request-merged');
+        await logAction(q, session, body.targetId, null, 'requests-merged-in');
+        return { merged: sourceIds.length, processes, requestedTargetPeople: Math.min(requested, 100000) };
+      });
+      return ok(result);
+    }
     if (body.action === 'update-program-access') {
-      if (session.type === 'Paravet') throw forbidden('Only Admin or Super Admin can change program barangay access.');
+      if (session.type === 'Paravet') throw forbidden('Only an Admin can change program barangay access.');
       const campaign = await getCampaign(sql(), body.campaignId);
       if (!campaign || campaign.status !== 'scheduled') throw conflict('PROGRAM_NOT_ACTIVE', 'Only a scheduled program day can change barangay access.');
       const eligibleIds = [...new Set([campaign.host_barangay_id, ...body.allowedBarangayIds])];

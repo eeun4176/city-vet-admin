@@ -150,7 +150,7 @@ export default route({
   },
   POST: async (c) => {
     const session = await requireAuth(c.req, { roles: ['SuperAdmin', 'Admin', 'Paravet'] });
-    if (session.type === 'Paravet') throw forbidden('Only Admin and Super Admin can change schedules or actual start and finish times.');
+    if (session.type === 'Paravet') throw forbidden('Only an Admin can change schedules or actual start and finish times.');
     const input = parse(actions, c.body);
     return ok(await tx(session.id, async (q) => {
       if (input.action === 'create') {

@@ -37,4 +37,6 @@ export async function applyLocalSchema(database) {
   await database.exec(await readFile('db/022_daily_read_indexes.sql', 'utf8'));
   await database.exec(await readFile('db/023_workflow_redesign.sql', 'utf8'));
   await database.exec(await readFile('db/024_private_file_storage.sql', 'utf8'));
+  await database.exec(await readFile('db/026_salin_integration.sql', 'utf8'));
+  await database.exec(await readFile('db/027_salin_stubs.sql', 'utf8'));
 }

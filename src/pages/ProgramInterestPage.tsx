@@ -19,9 +19,11 @@ type Campaign = {
   requestNote: string | null; reviewNote: string | null; ownerCount: number; petCount: number;
   allowedBarangays: Barangay[]; programSlots: number | null; programSlotsUsed: number | null; programDurationMinutes: number | null;
   assignedParavets: ParavetAssignment[];
+  createdByName: string | null; submittedByName: string | null; lastEditedBy: string | null; lastEditedAt: string | null;
+  mergedIntoId: number | null; mergedInto: { reference: string; hostBarangay: string } | null;
 };
 type Pet = { name: string; species: 'Dog' | 'Cat'; sex?: 'Male' | 'Female'; ageMonths?: number; processes: Process[] };
-type InterestPerson = { registry_owner_id?:string; id: number; owner_name: string; mobile: string | null; residence_barangay_id: number; residence_barangay: string; pets: Pet[]; status: string; duplicate_confirmed: boolean; created_at: string };
+type InterestPerson = { registry_owner_id?:string; id: number; owner_name: string; mobile: string | null; residence_barangay_id: number; residence_barangay: string; pets: Pet[]; status: string; duplicate_confirmed: boolean; created_at: string; added_by_name?: string | null; updated_by_name?: string | null };
 type Details = { campaign: Campaign; people: InterestPerson[]; activity: { id: number; actorName: string; action: string; createdAt: string }[] };
 type PageData = { campaigns: Campaign[]; barangays: Barangay[]; programs: ProgramOption[]; role: string; assignedBarangayId: number | null };
 type DraftPet = { name: string; species: 'Dog' | 'Cat'; sex: 'Male' | 'Female' | ''; ageMonths: string; processes: Process[] };
@@ -34,7 +36,9 @@ const statusStyle: Record<string, string> = {
   rejected: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200',
   scheduled: 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200',
   closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  merged: 'bg-violet-50 text-violet-800 dark:bg-violet-950 dark:text-violet-200',
 };
+const whoLine = (campaign: Campaign) => [campaign.createdByName && `Filed by ${campaign.createdByName}`, campaign.submittedByName && `Sent by ${campaign.submittedByName}`, campaign.lastEditedBy && `Last edited by ${campaign.lastEditedBy}${campaign.lastEditedAt ? ` · ${new Date(campaign.lastEditedAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' })}` : ''}`].filter(Boolean).join(' · ');
 const emptyPet = (processes: Process[] = []): DraftPet => ({ name: '', species: 'Dog', sex: '', ageMonths: '', processes: [...processes] });
 const dateLabel = (value: string | null | undefined) => value ? new Date(`${value.slice(0, 10)}T12:00:00+08:00`).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Manila' }) : 'Date not set';
 const durationLabel = (minutes: number | null | undefined) => minutes == null ? 'Not set' : `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} hr ` : ''}${minutes % 60 ? `${minutes % 60} min` : ''}`.trim();
@@ -57,6 +61,7 @@ export function ProgramInterestPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [merging, setMerging] = useState(false);
   const { data, loading, error: loadError, reload: reloadData } = useApi<PageData>(`/program-interest${reload ? `?refresh=${reload}` : ''}`);
   const campaigns = data?.campaigns ?? [];
   const programsForInterest = (data?.programs ?? []).filter((program) => !program.campaignId);
@@ -107,6 +112,7 @@ export function ProgramInterestPage() {
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => startCreate('demand')} className={btnGhost}>Gather demand</button>
         <button type="button" onClick={() => startCreate('program-day')} className={btnPrimary}>Use a scheduled program</button>
+        {!isParavet && <button type="button" onClick={() => setMerging(true)} className={btnGhost}>Merge requests</button>}
       </div>
     </header>
 
@@ -125,7 +131,7 @@ export function ProgramInterestPage() {
       {!loading && campaigns.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No program interest lists yet. Start a demand list or attach one to a scheduled program.</p>}
       {!!campaigns.length && <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['List','Host barangay','Program access','Interest','Status',''].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{campaigns.map((campaign) => <tr key={campaign.id}>
-          <td className="min-w-56 p-3"><p className="font-medium">{campaign.kind === 'program_request' ? 'New program request' : campaign.programTitle || 'Scheduled program'}</p><p className="font-mono text-xs text-slate-500">{campaign.reference}{campaign.programDate ? ` · ${dateLabel(campaign.programDate)}` : ''}</p></td>
+          <td className="min-w-56 p-3"><p className="font-medium">{campaign.kind === 'program_request' ? 'New program request' : campaign.programTitle || 'Scheduled program'}</p><p className="font-mono text-xs text-slate-500">{campaign.reference}{campaign.programDate ? ` · ${dateLabel(campaign.programDate)}` : ''}</p>{campaign.createdByName && <p className="text-xs text-slate-500">Filed by {campaign.createdByName}</p>}{campaign.mergedInto && <p className="text-xs text-violet-700 dark:text-violet-300">Merged into {campaign.mergedInto.reference}</p>}</td>
           <td className="whitespace-nowrap p-3">{campaign.hostBarangay}</td>
           <td className="max-w-56 p-3 text-slate-600 dark:text-slate-300">{campaign.allowedBarangays.map((item) => item.name).join(', ')}</td>
           <td className="whitespace-nowrap p-3"><strong>{campaign.ownerCount}</strong>{campaign.kind === 'program_request' ? ` / ${campaign.targetPeople} owners` : ' owners'}<p className="text-xs text-slate-500">{campaign.petCount} pets</p></td>
@@ -156,8 +162,42 @@ export function ProgramInterestPage() {
       </form>
     </Modal>}
 
+    {merging && <MergeRequests campaigns={campaigns} onClose={() => setMerging(false)} onMerged={(reference) => { setMerging(false); setReload((value) => value + 1); setNotice(`Requests merged into ${reference}.`); }} />}
     {selectedId !== null && <CampaignDetails key={selectedId} campaignId={selectedId} role={data?.role ?? ''} barangays={barangayOptions} programs={data?.programs ?? []} onClose={closeCampaign} onChanged={() => { setReload((value) => value + 1); setNotice('Program interest list updated.'); }} />}
   </div>;
+}
+
+/** Admin: run several barangays' sent or approved requests as one program. Owners keep their barangay; services and targets combine. */
+function MergeRequests({ campaigns, onClose, onMerged }: { campaigns: Campaign[]; onClose: () => void; onMerged: (reference: string) => void }) {
+  const mergeable = campaigns.filter((campaign) => campaign.kind === 'program_request' && ['requested', 'approved'].includes(campaign.status));
+  // The request with the most owners is kept by default; the smaller ones merge into it.
+  const [targetId, setTargetId] = useState([...mergeable].sort((a, b) => b.ownerCount - a.ownerCount)[0]?.id ?? 0);
+  const [sourceIds, setSourceIds] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const target = mergeable.find((campaign) => campaign.id === targetId);
+  const chosen = mergeable.filter((campaign) => sourceIds.includes(campaign.id) && campaign.id !== targetId);
+  const all = target ? [target, ...chosen] : chosen;
+  const merge = async () => {
+    if (!target) return;
+    setSaving(true); setError('');
+    try {
+      await api('POST', '/program-interest', { action: 'merge-requests', targetId: target.id, expectedRevision: target.revision, sources: chosen.map((campaign) => ({ id: campaign.id, expectedRevision: campaign.revision })) });
+      onMerged(target.reference);
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not merge these requests.'); }
+    finally { setSaving(false); }
+  };
+  return <Modal title="Merge program requests" wide onClose={() => { if (!saving) onClose(); }}>
+    <div className="space-y-4">
+      {error && <Notice kind="error">{error}</Notice>}
+      {mergeable.length < 2 ? <p className="text-sm text-slate-500">At least two sent or approved requests are needed to merge.</p> : <>
+        <Field label="Keep this request (its barangay hosts the program)"><select className={inputCls} value={targetId} onChange={(event) => { setTargetId(Number(event.target.value)); setSourceIds([]); }}>{mergeable.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.reference} · {campaign.hostBarangay} · {campaign.status}</option>)}</select></Field>
+        <fieldset><legend className="text-sm font-medium">Merge into it</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{mergeable.filter((campaign) => campaign.id !== targetId).map((campaign) => <Check key={campaign.id} checked={sourceIds.includes(campaign.id)} onChange={(checked) => setSourceIds((current) => checked ? [...current, campaign.id] : current.filter((id) => id !== campaign.id))}>{campaign.reference} · {campaign.hostBarangay} ({campaign.ownerCount} owners)</Check>)}</div></fieldset>
+        {chosen.length > 0 && <p className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-900">{all.length} barangays · {all.reduce((sum, campaign) => sum + campaign.ownerCount, 0)} owners · {all.reduce((sum, campaign) => sum + campaign.petCount, 0)} pets · {[...new Set(all.flatMap((campaign) => campaign.processes))].join(', ')}. The merged requests end when this one is closed, rejected or cancelled.</p>}
+        <div className="flex justify-end gap-2"><button type="button" className={btnGhost} disabled={saving} onClick={onClose}>Cancel</button><button type="button" className={btnPrimary} disabled={saving || !target || !chosen.length} onClick={() => void merge()}>{saving ? 'Merging…' : 'Merge requests'}</button></div>
+      </>}
+    </div>
+  </Modal>;
 }
 
 function CampaignPanel({ embedded, title, onClose, children }: { embedded: boolean; title: string; onClose: () => void; children: ReactNode }) {
@@ -287,6 +327,9 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
         ].map(([label, value]) => <article key={label} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 font-semibold">{value}</p></article>)}
       </section>
       <p className="text-sm text-slate-500">Allowed barangays: {campaign.allowedBarangays.map((item) => item.name).join(', ')} · Processes: {campaign.processes.join(', ')}. Interest entries do not issue a stub or confirm attendance.</p>
+      {whoLine(campaign) && <p className="text-sm text-slate-600 dark:text-slate-300">{whoLine(campaign)}</p>}
+      {campaign.mergedInto && <Notice>Merged into {campaign.mergedInto.reference} ({campaign.mergedInto.hostBarangay}). Its owners now continue on that request, and this barangay can start a new request when it finishes.</Notice>}
+      {!!data?.activity.length && <details className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"><summary className="cursor-pointer text-sm font-medium">Activity history ({data.activity.length})</summary><ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">{data.activity.map((item) => <li key={item.id}>{new Date(item.createdAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' })} · <strong>{item.actorName}</strong> · {item.action.replaceAll('-', ' ')}</li>)}</ul></details>}
       {campaign.programRecordId && <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
         <div><h3 className="font-semibold">Paravets assigned in participating barangays</h3><p className="mt-1 text-xs text-slate-500">This roster follows current active Paravet assignments in the allowed barangays.</p></div>
         {campaign.assignedParavets.length ? <ul className="mt-3 grid gap-2 sm:grid-cols-2">{campaign.assignedParavets.map((paravet) => <li key={paravet.id} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><strong>{paravet.name}</strong><p className="text-xs text-slate-500">{paravet.accountKey} · {paravet.barangay}</p></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No active Paravets are assigned to the current participating barangays.</p>}
@@ -345,6 +388,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
         <div className="flex items-center justify-between"><h3 className="font-semibold">Interested owners ({campaign.ownerCount})</h3><span className="text-xs text-slate-500">{campaign.petCount} pets listed</span></div>
         {!data?.people.length ? <p className="py-5 text-center text-sm text-slate-500">No owner interests entered yet.</p> : <div className="mt-2 space-y-2">{data.people.map((person) => <article key={person.id} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
           <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{person.owner_name}{person.duplicate_confirmed && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950 dark:text-amber-100">Marked distinct after review</span>}</p><p className="text-xs text-slate-500">{person.mobile || 'No mobile provided'} · {person.residence_barangay} · {person.pets.length} pets</p></div>{isAdmin&&<Link className="text-xs text-brand-700 underline" to={`/registry/owners?intakeSource=interest&intakeId=${person.id}`}>Verify / add to Owners</Link>}{editable && <div className="flex gap-3 text-xs"><button type="button" onClick={() => startEdit(person)} className="text-brand-700 underline dark:text-brand-300">Edit</button><button type="button" disabled={saving} onClick={() => void withdraw(person.id)} className="text-red-700 underline dark:text-red-300">Withdraw</button></div>}</div>
+          {(person.added_by_name || person.updated_by_name) && <p className="mt-1 text-[11px] text-slate-500">{[person.added_by_name && `Added by ${person.added_by_name}`, person.updated_by_name && `edited by ${person.updated_by_name}`].filter(Boolean).join(' · ')}</p>}
           {person.pets.length > 0 && <ul className="mt-2 grid gap-1 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2">{person.pets.map((pet, index) => <li key={`${person.id}-${index}`}><strong>{pet.name}</strong> · {pet.species}{pet.sex ? ` · ${pet.sex}` : ''}{pet.ageMonths == null ? '' : ` · ${pet.ageMonths} mo`} · {pet.processes.join(', ')}</li>)}</ul>}
         </article>)}</div>}
       </section>

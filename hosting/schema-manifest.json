@@ -1,6 +1,6 @@
 {
   "format": "ekapon-empty-hosting-schema-v1",
-  "schemaSha256": "c5d2873bb95b5a9de351c56ec055dec80da67c652c2d4733f5039f559fcec3c0",
+  "schemaSha256": "a1d93e3184339f4c032d1980d5b1aa68f5dfe4b5167500ed85ee381c9f66f00b",
   "sources": [
     {
       "file": "000_ekapon_schema.sql",
@@ -85,6 +85,18 @@
     {
       "file": "024_private_file_storage.sql",
       "sha256": "37e9c79a54a5d61f0b7ebfcaad195734058074e05241edcd666538fe22f33d12"
+    },
+    {
+      "file": "026_salin_integration.sql",
+      "sha256": "897f00132f7c07b4dc9612bae1d3432eb7bd74c379ce42ed7f338b05e21442d9"
+    },
+    {
+      "file": "027_salin_stubs.sql",
+      "sha256": "9afa45b8119940479a1b3c1ab0b0c0b41595b39a8a8e9527ee4802c1f59bac7c"
+    },
+    {
+      "file": "028_superadmin_only.sql",
+      "sha256": "30b6246870df86361c97e077ed78dd78dbcac0c0c4cc89c486360627407011cb"
     }
   ],
   "accounts": 0,

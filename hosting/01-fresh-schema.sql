@@ -2479,6 +2479,84 @@ ALTER TABLE ekapon.stub_batches ADD CONSTRAINT stub_batches_pdf_storage_check CH
     (external_pdf IS NOT NULL)::int + (external_pdf_file_id IS NOT NULL)::int <= 1
 );
 
+-- SOURCE: db/026_salin_integration.sql
+-- 026: shared barangay program requests from Salin (the paravets' field app).
+-- * Admin can merge requests from several barangays into one: the merged
+--   request is kept as status 'merged' and points at the request it joined.
+--   It still counts as the barangay's active request until that one finishes.
+-- * Salin may resend an owner entry after a dropped connection; request_id
+--   makes the resend return the first entry instead of adding a duplicate.
+-- Additive and idempotent: safe to run twice. (025 is reserved for report performance.)
+
+ALTER TABLE ekapon.program_interest_campaigns ADD COLUMN IF NOT EXISTS merged_into_id bigint REFERENCES ekapon.program_interest_campaigns(id) ON DELETE RESTRICT;
+ALTER TABLE ekapon.program_interest_campaigns DROP CONSTRAINT IF EXISTS program_interest_campaigns_status_check;
+ALTER TABLE ekapon.program_interest_campaigns ADD CONSTRAINT program_interest_campaigns_status_check CHECK(status IN ('gathering','requested','approved','rejected','scheduled','closed','cancelled','merged'));
+ALTER TABLE ekapon.program_interest_campaigns DROP CONSTRAINT IF EXISTS program_interest_campaigns_merged_check;
+ALTER TABLE ekapon.program_interest_campaigns ADD CONSTRAINT program_interest_campaigns_merged_check CHECK((status='merged')=(merged_into_id IS NOT NULL) OR (merged_into_id IS NOT NULL AND status IN ('closed','rejected','cancelled')));
+CREATE INDEX IF NOT EXISTS program_interest_merged_into_idx ON ekapon.program_interest_campaigns(merged_into_id) WHERE merged_into_id IS NOT NULL;
+ALTER TABLE ekapon.program_interest_activity DROP CONSTRAINT IF EXISTS program_interest_activity_action_check;
+ALTER TABLE ekapon.program_interest_activity ADD CONSTRAINT program_interest_activity_action_check CHECK(action IN ('created','interest-added','interest-updated','interest-withdrawn','request-submitted','request-approved','request-rejected','program-scheduled','program-access-updated','closed','reopened','request-edited','request-cancelled','request-merged','requests-merged-in'));
+ALTER TABLE ekapon.program_interest_people ADD COLUMN IF NOT EXISTS request_id uuid;
+CREATE UNIQUE INDEX IF NOT EXISTS program_interest_people_request_uq ON ekapon.program_interest_people(request_id) WHERE request_id IS NOT NULL;
+-- A barangay finishes its request (closed, rejected or cancelled) before starting another; a merged one is not finished yet.
+CREATE OR REPLACE FUNCTION ekapon.enforce_active_demand() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.campaign_type='program_request' AND NEW.status IN ('gathering','requested','approved','scheduled','merged') THEN
+  PERFORM pg_advisory_xact_lock(73023,NEW.host_barangay_id);
+  IF EXISTS(SELECT 1 FROM ekapon.program_interest_campaigns c WHERE c.host_barangay_id=NEW.host_barangay_id AND c.campaign_type='program_request' AND c.status IN ('gathering','requested','approved','scheduled','merged') AND c.id<>NEW.id) THEN
+   RAISE EXCEPTION 'An active request already exists for this barangay' USING ERRCODE='23505';
+  END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+DROP INDEX IF EXISTS ekapon.one_active_barangay_demand;
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM ekapon.program_interest_campaigns WHERE campaign_type='program_request' AND status IN ('gathering','requested','approved','scheduled','merged') GROUP BY host_barangay_id HAVING count(*)>1) THEN
+  CREATE UNIQUE INDEX IF NOT EXISTS one_active_barangay_demand ON ekapon.program_interest_campaigns(host_barangay_id) WHERE campaign_type='program_request' AND status IN ('gathering','requested','approved','scheduled','merged');
+ END IF;
+END $$;
+
+-- Rollback (only while no request is 'merged'):
+--   BEGIN; DROP INDEX IF EXISTS ekapon.program_interest_people_request_uq; ALTER TABLE ekapon.program_interest_people DROP COLUMN IF EXISTS request_id;
+--   ALTER TABLE ekapon.program_interest_campaigns DROP CONSTRAINT IF EXISTS program_interest_campaigns_merged_check; DROP INDEX IF EXISTS ekapon.program_interest_merged_into_idx;
+--   ALTER TABLE ekapon.program_interest_campaigns DROP COLUMN IF EXISTS merged_into_id; then re-run the status/action checks, trigger and index from 023_workflow_redesign.sql; COMMIT;
+
+-- SOURCE: db/027_salin_stubs.sql
+-- 027: stubs that paravets print in Salin, and that follow owner edits.
+-- * Admin can send an approved batch to its barangay: Salin then lists it for
+--   the paravets there to print. Status is unchanged (Approved until printed).
+-- * When a paravet edits an owner in a program request, that owner's issued
+--   stub is updated too; details_updated_at marks slips worth reprinting.
+-- * The owner writes their name on the printed (blank-name) stub; the paravet
+--   encodes it in Salin, and owner_confirmed_at records that.
+-- Additive and idempotent: safe to run twice. Apply after 026.
+
+ALTER TABLE ekapon.stub_batches ADD COLUMN IF NOT EXISTS sent_by bigint REFERENCES ekapon.accounts(id) ON DELETE RESTRICT;
+ALTER TABLE ekapon.stub_batches ADD COLUMN IF NOT EXISTS sent_at timestamptz;
+ALTER TABLE ekapon.stub_tickets ADD COLUMN IF NOT EXISTS details_updated_at timestamptz;
+ALTER TABLE ekapon.stub_tickets ADD COLUMN IF NOT EXISTS owner_confirmed_at timestamptz;
+ALTER TABLE ekapon.stub_activity DROP CONSTRAINT IF EXISTS stub_activity_action_check;
+ALTER TABLE ekapon.stub_activity ADD CONSTRAINT stub_activity_action_check CHECK (action IN ('batch-requested','batch-approved','batch-rejected','batch-printed','batch-reprinted','batch-handed-over','stub-issued','manual-issue-recorded','stub-cancelled','stub-redeemed','walk-in-submitted','attendance-voided','batch-sent','stub-details-updated','owner-confirmed'));
+CREATE INDEX IF NOT EXISTS stub_tickets_interest_person_idx ON ekapon.stub_tickets(interest_person_id) WHERE interest_person_id IS NOT NULL;
+
+-- Rollback: BEGIN; DROP INDEX IF EXISTS ekapon.stub_tickets_interest_person_idx;
+--   ALTER TABLE ekapon.stub_tickets DROP COLUMN IF EXISTS details_updated_at, DROP COLUMN IF EXISTS owner_confirmed_at;
+--   ALTER TABLE ekapon.stub_batches DROP COLUMN IF EXISTS sent_at, DROP COLUMN IF EXISTS sent_by;
+--   (after deleting any 'batch-sent'/'stub-details-updated'/'owner-confirmed' activity rows) restore the 012 action list on stub_activity_action_check; COMMIT;
+
+-- SOURCE: db/028_superadmin_only.sql
+-- 028: City Vet keeps one staff role. Every Admin account becomes a SuperAdmin;
+-- existing SuperAdmins are unchanged. Account creation already offers Paravet
+-- only, so no new Admin accounts are made. The 'Admin' enum value stays for old
+-- audit rows and is simply no longer used.
+-- Idempotent: safe to run twice. Apply after 027.
+
+UPDATE ekapon.accounts SET account_type = 'SuperAdmin' WHERE account_type = 'Admin';
+
+-- Rollback: not automatic. Before running, note the Admin accounts with
+--   SELECT id, username FROM ekapon.accounts WHERE account_type = 'Admin';
+-- and set those ids back to 'Admin' if needed.
+
 -- No database password is embedded. Enable the API login separately in the SQL Editor.
 CREATE ROLE ekapon_api NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 GRANT ekapon_admin TO ekapon_api;
@@ -2520,5 +2598,8 @@ INSERT INTO ekapon.schema_migrations(file,sha256) VALUES
 ('021_field_record_consistency.sql','29c3583d1787498dd3139e9acaee4d8a0398f5fd8cd38c2f07565875b50f6a9f'),
 ('022_daily_read_indexes.sql','cc9e9932d0d56e74381ae0705fe3d1943e9d72177faa71b574b870e82e13b077'),
 ('023_workflow_redesign.sql','939d4a03abd68ee0651a03bd8f57376415999cc73b68e92d83197cea3bd5fdbf'),
-('024_private_file_storage.sql','37e9c79a54a5d61f0b7ebfcaad195734058074e05241edcd666538fe22f33d12');
+('024_private_file_storage.sql','37e9c79a54a5d61f0b7ebfcaad195734058074e05241edcd666538fe22f33d12'),
+('026_salin_integration.sql','897f00132f7c07b4dc9612bae1d3432eb7bd74c379ce42ed7f338b05e21442d9'),
+('027_salin_stubs.sql','9afa45b8119940479a1b3c1ab0b0c0b41595b39a8a8e9527ee4802c1f59bac7c'),
+('028_superadmin_only.sql','30b6246870df86361c97e077ed78dd78dbcac0c0c4cc89c486360627407011cb');
 COMMIT;

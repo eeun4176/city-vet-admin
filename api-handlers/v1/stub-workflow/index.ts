@@ -10,8 +10,8 @@ import { conflict,forbidden,notFound,unprocessable } from '../../../server/error
 import { jsonValue } from '../../../server/dashboard';
 import { ownerSchema,stubPetSchema,attendancePetSchema,realDateSchema,canonicalOwner,payloadHash,ownerIdentity,
   getProgram,readPrograms,outputProgram,ensureIssuable,ensureAttendanceAllowed,ensureOwnerScope,ensurePetProcesses,
-  outputBatch,outputTicket,outputAttendance,overlappingAttendance,normalizedName } from '../../../server/stubWorkflow';
-import type { StubOwner,AttendancePet,StubProgram } from '../../../shared/stubs';
+  outputBatch,outputTicket,outputAttendance,overlappingAttendance,normalizedName,petsPerStub } from '../../../server/stubWorkflow';
+import type { StubOwner,AttendancePet,StubProgram,StubPet } from '../../../shared/stubs';
 const id=z.number().int().positive();
 const reason=z.string().trim().min(3).max(1000);
 const note=z.string().trim().max(1000).optional();
@@ -23,15 +23,18 @@ const actions=z.discriminatedUnion('action',[
   z.object({action:z.literal('review-batch'),batchId:id,decision:z.enum(['approve','reject']),quantity:z.number().int().min(1).max(500).optional(),note}),
   z.object({action:z.literal('confirm-print'),batchId:id}),
   z.object({action:z.literal('handover'),batchId:id}),
+  z.object({action:z.literal('send-to-barangay'),batchId:id}),
+  z.object({action:z.literal('issue-from-interest'),batchId:id}),
   z.object({action:z.literal('issue'),stubId:id,owner:ownerSchema,pets:z.array(stubPetSchema).min(1).max(3),interestPersonId:id.optional()}),
   z.object({action:z.literal('cancel-stub'),stubId:id,reason}),
+  z.object({action:z.literal('confirm-owner'),stubId:id,ownerName:z.string().trim().min(1).max(120)}),
   z.object({action:z.literal('redeem'),stubId:id,...actual,pets:z.array(attendancePetSchema).min(1).max(3)}),
   z.object({action:z.literal('walk-in'),campaignId:id,...actual,pets:z.array(attendancePetSchema).min(1).max(10)}),
   z.object({action:z.literal('void-attendance'),attendanceId:id,reason}),
 ]);
 const list=z.object({page:z.coerce.number().int().min(1).max(100000).default(1),pageSize:z.coerce.number().int().min(1).max(100).default(20),q:z.string().trim().max(120).default('')});
 const parseId=(value:unknown)=>parse(z.coerce.number().int().positive(),value);
-const admin=(session:Session)=>{if(session.type==='Paravet') throw forbidden('An Admin or Super Admin must complete this step.');};
+const admin=(session:Session)=>{if(session.type==='Paravet') throw forbidden('An Admin must complete this step.');};
 async function audit(q:Tx,session:Session,campaignId:number,action:string,batchId:number|null=null,stubId:number|null=null,attendanceId:number|null=null) {
   await q`insert into ekapon.stub_activity(campaign_id,batch_id,stub_id,attendance_id,actor_id,action)
     values(${campaignId},${batchId},${stubId},${attendanceId},${session.id},${action})`;
@@ -106,7 +109,10 @@ export default route({
     if(c.query.mode==='print') {
         ensureIssuable(program,row);
         if(!['Approved','Printed','Handed over'].includes(b.status)) throw conflict('BATCH_NOT_APPROVED','Approve this batch before printing.');
-        const stubs=await sql()`select id,code,owner_snapshot->>'name' as "ownerName",status from ekapon.stub_tickets where batch_id=${b.id} and status in ('Available','Issued') order by id`;
+        // The slip shows the requested services, never pet names; the owner writes their name on it.
+        const stubs=await sql()`select id,code,owner_snapshot->>'name' as "ownerName",status,owner_confirmed_at as "ownerConfirmedAt",
+          coalesce((select jsonb_agg(distinct process) from jsonb_array_elements(coalesce(pets_snapshot,'[]'::jsonb)) pet cross join lateral jsonb_array_elements_text(pet->'processes') process),'[]'::jsonb) as services
+          from ekapon.stub_tickets where batch_id=${b.id} and status in ('Available','Issued') order by id`;
         return ok({batch:{...outputBatch(b),note:null,reviewNote:null},program,stubs});
       }
       const [stubs,[count]]=await Promise.all([
@@ -120,6 +126,16 @@ export default route({
       const t=await ticket(sql(),session,null,code);
       const {program}=await getProgram(sql(),t.campaign_id,session);
       return ok({stub:outputTicket(t),program});
+    }
+    if(c.query.mode==='day-pack') {
+      // Every stub of the program the user may scan, so program day works with no signal.
+      const campaignId=parseId(c.query.campaignId),{program}=await getProgram(sql(),campaignId,session);
+      const rows=await sql()`select t.id,t.code,t.status,t.owner_snapshot,t.pets_snapshot,t.redeemed_at,b.barangay_id as batch_barangay_id
+        from ekapon.stub_tickets t join ekapon.stub_batches b on b.id=t.batch_id
+        where b.campaign_id=${campaignId} and b.status in ('Approved','Printed','Handed over') and t.status in ('Available','Issued','Redeemed')
+          and (${session.type!=='Paravet'} or t.owner_barangay_id=${session.barangayId ?? -1} or (t.owner_barangay_id is null and b.barangay_id=${session.barangayId ?? -1}))
+        order by t.id`;
+      return ok({program,generatedAt:new Date().toISOString(),stubs:rows.map((r)=>({id:r.id,code:r.code,status:r.status,owner:r.owner_snapshot,pets:r.pets_snapshot,redeemedAt:r.redeemed_at,barangayId:r.batch_barangay_id}))});
     }
     if(c.query.mode==='issued') {
       const campaignId=parseId(c.query.campaignId),{program}=await getProgram(sql(),campaignId,session);
@@ -168,7 +184,7 @@ export default route({
   POST:async(c)=>{
     const session=await requireAuth(c.req,{roles:['SuperAdmin','Admin','Paravet']});
     const input=parse(actions,c.body);
-    if(['generate-batches','attach-pdf','review-batch','handover','cancel-stub','void-attendance'].includes(input.action)) admin(session);
+    if(['generate-batches','attach-pdf','review-batch','handover','cancel-stub','void-attendance','send-to-barangay','issue-from-interest'].includes(input.action)) admin(session);
     if(input.action==='attach-pdf'){
       await batch(sql(),session,input.batchId);
       const bytes=Buffer.from(input.data,'base64');
@@ -244,6 +260,52 @@ export default route({
           await audit(q,session,program.id,'batch-handed-over',b.id);
         }
         return {saved:true,batchId:b.id,reference:b.reference};
+      }
+      if(input.action==='send-to-barangay' || input.action==='issue-from-interest') {
+        const before=await batch(q,session,input.batchId);
+        const {program,row}=await getProgram(q,before.campaign_id,session,true);
+        const b=await batch(q,session,input.batchId,true);
+        ensureIssuable(program,row);
+        if(!['Approved','Printed','Handed over'].includes(b.status)) throw conflict('BATCH_NOT_APPROVED','Approve this batch first.');
+        if(input.action==='send-to-barangay') {
+          await q`update ekapon.stub_batches set sent_by=${session.id},sent_at=now() where id=${b.id}`;
+          await audit(q,session,program.id,'batch-sent',b.id);
+          await q`select ekapon.workflow_notice(${program.id}::bigint,${b.barangay_id}::int,'Stubs to print',${`${program.title}: City Vet sent your barangay's stubs. Print them in Salin.`},${`/stubs?campaignId=${program.id}&batchId=${b.id}`})`;
+          return {saved:true,batchId:b.id};
+        }
+        // Named stubs for the barangay's interested owners without one yet; an owner is issued only when every one of their stubs fits.
+        const people=await q`select p.id,p.owner_name,p.mobile,p.residence_barangay_id,p.pets,p.registry_owner_id from ekapon.program_interest_people p
+          where p.campaign_id=${program.id} and p.status='interested' and p.residence_barangay_id=${b.barangay_id}
+            and not exists(select 1 from ekapon.stub_tickets t where t.interest_person_id=p.id and t.status in ('Issued','Redeemed'))
+          order by p.created_at,p.id`;
+        const free=[...await q`select id from ekapon.stub_tickets where batch_id=${b.id} and status='Available' order by id for update`];
+        let issued=0,withoutPets=0,waiting=0;
+        for(const person of people) {
+          const pets=(person.pets as StubPet[]).map((pet)=>({...pet,processes:pet.processes.filter((process)=>program.processes.includes(process))})).filter((pet)=>pet.processes.length);
+          if(!pets.length){withoutPets++;continue;}
+          const chunks=petsPerStub(pets);
+          if(free.length<chunks.length){waiting++;continue;}
+          const owner=canonicalOwner({registryOwnerId:person.registry_owner_id ?? undefined,name:person.owner_name,mobile:person.mobile ?? '',address:'',barangayId:person.residence_barangay_id});
+          for(const chunk of chunks) {
+            const t=free.shift()!;
+            await q`update ekapon.stub_tickets set status='Issued',owner_snapshot=${q.json(jsonValue(owner))},pets_snapshot=${q.json(jsonValue(chunk))},owner_barangay_id=${owner.barangayId},
+              interest_person_id=${person.id},issued_by=${session.id},issued_at=now() where id=${t.id} and status='Available'`;
+            await audit(q,session,program.id,'stub-issued',b.id,t.id);
+            issued++;
+          }
+        }
+        if(issued) await q`select ekapon.workflow_notice(${program.id}::bigint,${b.barangay_id}::int,'Stubs issued',${`${program.title}: ${issued} named stubs were issued from your barangay's request.`},${`/stubs?campaignId=${program.id}&batchId=${b.id}`})`;
+        return {issued,ownersWithoutPets:withoutPets,ownersNeedingMoreStubs:waiting};
+      }
+      if(input.action==='confirm-owner') {
+        // The paravet encodes the name the owner wrote on the printed stub; resending the same name is harmless.
+        const previous=await ticket(q,session,input.stubId),{program}=await getProgram(q,previous.campaign_id,session,true);
+        const t=await ticket(q,session,input.stubId,null,true);
+        if(t.status!=='Issued') throw conflict('STUB_NOT_ISSUED','Only an issued, unused stub can have its owner name confirmed.');
+        const name=input.ownerName.replace(/\s+/g,' ');
+        await q`update ekapon.stub_tickets set owner_snapshot=owner_snapshot || ${q.json({name})},owner_confirmed_at=now() where id=${t.id}`;
+        await audit(q,session,program.id,'owner-confirmed',t.batch_id,t.id);
+        return {saved:true,stubId:t.id};
       }
       if(input.action==='issue' || input.action==='cancel-stub') {
         const previous=await ticket(q,session,input.stubId),{program,row}=await getProgram(q,previous.campaign_id,session,true);

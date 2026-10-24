@@ -6,6 +6,8 @@ import { Loading, Notice, Spinner, btnGhost, btnPrimary } from './ui';
 import '../pages/stub-workflow.css';
 
 const dateLabel = (value: string) => new Date(`${value.slice(0, 10)}T12:00:00+08:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
+const timeLabel = (value?: string | null) => value ? `${Number(value.slice(0, 2)) % 12 || 12}:${value.slice(3, 5)} ${Number(value.slice(0, 2)) < 12 ? 'AM' : 'PM'}` : '';
+const whenLabel = (program: StubPrintData['program']) => [dateLabel(program.date), [timeLabel(program.startTime), timeLabel(program.endTime)].filter(Boolean).join('–')].filter(Boolean).join(' · ');
 
 export function StubPrintSheet({ data, saving, actionError, onConfirmPrinted, onClose }: { data: StubPrintData; saving: boolean; actionError?: string; onConfirmPrinted: () => void; onClose: () => void }) {
   const [images, setImages] = useState<Record<number, string>>({});
@@ -66,7 +68,7 @@ export function StubPrintSheet({ data, saving, actionError, onConfirmPrinted, on
     {!ready && !error && <div className="stub-print-controls"><Loading label="Preparing private QR images…" /></div>}
     {ready && !fitChecked && <div className="stub-print-controls"><Loading label="Checking compact layout…" /></div>}
     {ready && <div className="stub-print-pages" ref={pagesRef}>{pages.map((stubs, pageIndex) => <section className="stub-print-page" key={pageIndex} aria-label={`Sheet ${pageIndex + 1}`}>{stubs.map((stub) => <article className="stub-owner-slip" key={stub.id}>
-      <div className="stub-slip-copy"><img className="stub-slip-logo" src="/favicon.png" alt="City Veterinary Office" /><h3 style={{ fontSize: data.program.title.length > 90 ? '7pt' : data.program.title.length > 55 ? '8pt' : '8.5pt' }}>{data.program.title}</h3><p>{dateLabel(data.program.date)}</p><p style={{ fontSize: data.program.location.length > 100 ? '7pt' : '7.5pt' }}>{data.program.location}</p><p className="stub-owner-name" style={{fontSize:'7pt',fontWeight:600}}>{stub.ownerName||'Owner: __________________'}</p></div>
+      <div className="stub-slip-copy"><img className="stub-slip-logo" src="/favicon.png" alt="City Veterinary Office" /><h3 style={{ fontSize: data.program.title.length > 90 ? '7pt' : data.program.title.length > 55 ? '8pt' : '8.5pt' }}>{data.program.title}</h3><p className="stub-slip-number">Stub No. {stub.id}</p><p>{whenLabel(data.program)}</p><p style={{ fontSize: data.program.location.length > 100 ? '7pt' : '7.5pt' }}>{data.program.location}</p><p className="stub-slip-services">{data.program.processes.map((process) => <span key={process}><span className="stub-box">{stub.services?.includes(process) ? '✓' : ''}</span>{process}</span>)}</p><p className="stub-owner-name">Owner: ______________________________</p></div>
       <img src={images[stub.id]} className="stub-slip-qr" alt="Program stub QR" />
     </article>)}</section>)}</div>}
   </div>, document.body);

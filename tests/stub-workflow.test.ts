@@ -146,7 +146,7 @@ describe('staff QR inventory and paper handover', () => {
     expect(printable.program).toMatchObject({ id: campaignId, date: today, location: `${tag} covered court` });
     expect(printable.stubs).toHaveLength(2);
     expect(JSON.stringify(printable)).not.toMatch(/"(?:owner|pets|mobile|address|owner_snapshot|pets_snapshot)"\s*:/);
-    expect(printable.stubs.every((stub: Record<string, unknown>) => Object.keys(stub).sort().join(',') === 'code,id,ownerName,status')).toBe(true);
+    expect(printable.stubs.every((stub: Record<string, unknown>) => Object.keys(stub).sort().join(',') === 'code,id,ownerConfirmedAt,ownerName,services,status')).toBe(true);
     success(await post({ action: 'confirm-print', batchId })); success(await post({ action: 'handover', batchId }));
     const printedAgain = success(await call('GET', `/api/v1/stub-workflow?mode=print&batchId=${batchId}`, { cookie: superAdmin }));
     expect(printedAgain.stubs).toEqual(printable.stubs);

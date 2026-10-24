@@ -58,7 +58,7 @@ export default route({GET:async(c)=>{
 },POST:async(c)=>{
   const session=await requireAuth(c.req,{roles:['Admin','SuperAdmin','Paravet']});await qualityRegistryAccess(session);
   const b=parse(bodySchema,c.body);
-  if(b.action==='review'&&session.type==='Paravet')throw forbidden('Admin or Super Admin must record the review decision.');
+  if(b.action==='review'&&session.type==='Paravet')throw forbidden('An Admin must record the review decision.');
   if(b.action==='review'&&!b.status)throw conflict('DECISION_REQUIRED','Select a review decision.');
   return ok(await tx(session.id,async(q)=>{
     const ids=[b.left,b.right].sort((a,b)=>a-b);

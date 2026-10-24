@@ -9,6 +9,8 @@ export type StubProgram = {
   id: number; title: string; date: string; location: string; hostBarangayId: number; hostBarangay: string;
   status: string; campaignStatus: string; processes: ProgramProcess[]; allowedBarangays: { id: number; name: string }[];
   slots: number | null; slotsUsed: number; durationMinutes: number | null;
+  /** HH:MM when the program record has them; printed on the stub. */
+  startTime?: string | null; endTime?: string | null;
 };
 export type StubParavet = { id: number; name: string; barangayId: number; barangay: string };
 export type StubBatch = {
@@ -18,6 +20,8 @@ export type StubBatch = {
   status: 'Requested' | 'Approved' | 'Rejected' | 'Printed' | 'Handed over';
   note: string | null; reviewNote: string | null; createdAt: string; issuedCount: number; redeemedCount: number;
   availableCount?: number; cancelledCount?: number;
+  /** When City Vet sent the batch to its barangay to print (Salin lists it). */
+  sentAt?: string | null;
 };
 export type StubTicket = {
   id: number; batchId: number; campaignId: number; code: string; status: 'Available' | 'Issued' | 'Redeemed' | 'Cancelled';
@@ -30,7 +34,9 @@ export type StubPageData = {
 };
 export type StubBatchDetails = { batch: StubBatch; program: StubProgram; stubs: StubTicket[]; page: number; pageSize: number; total: number };
 export type StubLookup = { stub: StubTicket; program: StubProgram };
-export type StubPrintData = { batch: StubBatch; program: StubProgram; stubs: { id: number; code: string; ownerName?:string|null; status?:string }[] };
+export type StubPrintData = { batch: StubBatch; program: StubProgram; stubs: { id: number; code: string; ownerName?:string|null; status?:string; services?: ProgramProcess[]; ownerConfirmedAt?: string | null }[] };
+/** A program's stubs for scanning with no signal (Salin downloads it before program day). */
+export type StubDayPack = { program: StubProgram; generatedAt: string; stubs: { id: number; code: string; status: StubTicket['status']; owner: StubOwner | null; pets: StubPet[]; redeemedAt: string | null; barangayId: number }[] };
 export type ProgramAttendance = {
   id: number; campaignId: number; source: 'Stub' | 'Walk-in'; stubId: number | null; owner: StubOwner;
   pets: AttendancePet[]; attendedOn: string; encodedBy: string; createdAt: string; status: 'Submitted' | 'Voided'; voidReason: string | null;

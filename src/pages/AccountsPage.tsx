@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Field, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary } from '../components/ui';
 import { ReferenceInput } from '../components/ReferenceInput';
 import { api } from '../lib/api';
+import { roleLabel } from '../../shared/permissions';
 import { useDebouncedValue } from '../lib/useApi';
 import { useReportBasket } from '../lib/reportBasket';
 
@@ -117,7 +118,7 @@ export function AccountsPage() {
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts.map((account) => <tr key={account.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${account.fullName}`} checked={bulk.has(account.id)} onChange={()=>bulk.toggle(account.id)}/></td>
             <td className="p-3 font-medium"><button type="button" onClick={() => setSelected(account)} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account.fullName}</button></td>
-            <td className="p-3">{account.accountType}{account.accountKey || account.username ? ` · ${account.accountKey ?? account.username}` : ''}</td>
+            <td className="p-3">{roleLabel(account.accountType)}{account.accountKey || account.username ? ` · ${account.accountKey ?? account.username}` : ''}</td>
             <td className="p-3">{account.barangay?.name ?? '—'}</td>
             <td className="p-3">{account.mobile ?? '—'}</td>
             <td className="p-3">{account.status}</td>
@@ -190,7 +191,7 @@ function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; on
     }
   };
 
-  return <Modal title={editable ? `Edit ${account.accountType} account` : `${account.accountType} account details`} onClose={onClose}>
+  return <Modal title={editable ? `Edit ${roleLabel(account.accountType)} account` : `${roleLabel(account.accountType)} account details`} onClose={onClose}>
     {error && <div className="mb-3"><Notice kind="error">{error}</Notice></div>}
     <div className="space-y-3">
       {editable ? <>
@@ -205,7 +206,7 @@ function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; on
           ? <Field label="Barangay">
             <ReferenceInput source="barangay" value={draft.barangay?.name ?? ''} onChange={(value) => setDraft({ ...draft, barangay: value ? { id: draft.barangay?.id ?? 0, name: value, acronym: draft.barangay?.acronym ?? '' } : null })} className={inputCls} />
           </Field>
-          : <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Role and login ID:</strong> {account.accountType} · {account.username ?? account.accountKey}</p>}
+          : <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Role and login ID:</strong> {roleLabel(account.accountType)} · {account.username ?? account.accountKey}</p>}
       </> : <>
         <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Name:</strong> {account.fullName}</p>
         <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Username / account key:</strong> {account.username ?? account.accountKey}</p>

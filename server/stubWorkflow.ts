@@ -2,6 +2,7 @@ import { BREED_CLASSES,HEALTH_STATUSES } from '../shared/petReferences';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { Session } from './auth';
+import type { Tx } from './db';
 import { forbidden, notFound, unprocessable } from './errors';
 import { PROGRAM_PROCESSES, normalizeProgramStatus, programProcessesFrom } from '../shared/programs';
 import type { AttendancePet, StubBatch, StubOwner, StubPet, StubProgram, StubTicket, ProgramAttendance } from '../shared/stubs';
@@ -84,7 +85,8 @@ export function outputProgram(row:ProgramRow):StubProgram {
   const selected = programProcessesFrom(data.processes,data.program);
   let duration = numeric(data.durationMinutes ?? data.duration_minutes);
   const start = String(data.startTime ?? ''), end = String(data.endTime ?? '');
-  if (/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(start) && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(end)) {
+  const clock = (time:string) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : null;
+  if (clock(start) && clock(end)) {
     const minutes = (time:string) => Number(time.slice(0,2))*60+Number(time.slice(3,5));
     if (minutes(end)>minutes(start)) duration=minutes(end)-minutes(start);
   }
@@ -92,7 +94,7 @@ export function outputProgram(row:ProgramRow):StubProgram {
     date:firstNonblank(data.date,data.programDate).slice(0,10),location:firstNonblank(data.location,data.venue),
     hostBarangayId:row.host_barangay_id,hostBarangay:row.host_barangay,status:normalizeProgramStatus(String(data.status ?? 'Planned')) ?? String(data.status ?? ''),
     campaignStatus:row.status,processes:selected.length ? selected : programProcessesFrom(row.processes),allowedBarangays:row.allowed_barangays,
-    slots:numeric(data.slots),slotsUsed:Number(row.slots_used),durationMinutes:duration };
+    slots:numeric(data.slots),slotsUsed:Number(row.slots_used),durationMinutes:duration,startTime:clock(start),endTime:clock(end) };
   return program;
 }
 
@@ -139,7 +141,7 @@ export function ensurePetProcesses(program:StubProgram,pets:StubPet[]) {
 export const outputBatch = (r:any):StubBatch => ({id:r.id,reference:r.reference,campaignId:r.campaign_id,programTitle:r.program_snapshot.title,programDate:r.program_snapshot.date,
   recipientId:r.recipient_id,recipientName:r.recipient_name,barangayId:r.barangay_id,barangay:r.barangay,
   requestedQuantity:r.requested_quantity,approvedQuantity:r.approved_quantity,status:r.status,note:r.note,reviewNote:r.review_note,
-  createdAt:r.created_at,issuedCount:Number(r.issued_count ?? 0),redeemedCount:Number(r.redeemed_count ?? 0),availableCount:Number(r.available_count ?? 0),cancelledCount:Number(r.cancelled_count ?? 0)});
+  createdAt:r.created_at,issuedCount:Number(r.issued_count ?? 0),redeemedCount:Number(r.redeemed_count ?? 0),availableCount:Number(r.available_count ?? 0),cancelledCount:Number(r.cancelled_count ?? 0),sentAt:r.sent_at ?? null});
 export const outputTicket = (r:any):StubTicket => ({id:r.id,batchId:r.batch_id,campaignId:r.campaign_id,barangayId:r.batch_barangay_id,code:r.code,status:r.status,owner:r.owner_snapshot,pets:r.pets_snapshot,issuedAt:r.issued_at,redeemedAt:r.redeemed_at});
 export const outputAttendance = (r:any):ProgramAttendance => ({id:r.id,campaignId:r.campaign_id,source:r.source,stubId:r.stub_id,owner:r.owner_snapshot,pets:r.pets_snapshot,
   attendedOn:r.attended_on,encodedBy:r.encoded_by_name,createdAt:r.created_at,status:r.status,voidReason:r.void_reason});
@@ -150,4 +152,33 @@ export function overlappingAttendance(owner:StubOwner,pets:AttendancePet[],row:a
     || Boolean(normalizedPhone(owner.mobile) && normalizedPhone(previous.mobile)===normalizedPhone(owner.mobile)));
   return sameOwner && pets.some((pet)=>(row.pets_snapshot as AttendancePet[]).some((old)=>normalizedName(old.name)===normalizedName(pet.name)
     && old.species===pet.species && (!old.sex || !pet.sex || old.sex===pet.sex) && old.processes.some((process)=>pet.processes.includes(process))));
+}
+
+/** A stub carries up to three pets: an owner with more is spread over several stubs, in order. */
+export const petsPerStub = <T,>(pets: T[]) => Array.from({ length: Math.ceil(pets.length / 3) }, (_, index) => pets.slice(index * 3, index * 3 + 3));
+
+/**
+ * A paravet edited an interested owner (in Salin or e-Kapon): their issued stubs follow — the new name and mobile,
+ * pets three per stub — and are marked for reprinting. A name the owner wrote on the stub is kept. A stub left with no pets is cancelled.
+ */
+export async function syncInterestStubs(q: Tx, session: Session, personId: number, owner: { name: string; mobile: string }, pets: StubPet[]) {
+  const tickets = await q`select t.id, t.batch_id, b.campaign_id from ekapon.stub_tickets t join ekapon.stub_batches b on b.id = t.batch_id
+    where t.interest_person_id = ${personId} and t.status = 'Issued' order by t.id for update of t`;
+  const chunks = petsPerStub(pets);
+  for (const [index, t] of tickets.entries()) {
+    if (!chunks[index]) {
+      await q`update ekapon.stub_tickets set status = 'Cancelled', cancelled_by = ${session.id}, cancelled_at = now(), cancel_reason = 'The owner has fewer pets after an edit.' where id = ${t.id} and status = 'Issued'`;
+    } else {
+      const details = { name: owner.name.trim().replace(/\s+/g, ' '), mobile: normalizedPhone(owner.mobile) };
+      await q`update ekapon.stub_tickets set owner_snapshot = owner_snapshot || ${q.json(details)} || case when owner_confirmed_at is null then '{}'::jsonb else jsonb_build_object('name', owner_snapshot->'name') end, pets_snapshot = ${q.json(chunks[index] as never)}, details_updated_at = now() where id = ${t.id}`;
+    }
+    await q`insert into ekapon.stub_activity(campaign_id, batch_id, stub_id, actor_id, action) values(${t.campaign_id}, ${t.batch_id}, ${t.id}, ${session.id}, ${chunks[index] ? 'stub-details-updated' : 'stub-cancelled'})`;
+  }
+}
+
+/** The owner withdrew from the program: their issued stubs can no longer be used. */
+export async function cancelInterestStubs(q: Tx, session: Session, personId: number) {
+  const cancelled = await q`update ekapon.stub_tickets t set status = 'Cancelled', cancelled_by = ${session.id}, cancelled_at = now(), cancel_reason = 'The owner withdrew from the program.'
+    from ekapon.stub_batches b where b.id = t.batch_id and t.interest_person_id = ${personId} and t.status = 'Issued' returning t.id, t.batch_id, b.campaign_id`;
+  for (const t of cancelled) await q`insert into ekapon.stub_activity(campaign_id, batch_id, stub_id, actor_id, action) values(${t.campaign_id}, ${t.batch_id}, ${t.id}, ${session.id}, 'stub-cancelled')`;
 }

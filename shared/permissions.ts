@@ -4,6 +4,8 @@
  * protection: every API route must still call `can()`.
  */
 export type Role = 'SuperAdmin' | 'Admin' | 'Paravet' | 'User'; // User retained only for historical account records.
+/** City Vet keeps one staff role (028): SuperAdmin is shown to people as "Admin". */
+export const roleLabel = (role: string) => role === 'SuperAdmin' ? 'Admin' : role;
 
 export const GRANT_PERMISSIONS = ['archive', 'restore', 'delete_submission', 'export_with_ids'] as const;
 export type GrantPermission = (typeof GRANT_PERMISSIONS)[number];

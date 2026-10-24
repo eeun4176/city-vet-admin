@@ -80,7 +80,7 @@ export default route({
     const { permanent } = parse(deleteQuery, c.query);
     if (permanent === 'true') {
       if (!can({ role: session.type, grants: session.grants }, 'census.delete')) {
-        throw forbidden('Deleting a census submission needs special access from SuperAdmin.');
+        throw forbidden('Deleting a census submission needs special access from an Admin.');
       }
       await tx(session.id, async (q) => {
         await registryLock(q);
