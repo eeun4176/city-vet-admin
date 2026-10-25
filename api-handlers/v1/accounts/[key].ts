@@ -48,6 +48,15 @@ export default route({
         select first_name as "firstName", middle_name as "middleName", last_name as "lastName",
                suffix, mobile, barangay_id as "barangayId"
           from ekapon.accounts where id = ${a.id}`;
+      if (before.barangayId !== after.barangayId) {
+        // Both teams hear about the move: the new barangay's Paravets (the moved one included) and the old one's.
+        const [moved] = await q`select a.full_name as name, nb.name as "newName", ob.name as "oldName" from ekapon.accounts a
+          join ekapon.barangays nb on nb.id = ${after.barangayId} left join ekapon.barangays ob on ob.id = ${before.barangayId} where a.id = ${a.id}`;
+        await q`select ekapon.workflow_notice(null, ${after.barangayId}, ${'Paravet assignment updated'},
+          ${`${moved.name} is now assigned to ${moved.newName}${moved.oldName ? ` (moved from ${moved.oldName})` : ''}. Requests, stubs and census for ${moved.newName} are shared with them from now on.`}, null)`;
+        if (before.barangayId) await q`select ekapon.workflow_notice(null, ${before.barangayId}, ${'Paravet assignment updated'},
+          ${`${moved.name} moved to ${moved.newName} and no longer works on ${moved.oldName}'s requests, stubs or census.`}, null)`;
+      }
       const [undo] = await q`
         insert into ekapon.edit_undo (actor_id, entity_type, entity_key, before_data, after_data)
         values (${s.id}, 'account', ${String(a.id)}, ${q.json(before)}, ${q.json(after)})

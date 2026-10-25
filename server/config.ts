@@ -13,6 +13,9 @@ const schema = z.object({
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SECRET_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/).default('ekapon-private'),
+  // The office Gmail account that sends password-reset codes, with a Google app password (not the account password).
+  GMAIL_USER: z.string().trim().email().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
 });
 
 export interface Config {
@@ -27,6 +30,8 @@ export interface Config {
   supabaseUrl: string;
   supabaseSecretKey: string;
   storageBucket: string;
+  gmailUser: string;
+  gmailAppPassword: string;
 }
 
 let cached: Config | undefined;
@@ -63,6 +68,9 @@ export function config(): Config {
       supabaseUrl: (e.SUPABASE_URL ?? '').replace(/\/$/, ''),
       supabaseSecretKey: e.SUPABASE_SECRET_KEY ?? '',
       storageBucket: e.SUPABASE_STORAGE_BUCKET,
+      gmailUser: e.GMAIL_USER ?? '',
+      // Google shows app passwords in groups of four ("abcd efgh ijkl mnop"): the spaces are not part of it.
+      gmailAppPassword: (e.GMAIL_APP_PASSWORD ?? '').replace(/\s+/g, ''),
     };
   }
   return cached;

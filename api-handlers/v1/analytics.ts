@@ -6,10 +6,13 @@ import { forbidden } from '../../server/errors';
 import { likePattern } from '../../server/listing';
 import { ANALYTICS_METHODOLOGY_VERSION } from '../../shared/analytics';
 import { readSummary, summaryHeaders } from '../../server/summaryCache';
+import { todayManila } from '../../server/census';
 import {
   activeMonth,
+  lastCompleteMonth,
   monthlyCalendar,
   planningCoverage,
+  planningWindow,
   percentageChange,
   type MonthlyComparison,
   type MonthlyOperationalRow,
@@ -37,14 +40,26 @@ const petVaccineFlag = `(case when record_data->>'vaccinationStatus' in ('Yes','
   or nullif(btrim(coalesce(record_data->>'vaccine_other', record_data->>'vaccineOther', '')), '') is not null
 ) end)`;
 const lapsedFlag = `lower(coalesce(record_data->>'laps', 'false')) in ('true', 'yes', '1')`;
+const sterilizedFlag = `lower(coalesce(record_data->>'sterilizationStatus',record_data->>'sterilized', 'false')) in ('true', 'yes', '1')`;
+// Pets published from an approved census carry no date of their own: they count from the day they entered the registry.
+// Only those: other undated records (old imports) stay undated rather than piling up in their import month.
 const activityDate = `coalesce(
   nullif(record_data->>'date', ''),
   nullif(record_data->>'visit_date', ''),
   nullif(record_data->>'census_date', ''),
   nullif(record_data->>'registration_date', ''),
   nullif(record_data->>'created_at', ''),
-  nullif(record_data->>'createdAt', '')
+  nullif(record_data->>'createdAt', ''),
+  case when record_data ? '_censusSourceId' then to_char(created_at at time zone 'Asia/Manila', 'YYYY-MM-DD') end
 )`;
+// One definition per service, shared by the trends, the heatmap and the planning baseline so they always agree.
+const serviceName = `lower(coalesce(record_data->>'service', ''))`;
+const isAntiRabies = `${serviceName} ~ '(anti[- ]?rab|rabies)'`;
+const isSpayNeuter = `${serviceName} ~ '(kapon|neuter|spay)'`;
+const isMicrochip = `${serviceName} like '%microchip%'`;
+// A Spay and Neuter Monthly Report row carries the month's total; any other service record is one procedure.
+const procedures = `case when record_data->>'source' = 'spay-neuter-monthly-report'
+  and coalesce(record_data->>'totalProcedures', '') ~ '^[0-9]+$' then (record_data->>'totalProcedures')::int else 1 end`;
 const validActivityDate = String.raw`^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])`;
 const isCompleted = `lower(coalesce(record_data->>'outcome', record_data->>'status', '')) in ('completed', 'attended')`;
 
@@ -135,7 +150,7 @@ export default route({
          count(*) filter (where dataset = 'pets' and lower(coalesce(record_data->>'species', '')) not in ('dog', 'cat'))::int as other_species,
          count(*) filter (where dataset = 'pets' and ${petVaccineFlag})::int as documented_vaccine_flags,
          count(*) filter (where dataset = 'pets' and ${lapsedFlag})::int as laps_records,
-         count(*) filter (where dataset = 'pets' and lower(coalesce(record_data->>'sterilizationStatus',record_data->>'sterilized', 'false')) in ('true', 'yes', '1'))::int as sterilized
+         count(*) filter (where dataset = 'pets' and ${sterilizedFlag})::int as sterilized
        from ekapon.dashboard_records
        where archived = false
          and dataset = any($1::text[])
@@ -175,14 +190,15 @@ export default route({
               count(*)::int as pets,
               count(*) filter (where ${petVaccineFlag})::int as documented_vaccine_flags,
               count(*) filter (where ${lapsedFlag})::int as laps_records,
-              count(*) filter (where not ${petVaccineFlag})::int as without_vaccine_flags
+              count(*) filter (where not ${petVaccineFlag})::int as without_vaccine_flags,
+              count(*) filter (where ${sterilizedFlag})::int as sterilized
          from ekapon.dashboard_records
         where dataset = 'pets' and archived = false
           and (${sample} = coalesce(record_data->>'_sampleData' = 'true', false))
           and (${citywide} or lower(coalesce(record_data->>'barangay', '')) = lower($1))
         group by 1
         order by laps_records desc, without_vaccine_flags desc, pets desc, barangay
-        limit 30`,
+        limit 100`,
       [barangay],
     ) as unknown as Array<{
       barangay: string;
@@ -190,6 +206,7 @@ export default route({
       documented_vaccine_flags: number;
       laps_records: number;
       without_vaccine_flags: number;
+      sterilized: number;
     }>;
 
     const monthlyRows = await sql().unsafe(
@@ -206,19 +223,9 @@ export default route({
        )
        select year, month,
               count(*) filter (where dataset = 'pets')::int as "petRegistrations",
-              count(*) filter (where dataset = 'services'
-                and lower(coalesce(record_data->>'service', '')) like '%anti-rab%'
-                and ${isCompleted})::int as "antiRabiesServices",
-              coalesce(sum(case
-                when record_data->>'source' = 'spay-neuter-monthly-report'
-                  and coalesce(record_data->>'totalProcedures', '') ~ '^[0-9]+$'
-                then (record_data->>'totalProcedures')::int
-                else 1 end) filter (where dataset = 'services'
-                and lower(coalesce(record_data->>'service', '')) ~ '(kapon|neuter|spay)'
-                and ${isCompleted}), 0)::int as "spayNeuterServices",
-              count(*) filter (where dataset = 'services'
-                and lower(coalesce(record_data->>'service', '')) like '%microchip%'
-                and ${isCompleted})::int as "microchipServices",
+              count(*) filter (where dataset = 'services' and ${isAntiRabies} and ${isCompleted})::int as "antiRabiesServices",
+              coalesce(sum(${procedures}) filter (where dataset = 'services' and ${isSpayNeuter} and ${isCompleted}), 0)::int as "spayNeuterServices",
+              count(*) filter (where dataset = 'services' and ${isMicrochip} and ${isCompleted})::int as "microchipServices",
               count(*) filter (where dataset = 'programs')::int as programs,
               count(*) filter (where dataset = 'households')::int as households,
               count(*) filter (where dataset = 'animals')::int as animals
@@ -231,8 +238,8 @@ export default route({
 
     const planningMonthRows = sample ? [] : await sql().unsafe(
       `select substring(${activityDate} from 6 for 2)::int as month, count(*)::int as records,
-         count(*) filter(where lower(coalesce(record_data->>'service','')) ~ '(rabies|vaccin)')::int as "antiRabiesServices",
-         coalesce(sum(case when record_data->>'recordOrigin'='Spay and Neuter Monthly Report' and coalesce(record_data->>'totalProcedures','') ~ '^[0-9]+$' then (record_data->>'totalProcedures')::int else 1 end) filter(where lower(coalesce(record_data->>'service','')) ~ '(kapon|neuter|spay)'),0)::int as "spayNeuterServices"
+         count(*) filter(where ${isAntiRabies})::int as "antiRabiesServices",
+         coalesce(sum(${procedures}) filter(where ${isSpayNeuter}),0)::int as "spayNeuterServices"
          from ekapon.dashboard_records
         where dataset = 'services' and archived = false
           and record_data->>'_sampleData' is distinct from 'true'
@@ -264,12 +271,8 @@ export default route({
       `with monthly as (
          select coalesce(nullif(btrim(record_data->>'barangay'), ''), 'Unspecified') as barangay,
                 substring(${activityDate} from 6 for 2)::int as month,
-                count(*) filter (where lower(coalesce(record_data->>'service', '')) like '%anti-rab%')::int as anti_rabies,
-                coalesce(sum(case
-                  when record_data->>'source' = 'spay-neuter-monthly-report'
-                    and coalesce(record_data->>'totalProcedures', '') ~ '^[0-9]+$'
-                  then (record_data->>'totalProcedures')::int
-                  else 1 end) filter (where lower(coalesce(record_data->>'service', '')) ~ '(kapon|neuter|spay)'), 0)::int as kapon
+                count(*) filter (where ${isAntiRabies})::int as anti_rabies,
+                coalesce(sum(${procedures}) filter (where ${isSpayNeuter}), 0)::int as kapon
            from ekapon.dashboard_records
           where dataset = 'services' and archived = false
             and (${sample} = coalesce(record_data->>'_sampleData' = 'true', false))
@@ -298,9 +301,60 @@ export default route({
       totalActivity: number;
     }>;
 
+    // Census coverage: which barangays have an approved census for the year, and what is still waiting for review.
+    const censusCoverage = sample ? [] : await sql()`
+      select b.name as barangay,
+             count(s.id) filter (where s.status = 'approved')::int as approved,
+             count(s.id) filter (where s.status = 'pending')::int as pending,
+             count(s.id) filter (where s.status = 'rejected')::int as rejected,
+             coalesce(sum(c.owners) filter (where s.status = 'approved'), 0)::int as owners,
+             coalesce(sum(c.pets) filter (where s.status = 'approved'), 0)::int as pets,
+             to_char(max(s.census_date) filter (where s.status = 'approved'), 'YYYY-MM-DD') as "lastCensus"
+        from ekapon.barangays b
+        left join ekapon.census_submissions s on s.barangay_id = b.id and extract(year from s.census_date) = ${year}
+        left join lateral (select count(distinct o.id)::int as owners, count(p.id)::int as pets
+                             from ekapon.census_owners o left join ekapon.census_pets p on p.owner_id = o.id
+                            where o.submission_id = s.id) c on true
+       where ${citywide} or b.id = ${session.barangayId ?? -1}
+       group by b.id, b.name
+       order by approved, pending desc, b.name` as unknown as Array<{
+        barangay: string; approved: number; pending: number; rejected: number; owners: number; pets: number; lastCensus: string | null;
+      }>;
+
+    // Program turnout: of the owners named on stubs, how many came; plus blank-stub and walk-in owners served on the day.
+    const programTurnout = sample ? [] : await sql()`
+      with tickets as (
+        select b.campaign_id,
+               count(*) filter (where t.interest_person_id is not null and t.status in ('Issued', 'Redeemed'))::int as named,
+               count(*) filter (where t.interest_person_id is not null and t.status = 'Redeemed')::int as named_attended
+          from ekapon.stub_tickets t join ekapon.stub_batches b on b.id = t.batch_id
+         group by 1
+      ), attendance as (
+        select campaign_id, count(*)::int as attended, count(*) filter (where source = 'Walk-in')::int as walk_ins,
+               min(attended_on) as day, max(program_snapshot->>'title') as title
+          from ekapon.program_attendance where status <> 'Voided'
+         group by 1
+      )
+      select c.id, coalesce(a.title, 'Program ' || c.id) as title, hb.name as barangay, to_char(a.day, 'YYYY-MM-DD') as date,
+             (select count(*)::int from ekapon.program_interest_people p where p.campaign_id = c.id and p.status = 'interested') as interested,
+             coalesce(t.named, 0) as named, coalesce(t.named_attended, 0) as "namedAttended", a.attended, a.walk_ins as "walkIns"
+        from attendance a
+        join ekapon.program_interest_campaigns c on c.id = a.campaign_id
+        join ekapon.barangays hb on hb.id = c.host_barangay_id
+        left join tickets t on t.campaign_id = c.id
+       where extract(year from a.day) = ${year}
+         and (${citywide} or c.host_barangay_id = ${session.barangayId ?? -1}
+              or exists (select 1 from ekapon.program_interest_allowed_barangays x where x.campaign_id = c.id and x.barangay_id = ${session.barangayId ?? -1}))
+       order by a.day desc, c.id desc
+       limit 20` as unknown as Array<{
+        id: number; title: string; barangay: string; date: string; interested: number; named: number; namedAttended: number; attended: number; walkIns: number;
+      }>;
+
     const calendar = monthlyCalendar(year, monthlyRows);
     const currentRows = monthlyRows.filter((row) => row.year === year);
     const throughMonth = currentRows.filter(activeMonth).reduce((latest, row) => Math.max(latest, row.month), 0);
+    // The planning baseline uses finished months only: a half-done month would pull the average down.
+    const complete = lastCompleteMonth(year, todayManila());
     const comparisonMonths = calendar.slice(0, throughMonth);
     const sum = (key: keyof MonthlyComparison['current'], side: 'current' | 'previous') =>
       comparisonMonths.reduce((total, month) => total + month[side][key], 0);
@@ -308,15 +362,13 @@ export default route({
     const previousVaccinationServices = sum('antiRabiesServices', 'previous');
     const currentSpayNeuterServices = sum('spayNeuterServices', 'current');
     const previousSpayNeuterServices = sum('spayNeuterServices', 'previous');
-    const planning = planningCoverage(planningMonthRows, filters.source);
-    const planningMonths = planningMonthRows
-      .filter(({ records }) => records > 0)
-      .slice(-3)
-      .map(({ month }) => month);
+    const completePlanningRows = planningMonthRows.filter((row) => row.month <= complete);
+    const planning = planningCoverage(completePlanningRows, filters.source);
+    const planningMonths = planningWindow(completePlanningRows);
     const planningMean = (metric:'antiRabiesServices'|'spayNeuterServices') => {
       if (!planning.available) return null;
-      const months = planningMonthRows.filter((row) => planningMonths.includes(row.month));
-      return Math.round(months.reduce((sum, row) => sum + Number(row[metric]), 0) / months.length);
+      const months = completePlanningRows.filter((row) => planningMonths.includes(row.month));
+      return Math.round(months.reduce((sum, row) => sum + Number(row[metric]), 0) / planningMonths.length);
     };
     const forecastVaccinationServices = planningMean('antiRabiesServices');
     const forecastSpayNeuterServices = planningMean('spayNeuterServices');
@@ -398,12 +450,14 @@ export default route({
         available: planning.available,
         reason: planning.reason,
         months: planningMonths,
-        method: 'mean of the latest three months with completed, validly dated live service records in the selected year; shown only with at least 10 records across 3 distinct calendar months',
+        method: 'mean of the three finished calendar months ending with the latest finished month that has completed, validly dated live service records (a month without records counts as zero); shown only with at least 10 records across 3 distinct finished months',
       },
       monthly: calendar,
       barangays,
       serviceBreakdown,
       barangayActivity,
+      censusCoverage,
+      programTurnout,
       recommendations,
       limitations: ['sample-isolation', 'vaccine-coverage', 'risk-thresholds', 'unsupported-domains', 'forecast-limitations'] as const,
     };

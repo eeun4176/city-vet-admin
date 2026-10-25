@@ -229,6 +229,9 @@ describe('accounts', () => {
   it('edits portal and staff profiles without changing account roles or keys', async () => {
     const r = await call('PATCH', `/api/v1/accounts/${acct.key}`, { cookie: admin, json: { mobile: '09180001111', barangay: 'Muzon Proper' } });
     expect(r.status).toBe(200); expect(r.json.account.accountKey).toBe(acct.key); expect(r.json.account.barangay.name).toBe('Muzon Proper'); expect(r.json.account.mobile).toBe('0918-000-1111');
+    // The moved Paravet (now in Muzon Proper) is told about the new assignment.
+    const notices = await sql()`select n.body from ekapon.notifications n join ekapon.accounts a on a.id = n.recipient_id where a.account_key = ${acct.key} and n.title = 'Paravet assignment updated'`;
+    expect(notices.some((n) => String(n.body).includes('is now assigned to Muzon Proper'))).toBe(true);
     const profile = await call('PATCH', `/api/v1/accounts/${acct.key}`, { cookie: admin, json: { firstName: 'Updated', middleName: 'Profile', lastName: LAST, suffix: 'Jr.' } });
     expect(profile.status).toBe(200);
     expect(profile.json.account).toMatchObject({ firstName: 'Updated', middleName: 'Profile', lastName: LAST, suffix: 'Jr.', accountKey: acct.key });

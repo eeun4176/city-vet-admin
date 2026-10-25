@@ -87,6 +87,7 @@ export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountT
   const [a] = await sql()`
     select a.id, a.account_type::text as type, a.account_key, a.username::text as username,
            a.full_name, a.status::text as status, a.barangay_id, b.name as barangay, a.locale,
+           extract(epoch from a.sessions_valid_after)::float8 as valid_after,
            coalesce((select array_agg(distinct g.permission)
                        from ekapon.access_grants g
                       where g.grantee_id = a.id and g.revoked_at is null and g.expires_at > now()
@@ -97,6 +98,8 @@ export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountT
   if (a?.status === 'On hold') throw unauthenticated('Your account is on hold. Please contact the City Veterinary Office.');
   const expected = wantScope === 'full' ? 'Active' : 'Password reset required';
   if (!a || a.status !== expected) throw unauthenticated('Your session is no longer valid. Please sign in again.');
+  // A password reset ends every session issued before it.
+  if (a.valid_after && Number(payload.iat ?? 0) < Number(a.valid_after)) throw unauthenticated('Your password was changed. Please sign in again.');
   if (a.type === 'User') throw unauthenticated('Resident access has been retired. Contact staff for assistance.');
   if (a.type === 'Paravet' && !bearer) throw new AppError(401, 'USE_SALIN', 'Paravets sign in with the Salin app.');
   if (opts.roles && !opts.roles.includes(a.type)) throw forbidden();

@@ -40,4 +40,5 @@ export async function applyLocalSchema(database) {
   await database.exec(await readFile('db/026_salin_integration.sql', 'utf8'));
   await database.exec(await readFile('db/027_salin_stubs.sql', 'utf8'));
   await database.exec(await readFile('db/029_census_request_id.sql', 'utf8'));
+  await database.exec(await readFile('db/030_password_reset_email.sql', 'utf8'));
 }

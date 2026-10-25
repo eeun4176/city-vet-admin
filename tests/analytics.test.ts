@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeMonth,
+  lastCompleteMonth,
   monthlyCalendar,
   planningCoverage,
+  planningWindow,
   percentageChange,
   trailingThreeMonthAverage,
   type MonthlyOperationalRow,
@@ -52,5 +54,18 @@ describe('operational analytics helpers', () => {
     expect(trailingThreeMonthAverage(calendar, 'antiRabiesServices', 3)).toBe(3);
     expect(trailingThreeMonthAverage(calendar, 'antiRabiesServices', 2)).toBeNull();
     expect(activeMonth(rows[0])).toBe(true);
+  });
+
+  it('compares and plans with finished months only (Manila date)', () => {
+    expect(lastCompleteMonth(2026, '2026-10-25')).toBe(9);
+    expect(lastCompleteMonth(2026, '2026-01-03')).toBe(0);
+    expect(lastCompleteMonth(2025, '2026-10-25')).toBe(12);
+    expect(lastCompleteMonth(2027, '2026-10-25')).toBe(0);
+  });
+
+  it('plans from the three months ending with the latest month with records, counting empty months as zero', () => {
+    expect(planningWindow([{ month: 2, records: 5 }, { month: 5, records: 4 }, { month: 6, records: 0 }])).toEqual([3, 4, 5]);
+    expect(planningWindow([{ month: 1, records: 3 }, { month: 2, records: 3 }])).toEqual([1, 2]);
+    expect(planningWindow([{ month: 4, records: 0 }])).toEqual([]);
   });
 });
