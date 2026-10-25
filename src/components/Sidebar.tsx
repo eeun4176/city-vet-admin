@@ -41,7 +41,7 @@ export function Sidebar({ nodes, activeId, activeAncestors, collapsed, onToggleC
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-panel dark:border-slate-800 dark:bg-surface-dark">
       <div className={`flex items-center gap-3 border-b border-slate-100 p-3 dark:border-slate-800 ${collapsed ? 'justify-center' : ''}`}>
-        <img src="/images.jpg" alt="" className="h-10 w-10 shrink-0 rounded-xl border border-brand-200 object-cover" />
+        <img src="/cityvet-logo.png" alt="" className="h-10 w-10 shrink-0 rounded-xl border border-brand-200 object-cover" />
         {!collapsed && (
           <>
             <div className="min-w-0 flex-1 leading-tight">

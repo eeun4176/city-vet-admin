@@ -3,8 +3,8 @@ import { censusEn, censusFil } from './census';
 export type Locale = 'en' | 'fil';
 
 const base = {
-  'app.name': 'City Veterinary Office',
-  'app.city': 'San Jose del Monte',
+  'app.name': 'e-Vet',
+  'app.city': 'Admin | City of San Jose del Monte',
   'nav.overview': 'Overview',
   'nav.account': 'Account',
   'nav.dashboard': 'Dashboard',
@@ -84,7 +84,7 @@ const base = {
   'login.newSubmit': 'Save password',
   'login.useFirst': 'First time? Use your temporary password',
   'login.useNormal': 'Back to sign in',
-  'login.useSalin': 'Paravet? Sign in with the Salin app',
+  'login.useSalin': 'Paravet? Sign in with the e-Vet Field app',
   'login.working': 'Please wait',
   'maintenance.title': 'Under maintenance',
   'maintenance.body': 'The dashboard is temporarily unavailable. Please try again later.',
@@ -190,8 +190,8 @@ export type MessageKey = keyof typeof base | keyof typeof censusEn;
 // Filipino labels: please have a CVO staff member review the wording.
 const fil: Record<MessageKey, string> = {
   ...censusFil,
-  'app.name': 'Tanggapan ng Beterinaryo ng Lungsod',
-  'app.city': 'San Jose del Monte',
+  'app.name': 'e-Vet',
+  'app.city': 'Admin | Lungsod ng San Jose del Monte',
   'nav.overview': 'Pangkalahatang-tanaw',
   'nav.account': 'Account',
   'nav.dashboard': 'Dashboard',
@@ -271,7 +271,7 @@ const fil: Record<MessageKey, string> = {
   'login.newSubmit': 'I-save ang password',
   'login.useFirst': 'Unang beses? Gamitin ang pansamantalang password',
   'login.useNormal': 'Bumalik sa sign in',
-  'login.useSalin': 'Paravet? Mag-sign in gamit ang Salin app',
+  'login.useSalin': 'Paravet? Mag-sign in gamit ang e-Vet Field app',
   'login.working': 'Sandali lang',
   'maintenance.title': 'Sinasaayos ang sistema',
   'maintenance.body': 'Pansamantalang hindi magagamit ang dashboard. Pakisubukan muli mamaya.',

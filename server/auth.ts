@@ -98,7 +98,7 @@ export async function requireAuth(req: IncomingMessage, opts: { roles?: AccountT
   const expected = wantScope === 'full' ? 'Active' : 'Password reset required';
   if (!a || a.status !== expected) throw unauthenticated('Your session is no longer valid. Please sign in again.');
   if (a.type === 'User') throw unauthenticated('Resident access has been retired. Contact staff for assistance.');
-  if (a.type === 'Paravet' && !bearer) throw new AppError(401, 'USE_SALIN', 'Paravets sign in with the Salin app.');
+  if (a.type === 'Paravet' && !bearer) throw new AppError(401, 'USE_SALIN', 'Paravets sign in with the e-Vet Field app.');
   if (opts.roles && !opts.roles.includes(a.type)) throw forbidden();
   if (wantScope === 'full' && a.type !== 'SuperAdmin' && !opts.allowMaintenance) {
     const [maintenance] = await sql()`
