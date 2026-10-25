@@ -1,0 +1,5 @@
+{
+  // The project pins TypeScript 5.9; VS Code's bundled 6.x flags tsconfig.json's "moduleResolution": "node" as deprecated (TS5107).
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

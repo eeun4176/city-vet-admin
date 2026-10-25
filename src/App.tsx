@@ -114,6 +114,8 @@ export function App() {
           <Route path="/census/review/:status/:id" element={<RequireCapability cap="census.review"><SubmissionDetailPage /></RequireCapability>} />
           <Route path="/settings" element={BUILT['/settings']} />
           <Route path="/account" element={<AccountPage />} />
+          {/* No longer in the sidebar (Paravets are managed under Paravets); kept so search results and old links still open. */}
+          <Route path="/accounts" element={<RequireCapability cap="accounts.manage_portal">{BUILT['/accounts']}</RequireCapability>} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/stubs/legacy" element={<RequireCapability cap="registry.write"><RecordsPage dataset="stubs" title="Historical stub records" readOnly /></RequireCapability>} />
           <Route path="*" element={<NotFoundPage />} />

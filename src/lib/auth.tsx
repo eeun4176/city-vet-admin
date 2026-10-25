@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [controls, setControls] = useState<Controls | null>(null);
   const authVersion = useRef(0);
   const refreshing = useRef<Promise<void> | null>(null);
+  const statusRef = useRef(status); statusRef.current = status;
 
   const refresh = useCallback(() => {
     if (refreshing.current) return refreshing.current;
@@ -61,6 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('ready');
     } catch (error) {
       if (version !== authVersion.current) return;
+      // Only the server saying 401 ends a session; a slow or failed check (timeout, 5xx, offline) keeps the signed-in staff member in place.
+      if (statusRef.current === 'ready' && !(error instanceof ApiError && (error.status === 401 || error.code === 'MAINTENANCE_MODE'))) return;
       readQueries.setScope('anonymous');
       setAccount(null);
       setControls(null);

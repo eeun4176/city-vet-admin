@@ -1,5 +1,3 @@
-import { ReportMaturity } from '../components/ReportMaturity';
-import { useAuth } from '../lib/auth';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
@@ -10,7 +8,7 @@ import { EvidenceRecordSearch,ReportBuilder,ReportsPage as RegistryReports,Workb
 type Outcomes={totals:{ownerVisits:number;petVisits:number;completedProcedures:number;stubVisits:number;walkInVisits:number;programsWithAttendance:number};
   breakdown:{process:string;requested:number;completed:number;deferred:number;notEligible:number}[];
   programs:{id:number;recordId:string;title:string;date:string;barangay:string;status:string;archived:boolean;ownerVisits:number;petVisits:number;completedProcedures:number}[];total:number};
-const sections=[['decisions','Decision insights'],['outcomes','Program outcomes'],['registry','Registry statistics'],['evidence','Find records'],['builder','Create report'],['workbook','Monthly workbook']] as const;
+const sections=[['outcomes','Program outcomes'],['registry','Registry statistics'],['evidence','Find records'],['builder','Create report'],['workbook','Monthly workbook']] as const;
 
 function ProgramOutcomes(){
   const [year,setYear]=useState(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}).slice(0,4));
@@ -43,8 +41,7 @@ function ReportTask({task}:{task:'evidence'|'builder'}){
 }
 
 export function ReportsPage(){
-  const {account}=useAuth();
-  const [section,setSection]=useState<(typeof sections)[number][0]>('decisions');
+  const [section,setSection]=useState<(typeof sections)[number][0]>('outcomes');
   return <div className="w-full space-y-6"><header><h1 className="text-2xl font-semibold">Reports</h1><p className="mt-1 text-sm text-slate-500">Review program results, find evidence, or prepare a report.</p></header>
     <div role="tablist" aria-label="Reporting tasks" className={`${tabList} w-full`}>{sections.map(([id,label],index)=><button key={id} id={`report-tab-${id}`} role="tab" tabIndex={section===id?0:-1} aria-selected={section===id} aria-controls="report-content" onClick={()=>setSection(id)} onKeyDown={e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();
@@ -52,7 +49,7 @@ export function ReportsPage(){
       setSection(sections[next][0]);document.getElementById(`report-tab-${sections[next][0]}`)?.focus();
     }} className={tabItem(section===id)}>{label}</button>)}</div>
     <div key={section} className="page-transition" id="report-content" role="tabpanel" aria-labelledby={`report-tab-${section}`}>
-      {section==='decisions'?(account?.type==='Paravet'?<RegistryReports/>:<ReportMaturity/>):section==='outcomes'?<ProgramOutcomes/>:section==='registry'?<RegistryReports/>:section==='workbook'?<WorkbookTools/>:<ReportTask key={section} task={section}/>}
+      {section==='outcomes'?<ProgramOutcomes/>:section==='registry'?<RegistryReports/>:section==='workbook'?<WorkbookTools/>:<ReportTask key={section} task={section}/>}
     </div>
   </div>;
 }

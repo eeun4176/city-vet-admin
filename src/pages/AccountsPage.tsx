@@ -8,7 +8,7 @@ import { api } from '../lib/api';
 import { roleLabel } from '../../shared/permissions';
 import { useApi, useDebouncedValue } from '../lib/useApi';
 
-interface AccountRow {
+export interface AccountRow {
   id: number;
   accountKey: string | null;
   username: string | null;
@@ -21,6 +21,7 @@ interface AccountRow {
   mobile: string | null;
   barangay: { id: number; name: string; acronym: string } | null;
   status: string;
+  lastLoginAt?: string | null;
   archived: boolean;
 }
 
@@ -138,7 +139,7 @@ async function undoAccount(token: string, setToken: (value: string | null) => vo
   }
 }
 
-function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; onClose: () => void; onSaved: (token: string) => void }) {
+export function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; onClose: () => void; onSaved: (token: string) => void }) {
   const [draft, setDraft] = useState(account);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -245,9 +246,9 @@ function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; on
       </section>}
     </div>
     {confirmMove && <ConfirmDialog title="Move this Paravet to another barangay?" message={moveMessage()} confirmLabel={`Move to ${draft.barangay?.name ?? ''}`} busy={busy} onClose={() => setConfirmMove(false)} onConfirm={() => { setConfirmMove(false); void save(true); }} />}
-    {archiveConfirm&&<ConfirmDialog title={account.archived?'Restore Paravet access?':'Remove Paravet access?'} message="Submissions and original actor/barangay history remain. Deactivation prevents sign-in; restoring re-enables the account subject to its status." confirmLabel={account.archived?'Restore access':'Deactivate account'} danger={!account.archived} busy={busy} onClose={()=>setArchiveConfirm(false)} onConfirm={()=>{setBusy(true);void api('POST','/accounts/archive',{ids:[account.id],restore:account.archived}).then(()=>onSaved('')).catch(e=>setError(e.message)).finally(()=>setBusy(false));}}/>}
+    {archiveConfirm&&<ConfirmDialog title={account.archived?'Restore Paravet access?':'Deactivate this Paravet?'} message="Submissions and original actor/barangay history remain. Deactivation prevents sign-in; restoring re-enables the account subject to its status." confirmLabel={account.archived?'Restore access':'Deactivate account'} danger={!account.archived} busy={busy} onClose={()=>setArchiveConfirm(false)} onConfirm={()=>{setBusy(true);void api('POST','/accounts/archive',{ids:[account.id],restore:account.archived}).then(()=>onSaved('')).catch(e=>setError(e.message)).finally(()=>setBusy(false));}}/>}
     <div className="mt-5 flex flex-wrap justify-end gap-2">
-      {account.accountType==='Paravet'&&<button className={btnGhost} disabled={busy} onClick={()=>setArchiveConfirm(true)}>{account.archived?'Restore access':'Remove access'}</button>}
+      {account.accountType==='Paravet'&&<button className={btnGhost} disabled={busy} onClick={()=>setArchiveConfirm(true)}>{account.archived?'Restore access':'Deactivate'}</button>}
       <button type="button" onClick={onClose} className={btnGhost}>{editable ? 'Cancel' : 'Close'}</button>
       {editable && <button type="button" onClick={() => void save()} disabled={busy} className={btnPrimary}>{busy ? 'Saving…' : 'Save account'}</button>}
     </div>

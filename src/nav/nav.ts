@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeftRight, BarChart3, Bug, CalendarDays, CircleCheck, CircleX, ClipboardCheck, ClipboardList, Database, FileText, Folder, Hourglass,
-  KeyRound, LayoutDashboard, MapPin, PawPrint, ScrollText, ShieldCheck, Stethoscope, Ticket, UserCog, Users,
+  KeyRound, LayoutDashboard, MapPin, PawPrint, ScrollText, ShieldCheck, Stethoscope, Ticket, Users,
 } from 'lucide-react';
 import type { Capability } from '../../shared/permissions';
 import type { MessageKey } from '../i18n/messages';
@@ -60,13 +60,8 @@ export const NAV: NavSection[] = [
           { id: 'services', label: 'nav.services', icon: Stethoscope, to: '/services', cap: 'services.manage' },
         ],
       },
-      {
-        id: 'people', label: 'nav.people', icon: Users, children: [
-          { id: 'paravets', label: 'nav.paravets', icon: Stethoscope, to: '/paravets', cap: 'paravets.manage', feature: 'field-team' },
-          { id: 'accounts', label: 'nav.accounts', icon: UserCog, to: '/accounts', cap: 'accounts.manage_portal', feature: 'accounts' },
-          { id: 'barangays', label: 'nav.barangays', icon: MapPin, to: '/barangays', cap: 'barangays.view' },
-        ],
-      },
+      { id: 'paravets', label: 'nav.paravets', icon: Stethoscope, to: '/paravets', cap: 'paravets.manage', feature: 'field-team' },
+      { id: 'barangays', label: 'nav.barangays', icon: MapPin, to: '/barangays', cap: 'barangays.view' },
       {
         id: 'insights', label: 'nav.insights', icon: BarChart3, children: [
           { id: 'reports', label: 'nav.reports', icon: BarChart3, to: '/reports', cap: 'reports.view', feature: 'reports' },

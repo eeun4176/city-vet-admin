@@ -1,8 +1,9 @@
-import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, Search, X, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Search, X, LoaderCircle } from 'lucide-react';
 import { Children, Fragment, isValidElement, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../i18n';
 import type { MessageKey } from '../i18n/messages';
+import { downloadChartPng } from '../lib/chartImage';
 
 // Same controls as e-Vet Field: subtle borders, rounded-lg, a soft green focus ring, and a 1px press.
 export const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:border-slate-700 dark:bg-surface-dark dark:text-white dark:hover:border-slate-600 dark:disabled:bg-slate-800';
@@ -174,14 +175,25 @@ export function Loading({ label }: { label?: string } = {}) {
 export function ComparisonBars({ title, rows, className = '' }: { title?: string; rows: { label: string; value: number }[]; className?: string }) {
   const max = Math.max(1, ...rows.map((row) => row.value));
   const top = rows.reduce((best, row, index) => (row.value > rows[best].value ? index : best), 0);
-  return <div className={`grid gap-3 ${className}`}>
-    {title && <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-slate-500">{title}</p>}
+  return <div data-chart className={`grid gap-3 ${className}`}>
+    {title && <div className="flex items-center justify-between gap-2"><p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-slate-500">{title}</p><SaveChartImage name={title} /></div>}
     <ul aria-label={title} className="grid gap-3">{rows.map((row, index) => <li key={index} aria-label={`${row.label}: ${row.value}`} className={`grid grid-cols-[minmax(3rem,8rem)_1fr_auto] items-center gap-2.5 text-xs ${index === top ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-500 dark:text-slate-400'}`}>
       <span aria-hidden className="truncate capitalize">{row.label}</span>
       <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-slate-800"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-slate-300 dark:bg-slate-600'}`} /></span>
       <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>{row.value}</span>
     </li>)}</ul>
   </div>;
+}
+
+/** Saves the surrounding [data-chart] card (title, legend and chart) as a PNG to use in presentations. */
+export function SaveChartImage({ name }: { name: string }) {
+  const [busy, setBusy] = useState(false);
+  return <button type="button" data-export-ignore disabled={busy} aria-label={`Save ${name} as an image`} className={`${btnGhost} shrink-0 px-2.5 py-1 text-xs print:hidden`} onClick={(event) => {
+    const card = event.currentTarget.closest<HTMLElement>('[data-chart]');
+    if (!card) return;
+    setBusy(true);
+    downloadChartPng(card, name).catch((error: unknown) => window.dispatchEvent(new CustomEvent('cv:api-error', { detail: { message: error instanceof Error ? error.message : 'The chart could not be saved.' } }))).finally(() => setBusy(false));
+  }}><Download aria-hidden className="h-3.5 w-3.5" />{busy ? 'Saving…' : 'Save image'}</button>;
 }
 
 export function Spinner({ label = 'Working…' }: { label?: string }) {

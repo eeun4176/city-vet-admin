@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { ComparisonBars, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
+import { ComparisonBars, SaveChartImage, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
 import { Letterhead } from '../components/PrintSheet';
 import { useAuth } from '../lib/auth';
 import { useT } from '../i18n';
@@ -182,8 +182,8 @@ function MonthlyServicesChart({ data, monthLabel, labels }: {
     { key: 'kapon', value: row.current.spayNeuterServices, color: chartColors.kapon },
     { key: 'microchip', value: row.current.microchipServices, color: chartColors.microchip },
   ];
-  return <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-    <h3 className="text-sm font-semibold">{labels.chart}</h3>
+  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{labels.chart}</h3><SaveChartImage name={labels.chart} /></div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
       {([
         ['rabies', labels.rabies, chartColors.rabies],
@@ -238,8 +238,8 @@ function PetRegistrationChart({ data, monthLabel, labels }: {
     const previousObserved = previousRow && (series === 'current' ? previousRow.currentObserved : previousRow.previousObserved);
     return `${previousObserved ? 'L' : 'M'}${x(index)},${y(row[series].petRegistrations)}`;
   }).filter(Boolean).join(' ');
-  return <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-    <h3 className="text-sm font-semibold">{labels.chart}</h3>
+  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{labels.chart}</h3><SaveChartImage name={labels.chart} /></div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
       <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-teal-700" />{labels.current}</span>
       <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-indigo-500" />{labels.previous}</span>
@@ -286,8 +286,8 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
     if (value / maximum >= 0.25) return 'bg-teal-400 text-teal-950 dark:bg-teal-500 dark:text-white';
     return 'bg-teal-200 text-teal-950 dark:bg-teal-900 dark:text-teal-100';
   };
-  return <section>
-    <h2 className="text-lg font-semibold">{labels.title}</h2>
+  return <section data-chart>
+    <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">{labels.title}</h2>{barangays.length > 0 && <SaveChartImage name={labels.title} />}</div>
     <p className="mt-1 text-sm text-slate-500">{labels.help}</p>
     {!barangays.length ? <p className="mt-3 rounded-xl border border-slate-200 p-5 text-sm text-slate-500 dark:border-slate-700">{labels.empty}</p> : <>
       <div className="mt-3 data-table overflow-x-auto">
