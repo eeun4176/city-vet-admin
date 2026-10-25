@@ -25,9 +25,10 @@ export function sql(): Sql {
     client = postgres(url, {
       ssl: local ? false : 'require',
       prepare: false,
-      // One connection per warm instance bounds Supabase pooler pressure.
-      // It also queues local traffic safely through the PGlite socket server.
-      max: 1,
+      // Locally one connection queues traffic safely through the PGlite socket server. Hosted, a few per warm instance:
+      // with one, a handler's Promise.all of queries is pipelined on a single pooler connection, and the Field operations
+      // reads (program-workspace, program-interest, stub-workflow) hung there until the 60 s function limit.
+      max: local ? 1 : 5,
       idle_timeout: 20,
       connect_timeout: 10,
       onnotice: () => {},
