@@ -6,7 +6,7 @@ import { Field, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrima
 import { ReferenceInput } from '../components/ReferenceInput';
 import { api } from '../lib/api';
 import { roleLabel } from '../../shared/permissions';
-import { useDebouncedValue } from '../lib/useApi';
+import { useApi, useDebouncedValue } from '../lib/useApi';
 import { useReportBasket } from '../lib/reportBasket';
 
 interface AccountRow {
@@ -154,8 +154,26 @@ function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; on
   const editable = !account.archived;
   const canRenewPassword = account.accountType === 'Paravet' && !account.archived && !['Disabled', 'On hold'].includes(account.status);
   const hasBarangayAssignment = account.accountType === 'Paravet';
-  const save = async () => {
+  const [confirmMove, setConfirmMove] = useState(false);
+  const assignments = useApi<{ data: { id: number; name: string; paravets: { id: number; name: string }[] }[] }>(hasBarangayAssignment && editable ? '/barangay-assignments' : null);
+  const moving = hasBarangayAssignment && Boolean(draft.barangay?.name) && draft.barangay?.name.toLowerCase() !== account.barangay?.name.toLowerCase();
+  // What a move changes, said before it happens: who is left in each barangay, and that both teams are told.
+  const moveMessage = () => {
+    const from = account.barangay?.name, to = draft.barangay?.name ?? '';
+    const team = (name?: string) => assignments.data?.data.find((b) => b.name.toLowerCase() === name?.toLowerCase())?.paravets.filter((p) => p.id !== account.id);
+    const left = team(from), joining = team(to);
+    const count = (n: number) => `${n} active Paravet${n === 1 ? '' : 's'}`;
+    return [
+      `${account.fullName} moves from ${from ?? 'no barangay'} to ${to}.`,
+      `From now on they see and edit only ${to}'s program request, stubs and census, here and in Salin (Salin updates the next time it is online). Census submissions and history they already made stay under the barangay where they were made.`,
+      left && from ? (left.length ? `${from} keeps ${count(left.length)}.` : `Warning: ${from} will have no active Paravet left.`) : '',
+      joining ? `${to} will have ${count(joining.length + 1)}.` : '',
+      'The Paravets of both barangays are notified.',
+    ].filter(Boolean).join(' ');
+  };
+  const save = async (moveConfirmed = false) => {
     setError('');
+    if (moving && !moveConfirmed) { setConfirmMove(true); return; }
     const changes: { firstName?: string; middleName?: string; lastName?: string; suffix?: string; mobile?: string; barangay?: string } = {};
     if (draft.firstName !== account.firstName) changes.firstName = draft.firstName;
     if ((draft.middleName ?? '') !== (account.middleName ?? '')) changes.middleName = draft.middleName ?? '';
@@ -232,6 +250,7 @@ function AccountDetails({ account, onClose, onSaved }: { account: AccountRow; on
         {!confirmRenew && <button type="button" disabled={busy} onClick={() => { setRenewedPassword(null); setConfirmRenew(true); }} className={`${btnGhost} mt-3`}>Renew temporary password</button>}
       </section>}
     </div>
+    {confirmMove && <ConfirmDialog title="Move this Paravet to another barangay?" message={moveMessage()} confirmLabel={`Move to ${draft.barangay?.name ?? ''}`} busy={busy} onClose={() => setConfirmMove(false)} onConfirm={() => { setConfirmMove(false); void save(true); }} />}
     {archiveConfirm&&<ConfirmDialog title={account.archived?'Restore Paravet access?':'Remove Paravet access?'} message="Submissions and original actor/barangay history remain. Deactivation prevents sign-in; restoring re-enables the account subject to its status." confirmLabel={account.archived?'Restore access':'Deactivate account'} danger={!account.archived} busy={busy} onClose={()=>setArchiveConfirm(false)} onConfirm={()=>{setBusy(true);void api('POST','/accounts/archive',{ids:[account.id],restore:account.archived}).then(()=>onSaved('')).catch(e=>setError(e.message)).finally(()=>setBusy(false));}}/>}
     <div className="mt-5 flex flex-wrap justify-end gap-2">
       {account.accountType==='Paravet'&&<button className={btnGhost} disabled={busy} onClick={()=>setArchiveConfirm(true)}>{account.archived?'Restore access':'Remove access'}</button>}

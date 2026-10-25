@@ -13,6 +13,7 @@ export default route({
                else null end as "profilePhoto"
         from ekapon.account_preferences where account_id = ${s.id}`;
     const file = preferences?.profile_file_id ? await readPrivateFile(preferences.profile_file_id) : null;
+    const [contact] = await sql()`select email from ekapon.accounts where id = ${s.id} and email_verified_at is not null`;
     return ok({
       account: {
         id: s.id, type: s.type, name: s.name, username: s.username,
@@ -21,6 +22,8 @@ export default route({
         theme: preferences?.theme ?? 'light',
         profilePhoto: file ? `data:${file.mime};base64,${file.data}` : preferences?.profilePhoto ?? null,
         grants: s.grants,
+        // The confirmed email for password reset codes (Paravets set it in Salin).
+        email: contact?.email ?? null,
       },
     });
   },

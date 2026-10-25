@@ -14,4 +14,8 @@ SALIN_SESSION_DAYS=14
 LOGIN_IP_MAX_FAILURES=20
 # Same-origin access works automatically. Add the Salin app's exact origin so paravets can sign in from it.
 ALLOWED_ORIGINS=https://salin-puce.vercel.app
+# Paravet password reset by email: the office Gmail account and a Google app password for it
+# (Google Account > Security > 2-Step Verification on > App passwords). Not the Gmail password itself.
+GMAIL_USER=cityvet.office@gmail.com
+GMAIL_APP_PASSWORD=REPLACE_WITH_16_CHARACTER_APP_PASSWORD
 # Vercel supplies NODE_ENV=production; do not use LOCAL_TEST_MODE or TEST_DATABASE_URL.

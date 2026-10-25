@@ -45,9 +45,11 @@ type Analytics = {
     current: { petRegistrations: number; antiRabiesServices: number; spayNeuterServices: number; microchipServices: number; programs: number; households: number; animals: number };
     previous: { petRegistrations: number; antiRabiesServices: number; spayNeuterServices: number; microchipServices: number; programs: number; households: number; animals: number };
   }[];
-  barangays: { barangay: string; pets: number; documented_vaccine_flags: number; laps_records: number; without_vaccine_flags: number }[];
+  barangays: { barangay: string; pets: number; documented_vaccine_flags: number; laps_records: number; without_vaccine_flags: number; sterilized: number }[];
   serviceBreakdown: { service: string; total: number; completed: number }[];
   barangayActivity: { barangay: string; month: number; antiRabies: number; kapon: number; totalActivity: number }[];
+  censusCoverage?: { barangay: string; approved: number; pending: number; rejected: number; owners: number; pets: number; lastCensus: string | null }[];
+  programTurnout?: { id: number; title: string; barangay: string; date: string; interested: number; named: number; namedAttended: number; attended: number; walkIns: number }[];
   evidence: {
     countsByDataset: Record<'owners' | 'pets' | 'households' | 'animals' | 'programs' | 'services' | 'stubs', number>;
   };
@@ -576,6 +578,11 @@ export function ReportsPage() {
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
+  const percentOf = (part: number, whole: number) => whole ? `${Math.round((part / whole) * 100)}%` : '—';
+  // A summary cached before these sections existed has neither list.
+  const censusCoverage = data.censusCoverage ?? [], programTurnout = data.programTurnout ?? [];
+  const censusCovered = censusCoverage.filter((row) => row.approved > 0).length;
+  const censusPending = censusCoverage.reduce((total, row) => total + row.pending, 0);
   const cards = [
     ['reports.activePetRecords', data.totals.pets],
     ['reports.owners', data.totals.owners],
@@ -615,17 +622,32 @@ export function ReportsPage() {
       <h2 className="text-lg font-semibold">{t('reports.petSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.petHelp')}</p>
       <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.petCount', 'reports.withVaccineFlag', 'reports.laps', 'reports.noVaccineFlag'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.petCount', 'reports.withVaccineFlag', 'reports.sterilizedCol', 'reports.laps', 'reports.noVaccineFlag'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.barangays.map((row) => <tr key={row.barangay}>
           <td className="p-3 font-medium"><button type="button" onClick={() => {
             const reference = referenceData.data?.barangays.find((item) => item.name.toLowerCase() === row.barangay.toLowerCase());
             if (reference) setSelectedBarangayId(reference.id);
-          }} className="text-left text-teal-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-teal-300">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags}</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
+          }} className="text-left text-teal-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-teal-300">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags} ({percentOf(row.documented_vaccine_flags, row.pets)})</td><td className="p-3">{row.sterilized} ({percentOf(row.sterilized, row.pets)})</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
         </tr>)}
-        {!data.barangays.length && <tr><td colSpan={5} className="p-5 text-slate-500">{t('reports.noPets')}</td></tr>}</tbody>
+        {!data.barangays.length && <tr><td colSpan={6} className="p-5 text-slate-500">{t('reports.noPets')}</td></tr>}</tbody>
       </table></div>
       <p className="mt-2 text-xs text-slate-500">{t('reports.speciesSummary', { dogs: data.totals.dogs, cats: data.totals.cats, other: data.totals.other_species, sterilized: data.totals.sterilized })}</p>
     </section>
+
+    {source === 'live' && <section>
+      <h2 className="text-lg font-semibold">{t('reports.censusSection')}</h2>
+      <p className="mt-1 text-sm text-slate-500">{t('reports.censusHelp')}</p>
+      <p className="mt-2 text-sm font-medium">{t('reports.censusSummary', { covered: censusCovered, total: censusCoverage.length, year: data.year, pending: censusPending })}</p>
+      <details className="mt-2"><summary className="cursor-pointer text-sm text-teal-800 dark:text-teal-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
+        <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{censusCoverage.map((row) => <tr key={row.barangay}>
+            <td className="p-3 font-medium">{row.barangay}</td><td className="p-3">{row.approved}</td><td className="p-3">{row.pending}</td><td className="p-3">{row.rejected}</td>
+            <td className="p-3">{row.owners}</td><td className="p-3">{row.pets}</td><td className="p-3">{row.lastCensus ?? t('reports.noCensus')}</td>
+          </tr>)}</tbody>
+        </table></div>
+      </details>
+    </section>}
 
     <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer font-semibold">Trends and barangay activity</summary><div className="mt-5 space-y-5">
     <section className="grid gap-4 lg:grid-cols-2" aria-label={t('reports.trendSection')}>
@@ -716,6 +738,19 @@ export function ReportsPage() {
       </article>
       <p className="mt-2 text-xs text-slate-500">{t('reports.yearHelp', { year: data.year, previous: data.previousYear })}</p>
     </section>
+
+    {source === 'live' && <section className="mt-6">
+      <h2 className="text-lg font-semibold">{t('reports.turnoutSection')}</h2>
+      <p className="mt-1 text-sm text-slate-500">{t('reports.turnoutHelp')}</p>
+      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.program', 'reports.barangay', 'reports.date', 'reports.interested', 'reports.namedStubs', 'reports.namedCame', 'reports.showUp', 'reports.otherServed'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{programTurnout.map((row) => <tr key={row.id}>
+          <td className="p-3 font-medium">{row.title}</td><td className="p-3">{row.barangay}</td><td className="p-3">{row.date}</td><td className="p-3">{row.interested}</td>
+          <td className="p-3">{row.named}</td><td className="p-3">{row.namedAttended}</td><td className="p-3">{percentOf(row.namedAttended, row.named)}</td><td className="p-3">{row.attended - row.namedAttended}</td>
+        </tr>)}
+        {!programTurnout.length && <tr><td colSpan={8} className="p-5 text-slate-500">{t('reports.noTurnout')}</td></tr>}</tbody>
+      </table></div>
+    </section>}
 
     </div></details>
     <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer font-semibold">Monthly comparison table</summary><div className="mt-5">

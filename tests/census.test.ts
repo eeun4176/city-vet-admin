@@ -90,6 +90,9 @@ describe('census submissions', () => {
   });
 
   it('refuses approval until every owner has a decision, then applies decisions atomically', async () => {
+    const stats = async () => (await call('GET', `/api/v1/analytics?source=live&year=${today.slice(0, 4)}&fresh=1`, { cookie: admin })).json;
+    const registrations = (s: any) => s.monthly[Number(today.slice(5, 7)) - 1].current.petRegistrations;
+    const before = await stats();
     const pending = await call('POST', `/api/v1/census/submissions/${id}/review`, { cookie: admin, json: { decision: 'approve' } });
     expect(pending.status).toBe(422);
     const detail = (await call('GET', `/api/v1/census/submissions/${id}`, { cookie: admin })).json;
@@ -101,6 +104,10 @@ describe('census submissions', () => {
     expect(saved.status).toBe(200);
     const approved = await call('POST', `/api/v1/census/submissions/${id}/review`, { cookie: admin, json: { decision: 'approve', note: 'Checked', reviewToken: await approvalToken(call,id,admin) } });
     expect(approved.json).toMatchObject({ status: 'approved', newOwners: 1, newPets: 2, skippedOwners: 1 });
+    // Analytics: the approved census's pets count as this month's registrations, and its barangay as covered.
+    const after = await stats();
+    expect(registrations(after)).toBe(registrations(before) + 2);
+    expect(after.censusCoverage.find((row: any) => row.barangay === brgA.name).approved).toBeGreaterThanOrEqual(1);
     expect((await call('POST', `/api/v1/census/submissions/${id}/review`, { cookie: superAdmin, json: { decision: 'reject', note: 'late' } })).status).toBe(422);
     expect((await call('PATCH', `/api/v1/census/submissions/${id}`, { cookie: paravetA, json: { label: 'changed' } })).status).toBe(409);
     expect((await call('DELETE', `/api/v1/census/submissions/${id}?permanent=true`, { cookie: superAdmin })).status).toBe(409);

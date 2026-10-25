@@ -42,6 +42,8 @@ const paths = [
   '/api/v1/auth/profile',
   '/api/v1/auth/renew',
   '/api/v1/auth/set-password',
+  '/api/v1/auth/email',
+  '/api/v1/auth/forgot-password',
   '/api/v1/barangays',
   '/api/v1/search',
   '/api/v1/record-preview',

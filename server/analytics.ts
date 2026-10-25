@@ -88,6 +88,18 @@ export function trailingThreeMonthAverage(
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
+/** The last month of `year` that is over on `todayIso` (Manila date): 12 for past years, 0 for future ones. */
+export function lastCompleteMonth(year: number, todayIso: string): number {
+  const [currentYear, currentMonth] = todayIso.split('-').map(Number);
+  return year < currentYear ? 12 : year > currentYear ? 0 : currentMonth - 1;
+}
+
+/** The three calendar months ending with the latest month that has records; a month without records counts as zero. */
+export function planningWindow(rows: Array<{ month: number; records: number }>): number[] {
+  const last = rows.reduce((latest, row) => (row.records > 0 ? Math.max(latest, row.month) : latest), 0);
+  return last ? [last - 2, last - 1, last].filter((month) => month >= 1) : [];
+}
+
 export function activeMonth(row: MonthlyOperationalRow): boolean {
   return metricKeys.some((key) => row[key] > 0);
 }
