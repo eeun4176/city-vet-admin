@@ -25,4 +25,8 @@ describe('mock simulation fixtures', () => {
       details: { field: 'mobile', expected: '0917-123-4567' },
     });
   });
+
+  it('reports a lock or statement timeout as a busy database, not a server fault', () => {
+    for (const code of ['55P03', '57014']) expect(fromDb({ code })).toMatchObject({ status: 503, code: 'DATABASE_BUSY' });
+  });
 });

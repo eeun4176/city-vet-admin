@@ -63,6 +63,10 @@ export function fromDb(e: unknown): AppError | null {
       return new AppError(422, 'INVALID_VALUE', 'A value has the wrong format.');
     case '42501':
       return new AppError(403, 'FORBIDDEN', hasConstraint ? 'Not allowed.' : err.message ?? 'Not allowed.');
+    // lock_timeout / statement_timeout (hosting/07-query-timeouts.sql): the database is busy, not the request wrong.
+    case '55P03':
+    case '57014':
+      return new AppError(503, 'DATABASE_BUSY', 'The database is busy. Please try again in a moment.');
     default:
       return null;
   }
