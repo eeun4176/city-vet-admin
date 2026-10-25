@@ -2606,6 +2606,17 @@ GRANT USAGE, SELECT ON SEQUENCE ekapon.email_codes_id_seq TO ekapon_admin;
 --   BEGIN; DROP TABLE IF EXISTS ekapon.email_codes; DROP INDEX IF EXISTS ekapon.accounts_email_uq;
 --   ALTER TABLE ekapon.accounts DROP COLUMN IF EXISTS sessions_valid_after, DROP COLUMN IF EXISTS email_verified_at, DROP COLUMN IF EXISTS email; COMMIT;
 
+-- SOURCE: db/031_email_codes_no_rls.sql
+-- 031: Supabase turns on row-level security for newly created tables, which
+-- blocked every insert into ekapon.email_codes (from 030) for the API role.
+-- e-Kapon does not use RLS: the API checks every account and scope itself,
+-- like for all other ekapon tables. Turn it off for email_codes.
+-- Idempotent: safe to run twice. Apply after 030.
+
+ALTER TABLE ekapon.email_codes DISABLE ROW LEVEL SECURITY;
+
+-- Rollback: ALTER TABLE ekapon.email_codes ENABLE ROW LEVEL SECURITY; (password reset by email stops working)
+
 -- No database password is embedded. Enable the API login separately in the SQL Editor.
 CREATE ROLE ekapon_api NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 GRANT ekapon_admin TO ekapon_api;
@@ -2652,5 +2663,6 @@ INSERT INTO ekapon.schema_migrations(file,sha256) VALUES
 ('027_salin_stubs.sql','9afa45b8119940479a1b3c1ab0b0c0b41595b39a8a8e9527ee4802c1f59bac7c'),
 ('028_superadmin_only.sql','9effbbf8818a09070023787b9302a180d217a6e89a8cd495bf6ba2d48b254fc8'),
 ('029_census_request_id.sql','52696ab24862d703c2412c5477b162892c6291a6c8b71b5954fa70bdb6e45caf'),
-('030_password_reset_email.sql','a5ffcb89e04681c5679286b659b34bf39130f02136782f29bc2c9ab398b5cef8');
+('030_password_reset_email.sql','a5ffcb89e04681c5679286b659b34bf39130f02136782f29bc2c9ab398b5cef8'),
+('031_email_codes_no_rls.sql','a5abcb775dfa21942ed44599bb625e01099def0ce191899665142cc46fae100a');
 COMMIT;
