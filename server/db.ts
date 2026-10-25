@@ -5,9 +5,20 @@ export type Sql = postgres.Sql<any>;
 export type Tx = postgres.TransactionSql<any>;
 
 let client: Sql | undefined;
+let lastUsed = 0;
+// Vercel freezes an idle function, so idle_timeout never fires while the pooler drops the socket; a query on that dead socket then
+// waits out the 60 s function limit, and every later request on the instance queues behind it (max: 1). After a gap, connect fresh.
+const STALE_AFTER_MS = 10_000;
 
 /** Lazily creates one pooled client per serverless instance. `prepare: false` is required for Supabase's transaction pooler (port 6543). */
 export function sql(): Sql {
+  const now = Date.now();
+  if (client && now - lastUsed > STALE_AFTER_MS) {
+    // Queries still running on the old client may finish (within the function limit) before its socket closes.
+    void client.end({ timeout: 55 }).catch(() => {});
+    client = undefined;
+  }
+  lastUsed = now;
   if (!client) {
     const url = config().databaseUrl;
     const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
