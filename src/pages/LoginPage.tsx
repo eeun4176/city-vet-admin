@@ -64,7 +64,7 @@ export function LoginPage() {
     <div className="grid min-h-dvh place-items-center p-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-7 shadow-panel dark:border-slate-800 dark:bg-surface-dark">
         <img src="/cityvet-logo.png" alt="" className="mx-auto h-16 w-16 rounded-2xl border border-brand-200 object-cover" />
-        <p className="mt-3 text-center text-xs text-slate-500">{t('app.name')} · {t('app.city')}</p>
+        <p className="mt-3 text-center text-xs text-slate-500">{t('app.name')} {t('app.edition')} | {t('app.city')}</p>
         <h1 className="mt-1 text-center text-xl font-semibold">
           {step === 'signin' ? t('login.title') : step === 'first' ? t('login.firstTitle') : t('login.newTitle')}
         </h1>

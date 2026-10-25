@@ -4,7 +4,6 @@ import { landingPageForRole, type Capability } from '../shared/permissions';
 import { AppShell } from './components/AppShell';
 import { LocaleProvider, useT } from './i18n';
 import { useAuth } from './lib/auth';
-import { ReportBasketProvider } from './lib/reportBasket';
 import { flatten, NAV } from './nav/nav';
 import { MaintenancePage, NotFoundPage, PendingPage } from './pages/StatusPages';
 import { Loading } from './components/ui';
@@ -20,7 +19,6 @@ const DataManagementPage = lazy(() => import('./pages/DataManagementPage').then(
 const AuditPage = lazy(() => import('./pages/InsightsPages').then((module) => ({ default: module.AuditPage }))); 
 const DataQualityPage = lazy(() => import('./pages/DataQualityPage').then((module) => ({ default: module.DataQualityPage })));
 const ReportsPage = lazy(() => import('./pages/InsightsReportsPage').then((module) => ({ default: module.ReportsPage })));
-const ReportBasketPage = lazy(() => import('./pages/ReportBasketPage').then((module) => ({ default: module.ReportBasketPage }))); 
 const BarangaysPage = lazy(() => import('./pages/ReferencePages').then((module) => ({ default: module.BarangaysPage }))); 
 const ProgramInterestPage = lazy(() => import('./pages/ProgramInterestPage').then((module) => ({ default: module.ProgramInterestPage }))); 
 const StubWorkflowPage = lazy(() => import('./pages/StubWorkflowPage').then((module) => ({ default: module.StubWorkflowPage }))); 
@@ -33,6 +31,7 @@ const SubmissionDetailPage = lazy(() => import('./pages/census/SubmissionDetailP
 const MySubmissionsPage = lazy(() => import('./pages/census/SubmissionLists').then((module) => ({ default: module.MySubmissionsPage }))); 
 const ReviewListPage = lazy(() => import('./pages/census/SubmissionLists').then((module) => ({ default: module.ReviewListPage }))); 
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage }))); 
+const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({ default: module.AccountPage })));
 const AccountsPage = lazy(() => import('./pages/AccountsPage').then((module) => ({ default: module.AccountsPage }))); 
 const AccessHubPage = lazy(() => import('./pages/WorkflowPages').then((module) => ({ default: module.AccessHubPage }))); 
 const AccessRequestsPage = lazy(() => import('./pages/WorkflowPages').then((module) => ({ default: module.AccessRequestsPage }))); 
@@ -58,7 +57,6 @@ const BUILT: Record<string, ReactElement> = {
   '/services': <FieldRecordsPage key="services" kind="services" />,
   '/import-export': <DataManagementPage />,
   '/reports': <ReportsPage />,
-  '/report-basket': <ReportBasketPage />,
   '/data-quality': <DataQualityPage />,
   '/audit': <AuditPage />,
   '/settings': <SettingsPage />,
@@ -102,7 +100,7 @@ export function App() {
   const { account, setLocale } = useAuth();
   return (
     <LocaleProvider key={account?.id ?? 'anonymous'} preferred={account?.locale} onChange={setLocale}>
-      <ReportBasketProvider><Suspense fallback={<Loading label="Loading page…" />}><Routes>
+      <Suspense fallback={<Loading label="Loading page…" />}><Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<Protected><AppShell /></Protected>}>
           <Route index element={<HomeRedirect />} />
@@ -115,11 +113,12 @@ export function App() {
           <Route path="/census/mine/:id/edit" element={<RequireCapability cap="census.submit"><CensusFormPage /></RequireCapability>} />
           <Route path="/census/review/:status/:id" element={<RequireCapability cap="census.review"><SubmissionDetailPage /></RequireCapability>} />
           <Route path="/settings" element={BUILT['/settings']} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/stubs/legacy" element={<RequireCapability cap="registry.write"><RecordsPage dataset="stubs" title="Historical stub records" readOnly /></RequireCapability>} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
-      </Routes></Suspense></ReportBasketProvider>
+      </Routes></Suspense>
     </LocaleProvider>
   );
 }

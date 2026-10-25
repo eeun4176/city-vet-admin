@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CensusSheetEditor, type SheetValues } from '../../components/CensusSheetEditor';
-import { btnDanger, btnGhost, btnPrimary, ConfirmDialog, inputCls, Loading, Modal, Notice, StatusBadge, formatDate } from '../../components/ui';
+import { btnDanger, btnGhost, btnPrimary, ConfirmDialog, inputCls, Loading, Modal, Notice, StatusBadge, formatDate, Select } from '../../components/ui';
 import { useT } from '../../i18n';
 import type { MessageKey } from '../../i18n/messages';
 import { api } from '../../lib/api';
@@ -120,7 +120,7 @@ export function SubmissionDetailPage() {
   const encode = async (values: SheetValues) => { await api('PATCH', `/census/submissions/${id}`, { owners: values.owners }); setMessage({ kind: 'success', text: t('census.saved') }); reload(); };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <Link to={backTo} className="text-sm text-brand-700 hover:underline dark:text-brand-200">← {t('common.back')}</Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{submission.label}</h1><StatusBadge status={submission.status} />
@@ -134,18 +134,18 @@ export function SubmissionDetailPage() {
 
       {staff && (
         <section className="mt-5 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-          <h2 className="text-sm font-semibold">Review status and history</h2>
+          <h2 className="text-sm font-semibold">Review Status and History</h2>
           {reviewStatus.error && <div className="mt-3"><Notice kind="error">{reviewStatus.error.message}</Notice></div>}
           {nextStatus === 'rejected' && <label className="mt-3 block text-sm"><span className="font-medium">{t('census.detail.note')}</span>
             <textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={2} className={`${inputCls} mt-1`} />
           </label>}
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="min-w-48 text-sm"><span className="font-medium">Change status</span>
-              <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as typeof nextStatus)} className={`${inputCls} mt-1`}
+              <Select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as typeof nextStatus)} className={`${inputCls} mt-1`}
                 disabled={busy}>
                 <option value="pending" disabled={submission.status === 'approved' && !reviewStatus.data?.canUndo}>Pending</option>
                 <option value="approved" disabled={submission.status !== 'pending' && submission.status !== 'approved'}>Approved</option><option value="rejected" disabled={submission.status === 'approved' && !reviewStatus.data?.canUndo}>Rejected</option>
-              </select>
+              </Select>
             </label>
             <button type="button" className={btnPrimary}
               disabled={busy || nextStatus === submission.status || (nextStatus === 'rejected' && note.trim().length < 3)

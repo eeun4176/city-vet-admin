@@ -1,5 +1,5 @@
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
-import { ConfirmDialog } from '../components/ui';
+import { ConfirmDialog, Select, districtOptions } from '../components/ui';
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -103,11 +103,11 @@ export function ProgramInterestPage() {
   };
 
   if (loading && !data) return <Loading label="Loading program interest lists…" />;
-  if (loadError) return <div className="mx-auto max-w-6xl"><Notice kind="error">{loadError.message}</Notice></div>;
+  if (loadError) return <div className="w-full"><Notice kind="error">{loadError.message}</Notice></div>;
 
-  return <div className="mx-auto max-w-6xl space-y-5">
+  return <div className="w-full space-y-5">
     <header className="flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold">Program interest</h1>
+      <div><h1 className="text-2xl font-semibold">Program Interest</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">Record people interested in a scheduled program or gather barangay demand for a new request. An interest entry is not a confirmed appointment and does not issue or reserve a physical stub.</p></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => startCreate('demand')} className={btnGhost}>Gather demand</button>
@@ -124,7 +124,7 @@ export function ProgramInterestPage() {
 
     <section className={`${card} p-0`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 p-4 dark:border-slate-700">
-        <div><h2 className="font-semibold">Interest lists and requests</h2><p className="mt-1 text-xs text-slate-500">Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</p></div>
+        <div><h2 className="font-semibold">Interest Lists and Requests</h2><p className="mt-1 text-xs text-slate-500">Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</p></div>
         <button type="button" onClick={() => { reloadData(); setReload((value) => value + 1); }} className={btnGhost}>Refresh</button>
       </div>
       {loading && <Loading label="Refreshing lists…" />}
@@ -144,13 +144,13 @@ export function ProgramInterestPage() {
       {error && <div className="mb-3"><Notice kind="error">{error}</Notice></div>}
       <form onSubmit={(event) => void createCampaign(event)} className="space-y-4">
         <p className="text-sm text-slate-500">{createMode === 'demand' ? 'Create a provisional interest list. When it reaches the target, the Paravet can submit it for Admin review.' : 'Select a future program day that is already scheduled. Interested owners will be recorded separately from stub issuance and attendance.'}</p>
-        {createMode === 'demand' && !isParavet && <Field label="Host barangay"><select required className={inputCls} value={hostBarangayId} onChange={(event) => setHostBarangayId(event.target.value)}><option value="">Choose a barangay</option>{barangayOptions.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</select></Field>}
+        {createMode === 'demand' && !isParavet && <Field label="Host barangay"><Select required className={inputCls} value={hostBarangayId} onChange={(event) => setHostBarangayId(event.target.value)}><option value="">Choose a barangay</option>{districtOptions(barangayOptions)}</Select></Field>}
         {createMode === 'demand' && <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Owner target"><input className={inputCls} type="number" min={1} max={100000} required value={targetPeople} onChange={(event) => setTargetPeople(event.target.value)} /><span className="mt-1 block text-xs text-slate-500">Default 100; adjust for this request. Count owners, not pets.</span></Field>
           <Field label="Request note (optional)"><textarea className={inputCls} maxLength={1000} rows={3} value={requestNote} onChange={(event) => setRequestNote(event.target.value)} placeholder="Add context for the reviewer" /></Field>
         </div>}
         {createMode === 'program-day' && <>
-          <Field label="Scheduled program"><select required className={inputCls} value={programRecordId} onChange={(event) => setProgramRecordId(event.target.value)}><option value="">Choose a program day</option>{programsForInterest.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)} · {program.barangay}</option>)}</select>{programsForInterest.length === 0 && <span className="mt-1 block text-xs text-slate-500">No available future program days in your scope.</span>}</Field>
+          <Field label="Scheduled program"><Select required className={inputCls} value={programRecordId} onChange={(event) => setProgramRecordId(event.target.value)}><option value="">Choose a program day</option>{programsForInterest.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)} · {program.barangay}</option>)}</Select>{programsForInterest.length === 0 && <span className="mt-1 block text-xs text-slate-500">No available future program days in your scope.</span>}</Field>
           {selectedProgram && <div className="grid gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-700 sm:grid-cols-3">
             <p><span className="block text-xs text-slate-500">Slots used</span><strong>{selectedProgram.slotsUsed == null ? 'Not recorded' : selectedProgram.slotsUsed}{selectedProgram.slots == null ? '' : ` / ${selectedProgram.slots}`}</strong></p>
             <p><span className="block text-xs text-slate-500">Planned duration</span><strong>{durationLabel(selectedProgram.durationMinutes)}</strong></p>
@@ -191,7 +191,7 @@ function MergeRequests({ campaigns, onClose, onMerged }: { campaigns: Campaign[]
     <div className="space-y-4">
       {error && <Notice kind="error">{error}</Notice>}
       {mergeable.length < 2 ? <p className="text-sm text-slate-500">At least two sent or approved requests are needed to merge.</p> : <>
-        <Field label="Keep this request (its barangay hosts the program)"><select className={inputCls} value={targetId} onChange={(event) => { setTargetId(Number(event.target.value)); setSourceIds([]); }}>{mergeable.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.reference} · {campaign.hostBarangay} · {campaign.status}</option>)}</select></Field>
+        <Field label="Keep this request (its barangay hosts the program)"><Select className={inputCls} value={targetId} onChange={(event) => { setTargetId(Number(event.target.value)); setSourceIds([]); }}>{mergeable.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.reference} · {campaign.hostBarangay} · {campaign.status}</option>)}</Select></Field>
         <fieldset><legend className="text-sm font-medium">Merge into it</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{mergeable.filter((campaign) => campaign.id !== targetId).map((campaign) => <Check key={campaign.id} checked={sourceIds.includes(campaign.id)} onChange={(checked) => setSourceIds((current) => checked ? [...current, campaign.id] : current.filter((id) => id !== campaign.id))}>{campaign.reference} · {campaign.hostBarangay} ({campaign.ownerCount} owners)</Check>)}</div></fieldset>
         {chosen.length > 0 && <p className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-900">{all.length} barangays · {all.reduce((sum, campaign) => sum + campaign.ownerCount, 0)} owners · {all.reduce((sum, campaign) => sum + campaign.petCount, 0)} pets · {[...new Set(all.flatMap((campaign) => campaign.processes))].join(', ')}. The merged requests end when this one is closed, rejected or cancelled.</p>}
         <div className="flex justify-end gap-2"><button type="button" className={btnGhost} disabled={saving} onClick={onClose}>Cancel</button><button type="button" className={btnPrimary} disabled={saving || !target || !chosen.length} onClick={() => void merge()}>{saving ? 'Merging…' : 'Merge requests'}</button></div>
@@ -351,7 +351,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
       </section>}
 
       {campaign.status === 'approved' && !isParavet && <section className="flex flex-wrap items-end gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
-        <div className="min-w-64 flex-1"><Field label="Link to a scheduled program in the host barangay"><select className={inputCls} value={scheduleId} onChange={(event) => setScheduleId(event.target.value)}><option value="">Choose a program day</option>{scopedPrograms.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)}</option>)}</select></Field></div>
+        <div className="min-w-64 flex-1"><Field label="Link to a scheduled program in the host barangay"><Select className={inputCls} value={scheduleId} onChange={(event) => setScheduleId(event.target.value)}><option value="">Choose a program day</option>{scopedPrograms.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)}</option>)}</Select></Field></div>
         <button type="button" disabled={saving || !scheduleId} onClick={() => void schedule()} className={btnPrimary}>Link program day</button>
       </section>}
       {campaign.status === 'scheduled' && isAdmin && <section className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
@@ -371,11 +371,11 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Owner name"><input required className={inputCls} maxLength={120} value={ownerName} onChange={(event) => {setOwnerName(event.target.value);setRegistryOwnerId(undefined);}} /></Field>
             <Field label="Mobile number (optional)"><input className={inputCls} inputMode="tel" placeholder="09XX-XXX-XXXX" value={mobile} onChange={(event) => setMobile(event.target.value)} /></Field>
-            <Field label="Residence barangay"><select required className={inputCls} value={residenceBarangayId} onChange={(event) => {setResidenceBarangayId(event.target.value);setRegistryOwnerId(undefined);}}><option value="">Choose a barangay</option>{editableResidents.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</select></Field>
+            <Field label="Residence barangay"><Select required className={inputCls} value={residenceBarangayId} onChange={(event) => {setResidenceBarangayId(event.target.value);setRegistryOwnerId(undefined);}}><option value="">Choose a barangay</option>{editableResidents.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</Select></Field>
           </div>
           <div className="space-y-2"><div className="flex items-center justify-between"><h4 className="text-sm font-medium">Pets (optional while gathering interest)</h4><button type="button" disabled={pets.length >= 10} className={btnGhost} onClick={() => setPets((current) => [...current, emptyPet(campaign.processes)])}>Add pet</button></div>
             {pets.map((pet, index) => <div key={index} className="grid gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700 sm:grid-cols-2">
-              <div className="grid grid-cols-2 gap-2"><Field label={`Pet ${index + 1} name`}><input className={inputCls} maxLength={80} value={pet.name} onChange={(event) => setPetField(index, 'name', event.target.value)} /></Field><Field label="Species"><select className={inputCls} value={pet.species} onChange={(event) => setPetField(index, 'species', event.target.value)}><option>Dog</option><option>Cat</option></select></Field><Field label="Sex"><select className={inputCls} value={pet.sex} onChange={(event) => setPetField(index, 'sex', event.target.value)}><option value="">Not recorded</option><option>Female</option><option>Male</option></select></Field><Field label="Age in months"><input className={inputCls} type="number" min={0} max={600} value={pet.ageMonths} onChange={(event) => setPetField(index, 'ageMonths', event.target.value)} /></Field></div>
+              <div className="grid grid-cols-2 gap-2"><Field label={`Pet ${index + 1} name`}><input className={inputCls} maxLength={80} value={pet.name} onChange={(event) => setPetField(index, 'name', event.target.value)} /></Field><Field label="Species"><Select className={inputCls} value={pet.species} onChange={(event) => setPetField(index, 'species', event.target.value)}><option>Dog</option><option>Cat</option></Select></Field><Field label="Sex"><Select className={inputCls} value={pet.sex} onChange={(event) => setPetField(index, 'sex', event.target.value)}><option value="">Not recorded</option><option>Female</option><option>Male</option></Select></Field><Field label="Age in months"><input className={inputCls} type="number" min={0} max={600} value={pet.ageMonths} onChange={(event) => setPetField(index, 'ageMonths', event.target.value)} /></Field></div>
               <div><p className="text-xs font-medium text-slate-600 dark:text-slate-300">Requested processes</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">{campaign.processes.map((process) => <Check key={process} checked={pet.processes.includes(process)} onChange={(checked) => setPetField(index, 'processes', checked ? [...pet.processes, process] : pet.processes.filter((item) => item !== process))}>{process}</Check>)}</div><button type="button" className="mt-3 text-xs text-red-700 underline dark:text-red-300" onClick={() => setPets((current) => current.filter((_, i) => i !== index))}>Remove pet</button></div>
             </div>)}
           </div>

@@ -2,14 +2,14 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useT } from '../i18n';
 import { emptyOwner, emptyPet, todayManila, toPayload, type OwnerDraft, type OwnerPayload, type PetDraft } from '../lib/census';
-import { btnGhost, btnPrimary, DateInput, Field, inputCls, Notice } from './ui';
+import { btnGhost, btnPrimary, DateInput, Field, inputCls, Notice, Select } from './ui';
 import { ReferenceInput, type ReferenceSuggestion } from './ReferenceInput';
 
 function text(value: unknown): string | undefined {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : undefined;
 }
 function CensusFlag({value,onChange,label}:{value:boolean|null;onChange:(value:boolean|null)=>void;label:string}){
- return <Field label={label}><select className={inputCls} value={value===null?'unknown':value?'yes':'no'} onChange={e=>onChange(e.target.value==='unknown'?null:e.target.value==='yes')}><option value="unknown">Not recorded</option><option value="yes">Yes</option><option value="no">No</option></select></Field>;
+ return <Field label={label}><Select className={inputCls} value={value===null?'unknown':value?'yes':'no'} onChange={e=>onChange(e.target.value==='unknown'?null:e.target.value==='yes')}><option value="unknown">Not recorded</option><option value="yes">Yes</option><option value="no">No</option></Select></Field>;
 }
 
 function formatMobile(value: string): string {
@@ -48,34 +48,34 @@ function PetFields({ pet, index, onChange, onRemove, canRemove }: { pet: PetDraf
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label={t('census.pet.name')} className="sm:col-span-2"><ReferenceInput source="pets" value={pet.petName} onChange={(value) => set('petName', value)} onSelect={(suggestion) => onChange(petFromSuggestion(pet, suggestion))} required maxLength={80} className={inputCls} /></Field>
         <Field label={t('census.pet.species')}>
-          <select value={pet.species} onChange={(e) => set('species', e.target.value as PetDraft['species'])} className={inputCls}>
+          <Select value={pet.species} onChange={(e) => set('species', e.target.value as PetDraft['species'])} className={inputCls}>
             <option value="Dog">{t('census.pet.dog')}</option><option value="Cat">{t('census.pet.cat')}</option>
-          </select>
+          </Select>
         </Field>
         <Field label={t('census.pet.sex')}>
-          <select value={pet.sex} onChange={(e) => set('sex', e.target.value as PetDraft['sex'])} className={inputCls}>
+          <Select value={pet.sex} onChange={(e) => set('sex', e.target.value as PetDraft['sex'])} className={inputCls}>
             <option value="Male">{t('census.pet.male')}</option><option value="Female">{t('census.pet.female')}</option>
-          </select>
+          </Select>
         </Field>
         <Field label={t('census.pet.ageYears')}><input type="number" min={0} max={50} inputMode="numeric" value={pet.ageYears} onChange={(e) => set('ageYears', e.target.value)} className={inputCls} /></Field>
         <Field label={t('census.pet.ageMonths')}><input type="number" min={0} max={11} inputMode="numeric" value={pet.ageMonths} onChange={(e) => set('ageMonths', e.target.value)} className={inputCls} /></Field>
         <Field label={t('census.pet.breed')}>
-          <select value={pet.breedType} onChange={(e) => set('breedType', e.target.value as PetDraft['breedType'])} className={inputCls}>
+          <Select value={pet.breedType} onChange={(e) => set('breedType', e.target.value as PetDraft['breedType'])} className={inputCls}>
             <option value="">{t('census.pet.unknown')}</option><option value="Mongrel">{t('census.pet.mongrel')}</option><option value="Mix">Mix</option><option value="Pure">{t('census.pet.pure')}</option>
-          </select>
+          </Select>
         </Field>
         <Field label={t('census.pet.color')}><input maxLength={60} value={pet.color} onChange={(e) => set('color', e.target.value)} className={inputCls} /></Field>
         <Field label={t('census.pet.classification')}>
-          <select value={pet.confinement} onChange={(e) => set('confinement', e.target.value as PetDraft['confinement'])} className={inputCls}>
+          <Select value={pet.confinement} onChange={(e) => set('confinement', e.target.value as PetDraft['confinement'])} className={inputCls}>
             <option value="">{t('census.pet.unknown')}</option><option value="Confined">{t('census.pet.confined')}</option>
             <option value="Semi-confined">{t('census.pet.semi')}</option><option value="Free-roaming">{t('census.pet.free')}</option>
-          </select>
+          </Select>
         </Field>
         <Field label={t('census.pet.registered')}>
-          <select value={pet.registeredYear} onChange={(e) => set('registeredYear', e.target.value)} className={inputCls}>
+          <Select value={pet.registeredYear} onChange={(e) => set('registeredYear', e.target.value)} className={inputCls}>
             <option value="">{t('census.pet.unknown')}</option>
             {[thisYear, thisYear - 1, thisYear - 2].map((year) => <option key={year} value={year}>{year}</option>)}
-          </select>
+          </Select>
         </Field>
         <Field label={t('census.pet.vOther')}><input maxLength={120} value={pet.vaccineOther} onChange={(e) => set('vaccineOther', e.target.value)} className={inputCls} /></Field>
         <Field label={t('census.pet.remarks')}><input maxLength={300} value={pet.remarks} onChange={(e) => set('remarks', e.target.value)} className={inputCls} /></Field>

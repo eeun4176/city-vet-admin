@@ -1,5 +1,5 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
-import { ConfirmDialog } from '../components/ui';
+import { ConfirmDialog, Select } from '../components/ui';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Field, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary } from '../components/ui';
@@ -7,7 +7,6 @@ import { ReferenceInput } from '../components/ReferenceInput';
 import { api } from '../lib/api';
 import { roleLabel } from '../../shared/permissions';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { useReportBasket } from '../lib/reportBasket';
 
 interface AccountRow {
   id: number;
@@ -29,8 +28,6 @@ type AccountList = { data: AccountRow[]; total: number };
 const PAGE_SIZE = 25;
 
 export function AccountsPage() {
-  const { addRows } = useReportBasket();
-  const [basketMessage, setBasketMessage] = useState('');
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query.trim());
@@ -94,27 +91,25 @@ export function AccountsPage() {
     setStatus('');
   };
 
-  return <div className="mx-auto max-w-6xl">
+  return <div className="w-full">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><h1 className="text-2xl font-semibold">Accounts</h1><p className="mt-1 text-sm text-slate-500">Select an account to view or edit its profile details.</p></div>
       <input aria-label="Search accounts" placeholder="Search name, account key, or mobile…" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} className={`${inputCls} max-w-sm`} />
-      <button type="button" disabled={!accounts.length} onClick={() => { const result = addRows('Accounts', accounts.map((account) => ({ id: account.id, fullName: account.fullName, accountType: account.accountType, accountKey: account.accountKey, mobile: account.mobile, barangay: account.barangay?.name ?? '', status: account.status }))); setBasketMessage(`${result.added} accounts added${result.skipped ? `; ${result.skipped} skipped` : ''}.`); }} className={btnGhost}>Add visible accounts to report</button>
     </div>
-    {basketMessage && <p role="status" className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">{basketMessage}</p>}
     <div className="mt-3 flex flex-wrap items-end gap-3">
-      <label className="text-xs text-slate-500">Sort<select value={sort} onChange={(e) => setSort(e.target.value)} className={`${inputCls} mt-1`}><option value="created">Date added</option><option value="name">Name</option><option value="key">Account key</option><option value="type">Account type</option><option value="barangay">Barangay</option><option value="status">Status</option></select></label>
-      <label className="text-xs text-slate-500">Direction<select value={dir} onChange={(e) => setDir(e.target.value as 'asc' | 'desc')} className={`${inputCls} mt-1`}><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
-      <label className="text-xs text-slate-500">Type<select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option><option value="Paravet">Paravet</option></select></label>
-      <label className="text-xs text-slate-500">Status<select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option><option value="Active">Active</option><option value="On hold">On hold</option></select></label>
+      <label className="text-xs text-slate-500">Sort<Select value={sort} onChange={(e) => setSort(e.target.value)} className={`${inputCls} mt-1`}><option value="created">Date added</option><option value="name">Name</option><option value="key">Account key</option><option value="type">Account type</option><option value="barangay">Barangay</option><option value="status">Status</option></Select></label>
+      <label className="text-xs text-slate-500">Direction<Select value={dir} onChange={(e) => setDir(e.target.value as 'asc' | 'desc')} className={`${inputCls} mt-1`}><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
+      <label className="text-xs text-slate-500">Type<Select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option><option value="Paravet">Paravet</option></Select></label>
+      <label className="text-xs text-slate-500">Status<Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option><option value="Active">Active</option><option value="On hold">On hold</option></Select></label>
       <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className={`${inputCls} mt-1 w-24`} /></label>
-      <label className="text-xs text-slate-500">Month<select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</select></label>
+      <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className={`${inputCls} mt-1`}><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
       <button type="button" onClick={clearFilters} className={btnGhost}>Clear filters</button>
     </div>
     {error && <div className="mt-4"><Notice kind="error">{error}</Notice></div>}
-    <SelectionBar selection={bulk} total={total} rows={accounts}><button className={btnGhost} disabled={!bulk.count(total)} onClick={()=>void bulk.resolve<AccountRow>(bulkPath,300).then(rows=>{addRows('Accounts',rows.map(a=>({id:a.id,fullName:a.fullName,accountType:a.accountType,mobile:a.mobile,barangay:a.barangay?.name??'',status:a.status})));setBasketMessage('Selected accounts added to report basket.');}).catch(e=>setError(e.message))}>Add selected to report</button><button className={btnGhost} disabled={!bulk.count(total)} onClick={()=>void bulk.resolve<AccountRow>(bulkPath).then(rows=>exportSelectedCsv(rows as unknown as Record<string,unknown>[],'accounts-selected')).catch(e=>setError(e.message))}>Export selected</button></SelectionBar>
-    {loading ? <Loading /> : <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+    <SelectionBar selection={bulk} total={total} rows={accounts}><button className={btnGhost} disabled={!bulk.count(total)} onClick={()=>void bulk.resolve<AccountRow>(bulkPath).then(rows=>exportSelectedCsv(rows as unknown as Record<string,unknown>[],'accounts-selected')).catch(e=>setError(e.message))}>Export selected</button></SelectionBar>
+    {loading ? <Loading /> : <div className="mt-5 data-table overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="p-3">Select</th>{['Name','Account','Barangay','Mobile','Status','Actions'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="p-3">Select</th>{['Name','Account','Barangay','Mobile','Status'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts.map((account) => <tr key={account.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${account.fullName}`} checked={bulk.has(account.id)} onChange={()=>bulk.toggle(account.id)}/></td>
             <td className="p-3 font-medium"><button type="button" onClick={() => setSelected(account)} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account.fullName}</button></td>
@@ -122,7 +117,6 @@ export function AccountsPage() {
             <td className="p-3">{account.barangay?.name ?? '—'}</td>
             <td className="p-3">{account.mobile ?? '—'}</td>
             <td className="p-3">{account.status}</td>
-            <td className="p-3"><button type="button" className="text-teal-800 underline dark:text-teal-300" onClick={() => { const result = addRows('Accounts', [{ id: account.id, fullName: account.fullName, accountType: account.accountType, accountKey: account.accountKey, mobile: account.mobile, barangay: account.barangay?.name ?? '', status: account.status }]); setBasketMessage(`${result.added ? 'Account added' : 'Account updated'}.`); }}>Add to report</button></td>
           </tr>)}
         </tbody>
       </table>

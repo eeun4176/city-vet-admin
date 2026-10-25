@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { CensusSummarySheet, Letterhead, PrintButton, Signature, SheetFooter } from '../../components/PrintSheet';
-import { btnGhost } from '../../components/ui';
+import { btnGhost, tabItem, tabList } from '../../components/ui';
 import type { SubmissionDetail } from '../../lib/census';
 import { censusReviewValue } from '../../../shared/censusReview';
 import { censusSummaryRow } from '../../../shared/censusSummary';
@@ -10,7 +10,7 @@ const th = 'border border-slate-400 px-1 py-1 text-center font-semibold';
 const td = 'border border-slate-300 px-1 py-0.5 text-center tabular-nums';
 
 function SummaryForm({ owners, barangay, censusDate, preparedBy }: { owners: Owner[]; barangay: string; censusDate: string; preparedBy: string }) {
-  return <div className="bg-white">
+  return <div className="overflow-x-auto rounded-2xl bg-white p-5 text-black shadow-panel ring-1 ring-slate-200 sm:p-8 dark:ring-white/10 print:rounded-none print:p-0 print:shadow-none print:ring-0 print:overflow-visible">
     <CensusSummarySheet barangay={barangay} censusDate={censusDate} preparedBy={preparedBy} rows={owners.map((owner) => censusSummaryRow(owner.ownerName, owner.pets))} />
     {!owners.length && <p className="mt-3 text-sm text-slate-500">No owner or pet records are attached to this submission.</p>}
   </div>;
@@ -19,7 +19,7 @@ function SummaryForm({ owners, barangay, censusDate, preparedBy }: { owners: Own
 function DoorToDoorForm({ owners, barangay, censusDate, householdsVisited, preparedBy }: {
   owners: Owner[]; barangay: string; censusDate: string; householdsVisited: number; preparedBy: string;
 }) {
-  return <div className="bg-white text-slate-900 print:text-black">
+  return <div className="rounded-2xl bg-white p-5 text-black shadow-panel ring-1 ring-slate-200 sm:p-8 dark:ring-white/10 print:rounded-none print:p-0 print:shadow-none print:ring-0">
     <Letterhead title="Door-to-Door Census Form" />
     <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
       <p><strong>BARANGAY:</strong> {barangay}</p><p><strong>DATE:</strong> {censusDate}</p>
@@ -64,9 +64,9 @@ export function SubmissionForms({ detail }: { detail: SubmissionDetail }) {
     { id: 'door-to-door', label: 'Door-to-door' },
   ];
   return <section className="mt-6">
-    <div role="tablist" aria-label="Census form layout" className="mb-4 flex gap-2 print:hidden">
+    <div role="tablist" aria-label="Census form layout" className={`${tabList} mb-4 w-fit print:hidden`}>
       {options.map((option) => <button key={option.id} type="button" role="tab" aria-selected={active === option.id}
-        onClick={() => setActive(option.id)} className={active === option.id ? 'rounded-lg bg-teal-800 px-4 py-2 text-sm font-medium text-white' : btnGhost}>
+        onClick={() => setActive(option.id)} className={tabItem(active === option.id)}>
         {option.label}
       </button>)}
       <div className="ml-auto"><PrintButton target={sheet} /></div>

@@ -25,10 +25,18 @@ describe('dashboard and shared feedback', () => {
     const error = renderToStaticMarkup(createElement(LoadError, { message: 'Connection unavailable', onRetry: () => {} }));
     expect(error).toContain('role="alert"'); expect(error).toContain('Try again'); expect(error).not.toContain('No pending tasks');
   });
-  it('keeps visible text with loading icons and announces work as status', () => {
+  it('shows a loading skeleton, keeps the label for screen readers, and announces work as status', () => {
     const loading = renderToStaticMarkup(createElement(LocaleProvider, { children: createElement<{ label?: string }>(Loading, { label: 'Loading pending work…' }) }));
-    expect(loading).toContain('role="status"'); expect(loading).toContain('animate-spin'); expect(loading).toContain('Loading pending work…');
+    expect(loading).toContain('role="status"'); expect(loading).toContain('animate-pulse'); expect(loading).toContain('Loading pending work…');
     const saving = renderToStaticMarkup(createElement(Spinner, { label: 'Saving…' }));
     expect(saving).toContain('aria-hidden="true"'); expect(saving).toContain('Saving…');
+  });
+});
+
+describe('dashboard date', () => {
+  it('reads like "Monday, Apr 17 2026" in Manila time', async () => {
+    const { todayLabel } = await import('../src/pages/DashboardPage');
+    expect(todayLabel(new Date('2026-04-17T02:00:00Z'))).toBe('Friday, Apr 17 2026');
+    expect(todayLabel(new Date('2026-04-19T17:00:00Z'))).toBe('Monday, Apr 20 2026');
   });
 });

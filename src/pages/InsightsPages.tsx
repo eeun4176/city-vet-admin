@@ -1,13 +1,12 @@
-import { FileInput } from '../components/FileInput';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary } from '../components/ui';
+import { ComparisonBars, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
 import { Letterhead } from '../components/PrintSheet';
 import { useAuth } from '../lib/auth';
 import { useT } from '../i18n';
 import { api } from '../lib/api';
-import { useReportBasket } from '../lib/reportBasket';
 import { DataFreshness } from '../components/DataFreshness';
 
 type List = { data: Record<string, unknown>[]; total: number };
@@ -90,9 +89,7 @@ const datasetRoutes: Record<AnalyticsDataset, string> = {
 export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sample'; year: number }) {
   const navigate = useNavigate();
   const { account } = useAuth();
-  const { addRows } = useReportBasket();
   const [search, setSearch] = useState('');
-  const [basketMessage, setBasketMessage] = useState('');
   const debouncedSearch = useDebouncedValue(search.trim());
   const [dataset, setDataset] = useState<'all' | AnalyticsDataset>('all');
   const [dateScope, setDateScope] = useState<'year' | 'all'>('year');
@@ -123,7 +120,7 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
 
   return <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
     <div>
-      <h2 className="text-lg font-semibold">Search evidence records</h2>
+      <h2 className="text-lg font-semibold">Search Evidence Records</h2>
       <p className="mt-1 text-sm text-slate-500">Search records included in the selected source, date scope, and your existing access scope. Results are paginated; selecting a record opens its usual record page.</p>
     </div>
     <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -131,35 +128,27 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
         <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search names, IDs, status, service…" className={`${inputCls} mt-1`} />
       </label>
       <label className="text-xs text-slate-500">Record type
-        <select value={dataset} onChange={(event) => { setDataset(event.target.value as 'all' | AnalyticsDataset); setPage(1); }} className={`${inputCls} mt-1`}>
+        <Select value={dataset} onChange={(event) => { setDataset(event.target.value as 'all' | AnalyticsDataset); setPage(1); }} className={`${inputCls} mt-1`}>
           <option value="all">All accessible types</option>
           {availableDatasets.map((value) => <option key={value} value={value}>{datasetLabels[value]}</option>)}
-        </select>
+        </Select>
       </label>
       <label className="text-xs text-slate-500">Date scope
-        <select value={dateScope} onChange={(event) => { setDateScope(event.target.value as 'year' | 'all'); setPage(1); }} className={`${inputCls} mt-1`}>
+        <Select value={dateScope} onChange={(event) => { setDateScope(event.target.value as 'year' | 'all'); setPage(1); }} className={`${inputCls} mt-1`}>
           <option value="year">{year} records</option>
           <option value="all">All dates, including undated</option>
-        </select>
+        </Select>
       </label>
       <button type="button" onClick={() => { setSearch(''); setDataset('all'); setDateScope('year'); setPage(1); }} className={btnGhost}>Clear</button>
-      {data?.records.length ? <button type="button" className={btnGhost} onClick={() => {
-        const result = addRows('Analytics evidence', data.records.map((record) => ({
-          id: record.id, label: record.label, dataset: datasetLabels[record.dataset], status: record.status,
-          date: record.date, barangay: record.barangay, detail: record.detail,
-        })));
-        setBasketMessage(`${result.added} records added; ${result.skipped} could not be added.`);
-      }}>Add visible records to report</button> : null}
     </div>
-    {basketMessage && <p role="status" className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">{basketMessage}</p>}
     {error && <div className="mt-3"><Notice kind="error">{error.message}</Notice></div>}
     {loading && <p role="status" className="mt-3 text-xs text-slate-500">Searching records…</p>}
     {data && !loading && !error && <>
       <p aria-live="polite" className="mt-3 text-xs text-slate-500">Showing {data.records.length} of {data.total} matching {data.source} records {data.dateScope === 'all' ? 'across all dates, including undated records' : `for ${data.year}`}.</p>
-      <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="mt-2 data-table overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>
-            <th className="p-2">Record</th><th className="p-2">Type</th><th className="p-2">Date</th><th className="p-2">Barangay</th><th className="p-2">Details</th><th className="p-2"><span className="sr-only">Open</span></th><th className="p-2"><span className="sr-only">Report basket</span></th>
+            <th className="p-2">Record</th><th className="p-2">Type</th><th className="p-2">Date</th><th className="p-2">Barangay</th><th className="p-2">Details</th><th className="p-2"><span className="sr-only">Open</span></th>
           </tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {data.records.map((record) => <tr key={`${record.dataset}:${record.id}`}>
@@ -167,12 +156,8 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
               <td className="p-2">{datasetLabels[record.dataset]}</td><td className="p-2">{record.date || '—'}</td>
               <td className="p-2">{record.barangay || '—'}</td><td className="p-2">{[record.status, record.detail].filter(Boolean).join(' · ') || '—'}</td>
               <td className="p-2"><button type="button" onClick={() => openRecord(record)} className="font-medium text-teal-800 underline underline-offset-2 dark:text-teal-300">Open</button></td>
-              <td className="p-2"><button type="button" onClick={() => {
-                const result = addRows('Analytics evidence', [{ id: record.id, label: record.label, dataset: datasetLabels[record.dataset], status: record.status, date: record.date, barangay: record.barangay, detail: record.detail }]);
-                setBasketMessage(`${result.added ? 'Record added' : 'Record already in the report basket'}. ${result.skipped ? `${result.skipped} could not be added.` : ''}`);
-              }} className="font-medium text-teal-800 underline underline-offset-2 dark:text-teal-300">Add</button></td>
             </tr>)}
-            {!data.records.length && <tr><td colSpan={7} className="p-4 text-slate-500">No records match this source and date scope.</td></tr>}
+            {!data.records.length && <tr><td colSpan={6} className="p-4 text-slate-500">No records match this source and date scope.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -305,7 +290,7 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
     <h2 className="text-lg font-semibold">{labels.title}</h2>
     <p className="mt-1 text-sm text-slate-500">{labels.help}</p>
     {!barangays.length ? <p className="mt-3 rounded-xl border border-slate-200 p-5 text-sm text-slate-500 dark:border-slate-700">{labels.empty}</p> : <>
-      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="mt-3 data-table overflow-x-auto">
         <table className="w-full min-w-[920px] text-center text-xs">
           <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900"><tr>
             <th className="sticky left-0 min-w-40 bg-slate-50 p-3 text-left dark:bg-slate-900">{labels.barangay}</th>
@@ -473,7 +458,7 @@ export function ReportBuilder({ source, year }: { source: 'live' | 'sample'; yea
   };
   const clear = () => { setTitle(''); setBarangayId(''); setAccountId(''); setPetId(''); setParavetId(''); setRecordSearch(''); setResetKey((value) => value + 1); setCategories(reportCategories.map(([key]) => key)); setRequestPath(null); };
   return <section className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-    <div><h2 className="text-lg font-semibold">Build a consolidated report</h2><p className="mt-1 text-sm text-slate-500">Select categories and records to assemble one printable report with a Census-sheet-inspired office header. Report data is source-isolated; only supported database records are included.</p></div>
+    <div><h2 className="text-lg font-semibold">Build a Consolidated Report</h2><p className="mt-1 text-sm text-slate-500">Select categories and records to assemble one printable report with a Census-sheet-inspired office header. Report data is source-isolated; only supported database records are included.</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <label className="text-xs text-slate-500">Report title<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="Municipal veterinary operations report" className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
       <ReportOptionSearch key={`${resetKey}-barangay`} source={source} kind="barangay" label="Barangay" placeholder="Search barangays…" onSelect={setBarangayId} />
@@ -496,11 +481,10 @@ export function ReportBuilder({ source, year }: { source: 'live' | 'sample'; yea
       </div>
       <div className="flex justify-end print:hidden"><button type="button" onClick={() => window.print()} className={btnGhost}>Print report</button></div>
       <div className="space-y-5">{data.categories.map((section) => {
-        const maximum = Math.max(1, ...section.records.map((record) => Number(record.detail.match(/^\d+$/)?.[0] ?? 0)));
         return <section key={section.key} className="report-section rounded-xl border border-slate-200 p-4 dark:border-slate-700">
           <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="text-base font-semibold">{section.title}</h3><span className="text-sm text-slate-500">{section.key==='overview'?`${section.total} records across ${section.records.length} categories`:section.records.length < section.total ? `Showing ${section.records.length} of ${section.total} records (limit 300)` : `${section.total} records`}</span></div>
           {section.records.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900"><tr><th className="p-2">Record</th><th className="p-2">Status / Type</th><th className="p-2">Date / Year</th><th className="p-2">Barangay</th><th className="p-2">Details</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{section.records.map((record) => <tr key={`${section.key}:${record.id}`}><td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td><td className="p-2">{record.status || '—'}</td><td className="p-2">{record.date || '—'}</td><td className="p-2">{record.barangay || '—'}</td><td className="p-2">{record.detail || '—'}</td></tr>)}</tbody></table>
-            {section.records.some((record) => /^\d+$/.test(record.detail)) && <div aria-label={`${section.title} visual summary`} className="mt-3 space-y-2">{section.records.filter((record) => /^\d+$/.test(record.detail)).map((record) => <div key={`chart:${section.key}:${record.id}`} className="grid grid-cols-[8rem_1fr_3rem] items-center gap-2 text-xs"><span className="truncate capitalize">{record.label}</span><span className="h-2 overflow-hidden rounded bg-slate-100 dark:bg-slate-800"><span className="block h-full rounded bg-teal-600" style={{ width: `${Math.max(0, Number(record.detail) / maximum * 100)}%` }} /></span><strong className="text-right">{record.detail}</strong></div>)}</div>}
+            {section.records.some((record) => /^\d+$/.test(record.detail)) && <ComparisonBars className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900" title={`${section.title} visual summary`} rows={section.records.filter((record) => /^\d+$/.test(record.detail)).map((record) => ({ label: record.label, value: Number(record.detail) }))} />}
           </div> : <p className="mt-3 text-sm text-slate-500">No records match the selected filters.</p>}
         </section>;
       })}</div>
@@ -520,7 +504,7 @@ export function ReportsPage() {
   const barangayProfile = useApi<BarangayProfile>(selectedBarangayId ? `/reports?mode=barangay&source=${source}&barangayId=${selectedBarangayId}` : null);
   const currentData = data?.source === source && data.year === year;
   if (loading && !currentData) return <Loading />;
-  if (error && !currentData) return <div className="mx-auto max-w-6xl"><Notice kind="error">{error.message}</Notice></div>;
+  if (error && !currentData) return <div className="w-full"><Notice kind="error">{error.message}</Notice></div>;
   if (!data || !currentData) return null;
   const countChange = (change: number | null) => change === null ? t('reports.noBaseline') : t('reports.changeVs', { change: `${change > 0 ? '+' : ''}${change}`, year: data.previousYear });
   const monthLabel = (month: number) => new Date(data.year, month - 1, 1).toLocaleString(locale === 'fil' ? 'fil-PH' : 'en', { month: 'short' });
@@ -592,18 +576,18 @@ export function ReportsPage() {
     ['reports.programRecords', data.totals.programs],
   ] as const;
 
-  return <div className="mx-auto max-w-6xl space-y-7">
+  return <div className="w-full space-y-7">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div><h2 className="text-xl font-semibold">Registry statistics</h2><p className="mt-1 text-sm text-slate-500">{t('reports.description')}</p></div>
+      <div><h2 className="text-xl font-semibold">Registry Statistics</h2><p className="mt-1 text-sm text-slate-500">{t('reports.description')}</p></div>
       <button type="button" onClick={download} className={btnGhost}>{t('reports.export')}</button>
     </div>
     <div className="flex flex-wrap items-end gap-3">
-      <label className="text-xs text-slate-500">{t('reports.source')}<select value={source} onChange={(event) => setSource(event.target.value as typeof source)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <label className="text-xs text-slate-500">{t('reports.source')}<Select value={source} onChange={(event) => setSource(event.target.value as typeof source)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
         <option value="live">{t('reports.liveOnly')}</option>
-      </select></label>
-      <label className="text-xs text-slate-500">{t('reports.year')}<select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      </Select></label>
+      <label className="text-xs text-slate-500">{t('reports.year')}<Select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
         {Array.from({ length: 6 }, (_, index) => new Date().getFullYear() - index).map((value) => <option key={value} value={value}>{value}</option>)}
-      </select></label>
+      </Select></label>
       {!!data?.syntheticRecords&&<Notice>Includes synthetic reference records. These illustrate trends and never qualify as predictive evidence.</Notice>}
       <p className="text-xs text-slate-500">{t(source === 'sample' ? 'reports.sampleBadge' : 'reports.liveBadge')}</p>
     </div>
@@ -621,7 +605,7 @@ export function ReportsPage() {
     <section>
       <h2 className="text-lg font-semibold">{t('reports.petSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.petHelp')}</p>
-      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+      <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.petCount', 'reports.withVaccineFlag', 'reports.sterilizedCol', 'reports.laps', 'reports.noVaccineFlag'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.barangays.map((row) => <tr key={row.barangay}>
           <td className="p-3 font-medium"><button type="button" onClick={() => {
@@ -639,7 +623,7 @@ export function ReportsPage() {
       <p className="mt-1 text-sm text-slate-500">{t('reports.censusHelp')}</p>
       <p className="mt-2 text-sm font-medium">{t('reports.censusSummary', { covered: censusCovered, total: censusCoverage.length, year: data.year, pending: censusPending })}</p>
       <details className="mt-2"><summary className="cursor-pointer text-sm text-teal-800 dark:text-teal-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
-        <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+        <div className="mt-2 data-table overflow-x-auto"><table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{censusCoverage.map((row) => <tr key={row.barangay}>
             <td className="p-3 font-medium">{row.barangay}</td><td className="p-3">{row.approved}</td><td className="p-3">{row.pending}</td><td className="p-3">{row.rejected}</td>
@@ -691,10 +675,10 @@ export function ReportsPage() {
       }}
     />
     <label className="block max-w-md text-xs text-slate-500">Open any barangay profile
-      <select value={selectedBarangayId ?? ''} onChange={(event) => setSelectedBarangayId(event.target.value ? Number(event.target.value) : null)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <Select value={selectedBarangayId ?? ''} onChange={(event) => setSelectedBarangayId(event.target.value ? Number(event.target.value) : null)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
         <option value="">Choose a barangay…</option>
-        {referenceData.data?.barangays.map((row) => <option key={row.id} value={row.id}>{row.name} · {row.code} · ID {row.id}</option>)}
-      </select>
+        {districtOptions(referenceData.data?.barangays, (row) => row.id, (row) => `${row.name} · ${row.code} · ID ${row.id}`)}
+      </Select>
     </label>
     <BarangayProfilePanel
       profile={barangayProfile.data}
@@ -708,7 +692,7 @@ export function ReportsPage() {
     <section>
       <h2 className="text-lg font-semibold">{t('reports.serviceSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.serviceHelp')}</p>
-      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+      <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="p-3">{t('reports.serviceType')}</th><th className="p-3">{t('reports.records')}</th><th className="p-3">{t('reports.completed')}</th></tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.serviceBreakdown.map((row) => <tr key={row.service}><td className="p-3 font-medium">{row.service}</td><td className="p-3">{row.total}</td><td className="p-3">{row.completed}</td></tr>)}
         {!data.serviceBreakdown.length && <tr><td colSpan={3} className="p-5 text-slate-500">{t('reports.noServices')}</td></tr>}</tbody>
@@ -742,7 +726,7 @@ export function ReportsPage() {
     {source === 'live' && <section className="mt-6">
       <h2 className="text-lg font-semibold">{t('reports.turnoutSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.turnoutHelp')}</p>
-      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm">
+      <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.program', 'reports.barangay', 'reports.date', 'reports.interested', 'reports.namedStubs', 'reports.namedCame', 'reports.showUp', 'reports.otherServed'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{programTurnout.map((row) => <tr key={row.id}>
           <td className="p-3 font-medium">{row.title}</td><td className="p-3">{row.barangay}</td><td className="p-3">{row.date}</td><td className="p-3">{row.interested}</td>
@@ -757,7 +741,7 @@ export function ReportsPage() {
     <section>
       <h2 className="text-lg font-semibold">{t('reports.trendSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.trendHelp')}</p>
-      <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full min-w-[920px] text-left text-sm">
+      <div className="mt-3 data-table overflow-x-auto"><table className="w-full min-w-[920px] text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{[
           t('reports.month'),
           t('reports.metricPair', { metric: t('reports.petCount'), year: data.year, previous: data.previousYear }),
@@ -786,6 +770,25 @@ export function ReportsPage() {
     </section>
 
     </div></details>
+  </div>;
+}
+
+/** Drop zone for the monthly workbook, styled like Import and Export: drag the .xlsx in or browse; the chosen file shows in place. */
+function WorkbookDrop({ file, disabled, onFile }: { file: File | null; disabled: boolean; onFile: (file: File) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const [error, setError] = useState('');
+  const take = (next?: File) => { if (!next) return; if (!/\.xlsx$/i.test(next.name)) { setError('Choose an Excel workbook (.xlsx).'); return; } setError(''); onFile(next); };
+  return <div onDragOver={(event) => { event.preventDefault(); if (!disabled) setOver(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(false); }} onDrop={(event) => { event.preventDefault(); setOver(false); if (!disabled) take(event.dataTransfer.files[0]); }}
+    className={`flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-5 py-5 text-center transition-colors sm:flex-row sm:text-left ${over ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-white/[0.02]'}`}>
+    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-brand-600 shadow-[0_8px_20px_-10px_rgb(1_168_90/0.5)] ring-1 ring-slate-200 dark:bg-surface-bar dark:text-brand-300 dark:ring-slate-700"><FileSpreadsheet className="h-6 w-6" /></span>
+    <div className="min-w-0 flex-1">
+      <p className="truncate font-semibold">{file ? file.name : 'Select completed monthly workbook'}</p>
+      <p className="mt-0.5 text-sm text-slate-500">{file ? `${Math.max(1, Math.round(file.size / 1024))} KB · ready to validate` : 'Drag the .xlsx here or browse. Up to 3 MB.'}</p>
+      {error && <p role="alert" className="mt-1 text-sm text-red-700 dark:text-red-300">{error}</p>}
+    </div>
+    <button type="button" disabled={disabled} onClick={() => input.current?.click()} className={`${btnGhost} shrink-0`}>{file ? 'Choose another' : 'Browse'}</button>
+    <input ref={input} type="file" tabIndex={-1} aria-label="Select completed monthly workbook" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={disabled} className="sr-only" onChange={(event) => { take(event.target.files?.[0]); event.target.value = ''; }} />
   </div>;
 }
 
@@ -875,7 +878,7 @@ export function WorkbookTools() {
       setReportMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Unable to undo this report import.' });
     } finally { setReportBusy(false); }
   };
-  return <div className="mx-auto max-w-5xl">
+  return <div className="w-full">
 
     {reportBusy&&<Modal title="Loading workbook" onClose={()=>{}} dismissible={false}><Loading label="Processing workbook information…"/></Modal>}
     <section className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
@@ -887,24 +890,20 @@ export function WorkbookTools() {
           <input type="number" min={1} max={9999} value={exportYear} onChange={(event) => setExportYear(event.target.value)} className={`${inputCls} mt-1 w-28`} />
         </label>
         <label className="text-xs text-slate-500">Month
-          <select value={exportMonth} onChange={(event) => setExportMonth(event.target.value)} className={`${inputCls} mt-1 w-40`}>
+          <Select value={exportMonth} onChange={(event) => setExportMonth(event.target.value)} className={`${inputCls} mt-1 w-40`}>
             <option value="">All months</option>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{new Date(2000, index).toLocaleString('en', { month: 'long' })}</option>)}
-          </select>
+          </Select>
         </label>
         <label className="text-xs text-slate-500">Barangay
-          <select value={exportBarangay} onChange={(event) => setExportBarangay(event.target.value)} className={`${inputCls} mt-1 min-w-48`}>
-            <option value="">All barangays</option>{reportBarangays.data?.data.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
-          </select>
+          <Select value={exportBarangay} onChange={(event) => setExportBarangay(event.target.value)} className={`${inputCls} mt-1 min-w-48`}>
+            <option value="">All barangays</option>{districtOptions(reportBarangays.data?.data, (item) => item.name)}
+          </Select>
         </label>
         <button type="button" disabled={reportBusy || !/^\d{4}$/.test(exportYear)} onClick={() => void exportReport()} className={btnPrimary}>Export live workbook</button>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-        <label className="text-sm"><span className="font-medium">Select completed monthly workbook</span>
-          <FileInput type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={reportBusy || Boolean(reportImport)}
-            onChange={(event) => { setReportFile(event.target.files?.[0] ?? null); setReportPreview(null); setReportMessage(null); }}
-            className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" />
-        </label>
-        <button type="button" disabled={!reportFile || reportBusy || Boolean(reportImport)} onClick={() => void previewReportFile()} className={`${btnPrimary} self-end`}>
+      <div className="mt-5 grid items-center gap-3 sm:grid-cols-[1fr_auto]">
+        <WorkbookDrop file={reportFile} disabled={reportBusy || Boolean(reportImport)} onFile={(file) => { setReportFile(file); setReportPreview(null); setReportMessage(null); }} />
+        <button type="button" disabled={!reportFile || reportBusy || Boolean(reportImport)} onClick={() => void previewReportFile()} className={`${btnPrimary} h-11 px-5`}>
           {reportBusy ? 'Working…' : 'Validate workbook'}
         </button>
       </div>
@@ -931,7 +930,7 @@ export function WorkbookTools() {
           <ul className="mt-1 list-disc space-y-1 pl-5">{reportPreview.errors.map((item, index) => <li key={`${index}:${item}`}>{item}</li>)}</ul>
           {reportPreview.errors.length === 100 && <p className="mt-2 text-xs">Only the first 100 validation errors are displayed.</p>}
         </div>}
-        {reportPreview.records.length > 0 && <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+        {reportPreview.records.length > 0 && <div className="mt-3 data-table overflow-x-auto">
           <table className="w-full min-w-[38rem] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['Date','Client','Barangay','Procedures','Sheet / row'].map((item) => <th key={item} className="p-2">{item}</th>)}</tr></thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{reportPreview.records.map((record) => <tr key={`${record.worksheet}:${record.rowNumber}`}>
               <td className="p-2">{record.date}</td><td className="p-2">{record.clientName}</td><td className="p-2">{record.barangay}</td>
@@ -959,18 +958,18 @@ export function AuditPage() {
   if (month) params.set('month', month);
   const { data,error,loading } = useApi<Activity>(`/activity?${params}`);
   const rows = data?.data ?? [];
-  return <div className="mx-auto max-w-6xl"><h1 className="text-2xl font-semibold">Activity log</h1><p className="mt-1 text-sm text-slate-500">Recent recorded administrative actions.</p>
+  return <div className="w-full"><h1 className="text-2xl font-semibold">Activity Log</h1><p className="mt-1 text-sm text-slate-500">Recent recorded administrative actions.</p>
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="text-xs text-slate-500">Search<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="User, action, details" className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-      <label className="text-xs text-slate-500">Sort by<select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></select></label>
-      <label className="text-xs text-slate-500">Direction<select value={direction} onChange={(e) => { setDirection(e.target.value as typeof direction); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
+      <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></Select></label>
+      <label className="text-xs text-slate-500">Direction<Select value={direction} onChange={(e) => { setDirection(e.target.value as typeof direction); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
       <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-      <label className="text-xs text-slate-500">Month<select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</select></label>
+      <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
       <button type="button" onClick={() => { setSearch(''); setSort('time'); setDirection('desc'); setYear(''); setMonth(''); setPage(1); }} className={btnGhost}>Clear filters</button>
     </div>
     {loading && !data ? <Loading /> : error && !data ? <Notice kind="error">{error.message}</Notice> : <>
       {error && <div className="mt-3"><Notice kind="error">{error.message}</Notice></div>}
       {loading && <p role="status" className="mt-3 text-xs text-slate-500">Updating results…</p>}
-      <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['Time','User','Action','Details'].map((x)=><th key={x} className="p-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{rows.map((x)=><tr key={x.id}><td className="whitespace-nowrap p-3">{x.time}</td><td className="p-3">{x.user}</td><td className="p-3 font-medium">{x.action}</td><td className="p-3 text-slate-500">{x.detail}</td></tr>)}</tbody></table>{!rows.length && <p className="p-5 text-sm text-slate-500">No matching activity.</p>}</div><Pagination page={page} pageSize={pageSize} total={data?.total ?? 0} onPage={setPage} />
+      <div className="mt-5 data-table overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['Time','User','Action','Details'].map((x)=><th key={x} className="p-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{rows.map((x)=><tr key={x.id}><td className="whitespace-nowrap p-3">{x.time}</td><td className="p-3">{x.user}</td><td className="p-3 font-medium">{x.action}</td><td className="p-3 text-slate-500">{x.detail}</td></tr>)}</tbody></table>{!rows.length && <p className="p-5 text-sm text-slate-500">No matching activity.</p>}</div><Pagination page={page} pageSize={pageSize} total={data?.total ?? 0} onPage={setPage} />
     </>}</div>;
 }

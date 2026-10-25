@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useT } from '../i18n';
 import type { NavNode } from '../nav/nav';
@@ -8,9 +8,10 @@ import { NavigationBadge,navigationBadgeText } from './NavigationBadge';
 import type { NavigationBadges } from '../../shared/navigationBadges';
 
 const STORAGE_KEY = 'cv.nav.open';
-const rowBase = 'flex w-full items-center gap-2 rounded-lg py-2 pr-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
-const idle = 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800';
-const current = 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-900/50 dark:text-brand-100';
+const rowBase = 'flex h-10 w-full items-center gap-3 rounded-full px-[11px] text-left text-sm font-medium transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+const childRow = 'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
+const current = 'bg-brand-500/10 font-medium text-slate-900 dark:bg-brand-500/15 dark:text-white';
 
 export function useOpenGroups(activeAncestors: string[]) {
   const [open, setOpen] = useState<Set<string>>(() => {
@@ -43,32 +44,28 @@ interface TreeProps {
   level?: number;
 }
 
-/** Expanded sidebar: chevron on the left, icon, label; children indented one step per level (up to four). */
+/** Expanded sidebar: top-level rows have an icon, and groups a chevron on the right that turns when they open; children sit on a guide line, without icons, and stagger in. */
 export function NavTree({ nodes, open, toggle, activeId, onNavigate, level = 0,badges }: TreeProps) {
   const { t } = useT();
   return (
-    <ul role={level === 0 ? 'tree' : 'group'} className="space-y-0.5">
-      {nodes.map((node) => {
+    <ul role={level === 0 ? 'tree' : 'group'} className={level === 0 ? 'space-y-1' : `${level === 1 ? 'ml-5' : 'ml-3'} mt-1 space-y-0.5 border-l border-slate-200 pl-2.5 dark:border-slate-700`}>
+      {nodes.map((node, index) => {
         const Icon = node.icon;
         const hasChildren = Boolean(node.children?.length);
         const expanded = open.has(node.id);
-        const style = { paddingLeft: 8 + level * 16 };
-        const chevron = (
-          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
-            {hasChildren && <ChevronRight aria-hidden className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />}
-          </span>
-        );
-        const icon = Icon && level < 2 ? <Icon aria-hidden className="h-4 w-4 shrink-0 text-slate-400" /> : null;
+        const row = level === 0 ? rowBase : childRow;
+        const chevron = hasChildren && <ChevronRight aria-hidden className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 ease-spring ${expanded ? 'rotate-90' : ''}`} />;
+        const icon = Icon && level === 0 ? <Icon aria-hidden strokeWidth={1.9} className={`h-[18px] w-[18px] shrink-0 ${node.id === activeId ? 'text-brand-600 dark:text-brand-200' : ''}`} /> : null;
         return (
-          <li key={node.id} role="treeitem" aria-expanded={hasChildren ? expanded : undefined} aria-selected={node.id === activeId}>
+          <li key={node.id} role="treeitem" aria-expanded={hasChildren ? expanded : undefined} aria-selected={node.id === activeId} className={level ? 'nav-stagger' : undefined} style={level ? { '--i': index } as CSSProperties : undefined}>
             {hasChildren ? (
-              <button type="button" style={style} onClick={() => toggle(node.id)} className={`${rowBase} ${idle}`}>
-                {chevron}{icon}<span className="truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>
+              <button type="button" onClick={() => toggle(node.id)} className={`${row} ${idle} ${expanded ? 'text-slate-900 dark:text-white' : ''}`}>
+                {icon}<span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>{chevron}
               </button>
             ) : (
-              <NavLink to={node.to ?? '#'} style={style} onClick={onNavigate} aria-current={node.id === activeId ? 'page' : undefined}
-                className={`${rowBase} ${node.id === activeId ? current : idle}`}>
-                {chevron}{icon}<span className="truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>
+              <NavLink to={node.to ?? '#'} onClick={onNavigate} aria-current={node.id === activeId ? 'page' : undefined}
+                className={`${row} ${node.id === activeId ? current : idle}`}>
+                {icon}<span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>
               </NavLink>
             )}
             {hasChildren && expanded && (
@@ -126,7 +123,7 @@ function RailItem({ node, activeId, isAncestor, onNavigate,badges }: { node: Nav
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [shown]);
-  const classes = `relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${active ? current : idle}`;
+  const classes = `relative flex h-10 w-10 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${active ? current : idle}`;
   const common = { onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: hide, 'aria-label': [t(node.label),navigationBadgeText(node,badges)].filter(Boolean).join('. ') };
   return (
     <li className="flex justify-center">

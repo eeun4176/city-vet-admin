@@ -32,7 +32,7 @@ export function CensusFormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <h1 className="text-2xl font-semibold tracking-tight">{t(id ? 'census.edit.title' : 'census.new.title')}</h1>
       {!id && <p className="mt-1 text-sm text-slate-500">{t('census.new.intro')}</p>}
       <div className="mt-6">

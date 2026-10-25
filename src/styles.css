@@ -4,26 +4,67 @@
 
 @layer base {
   :focus-visible { outline-color: theme('colors.brand.500'); }
-  .page-transition { animation: page-enter 160ms ease-out both; }
+  /* Fade-through between pages and tabs: opacity only, so fixed children keep their place. */
+  .page-transition { animation: page-enter 320ms cubic-bezier(.22,1,.36,1) backwards; }
+  /* Sidebar groups: children stagger in (--i is the child's position). */
+  .nav-stagger { animation: nav-enter 260ms cubic-bezier(.22,1,.36,1) backwards; animation-delay: calc(var(--i, 0) * 35ms); }
+  @keyframes nav-enter { from { opacity: 0; transform: translateX(-6px); } }
+  /* Smooth hover, press and selection changes on every control that doesn't set its own transition (not opacity or menu items: that leaves Radix menus unstable to click). */
+  a, button, summary, input, select, textarea, [role="tab"] { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
   .ui-modal-overlay { animation: modal-fade 130ms ease-out both; }
   .ui-modal-panel { animation: modal-enter 170ms ease-out both; }
-  .ui-toast { animation: toast-enter 160ms ease-out both; }
-  @keyframes toast-enter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .ui-toast { animation: toast-enter 220ms cubic-bezier(.22,1,.36,1) both; }
+  @keyframes toast-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* The toast's timer line shrinks over the time it stays (--toast-ms). */
+  .toast-timer { transform-origin: left center; animation: toast-timer var(--toast-ms, 6000ms) linear both; }
+  @keyframes toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  /* Menus open like e-Vet Field's New Document menu: the panel unfolds from its button with a spring, and its rows fan in one after another (--i). */
+  .menu-pop { animation: menu-pop 300ms cubic-bezier(.32,.72,0,1) both; }
+  .menu-pop[data-side="top"] { animation-name: menu-pop-up; }
+  @keyframes menu-pop { from { opacity: 0; transform: translateY(-6px) scale(.97); clip-path: inset(0 0 70% 0 round 12px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 12px); } }
+  @keyframes menu-pop-up { from { opacity: 0; transform: translateY(6px) scale(.97); clip-path: inset(70% 0 0 0 round 12px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 12px); } }
+  .menu-pop .menu-item { animation: menu-item 320ms cubic-bezier(.22,1,.36,1) backwards; animation-delay: calc(var(--i, 0) * 24ms + 40ms); }
+  @keyframes menu-item { from { opacity: 0; transform: translateY(-4px); } }
+  /* Segmented switchers (seg-track): lib/segmented.ts measures the chosen item and this pill slides to it. */
+  .seg-track { position: relative; isolation: isolate; }
+  .seg-track[data-thumb]::before { content: ''; position: absolute; z-index: -1; left: 0; top: 0; width: var(--thumb-w); height: var(--thumb-h); border-radius: var(--thumb-r, .5rem); transform: translate(var(--thumb-x), var(--thumb-y)); background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 1px 1px rgb(0 0 0 / .04); }
+  .dark .seg-track[data-thumb]::before { background: theme('colors.surface.bar'); box-shadow: 0 1px 2px rgb(0 0 0 / .4); }
+  .seg-track[data-thumb="on"]::before { transition: transform 420ms cubic-bezier(.32,.72,0,1), width 420ms cubic-bezier(.32,.72,0,1), height 420ms cubic-bezier(.32,.72,0,1); }
+  .seg-track[data-thumb] > [aria-selected="true"], .seg-track[data-thumb] > [aria-checked="true"], .seg-track[data-thumb] > [aria-current="page"] { background: transparent !important; box-shadow: none !important; }
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes modal-enter { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes page-enter {
-    from { opacity: 0.75; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes page-enter { from { opacity: 0; } }
+  /* ComparisonBars: each bar grows from the left, staggered by its row (--i). */
+  .bar-grow { transform-origin: left center; animation: bar-grow 900ms cubic-bezier(.2,.7,.1,1) backwards; animation-delay: calc(var(--i, 0) * 90ms); }
+  @keyframes bar-grow { from { transform: scaleX(0); } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
   }
 }
 
+/* Record tables ("data-table" on the wrapper): a white card, a tinted sticky header with small uppercase labels, roomy rows that tint on hover.
+   Descendant selectors outrank the cells' own padding utilities, so every table keeps one look. */
+@layer components {
+  .data-table { @apply rounded-2xl bg-white shadow-panel ring-1 ring-inset ring-slate-200 dark:bg-surface-dark dark:ring-slate-800; }
+  .data-table table { @apply border-separate border-spacing-0; }
+  .data-table thead th { @apply sticky top-0 z-[1] h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50/95 px-4 py-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-slate-800 dark:bg-surface-bar; }
+  .data-table thead th:first-child { @apply rounded-tl-2xl; }
+  .data-table thead th:last-child { @apply rounded-tr-2xl; }
+  .data-table tbody td { @apply h-[50px] border-b border-slate-200 px-4 py-2.5 dark:border-slate-800; }
+  .data-table tbody tr:last-child td { @apply border-b-0; }
+  .data-table tbody tr { @apply transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]; }
+}
+
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
+  /* Page titles use e-Vet Field's scale (the id outranks each page's text-2xl); printed sheets keep their own. */
+  @media screen { #main h1 { font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.2; font-weight: 700; letter-spacing: -0.03em; } #main :is(h2, h3, h4), [role="dialog"] :is(h2, h3, h4) { font-weight: 600; letter-spacing: -0.01em; } }
   input, select, textarea { max-width: 100%; }
-  input[type="checkbox"] { accent-color: theme('colors.brand.600'); min-width: 1rem; min-height: 1rem; }
+  input[type="checkbox"] { accent-color: theme('colors.brand.500'); min-width: 1rem; min-height: 1rem; }
+  /* Dropdowns: a chevron instead of the browser's arrow, like e-Vet Field's menus. :not([multiple]) outranks the padding utilities. */
+  select:not([multiple]) { appearance: none; padding-right: 2.25rem; background-repeat: no-repeat; background-position: right .65rem center; background-size: 1rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858c88' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); cursor: pointer; }
   button, a, input, select, textarea { touch-action: manipulation; }
   @media (max-width: 767px) {
     button:not([role="switch"]), select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { min-height: 44px; }

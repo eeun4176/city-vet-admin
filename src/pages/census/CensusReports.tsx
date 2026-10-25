@@ -1,46 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CensusSummarySheet, Letterhead, PrintButton, Signature } from '../../components/PrintSheet';
 import { SUMMARY_PAIR_KEYS, type CensusSummaryRow } from '../../../shared/censusSummary';
-import { Field, inputCls, Loading, Notice } from '../../components/ui';
+import { Field, inputCls, Loading, Notice, Select, districtOptions } from '../../components/ui';
 import { useT } from '../../i18n';
 import { useApi } from '../../lib/useApi';
 
-type Barangay = { id: number; name: string };
+type Barangay = { id: number; name: string; district?: number };
 
 function BarangaySelect({ value, onChange, allowAll }: { value: string; onChange: (id: string, valid: boolean) => void; allowAll?: boolean }) {
   const { t } = useT();
   const { data } = useApi<{ data: Barangay[] }>('/barangays');
-  const [text, setText] = useState('');
-  const suppressSync = useRef(false);
-  useEffect(() => {
-    if (suppressSync.current) {
-      suppressSync.current = false;
-      return;
-    }
-    const selectedName = data?.data.find((barangay) => String(barangay.id) === value)?.name;
-    if (selectedName) setText(selectedName);
-  }, [data, value]);
+  // Searchable menu split by district, as in e-Vet Field; "Whole city" is the empty choice where allowed.
   return (
     <Field label={t('census.meta.barangay')}>
-      <input
-        list="census-barangay-options"
-        value={text}
-        onChange={(event) => {
-          const next = event.target.value;
-          setText(next);
-          const match = data?.data.find((barangay) => barangay.name.toLocaleLowerCase() === next.trim().toLocaleLowerCase());
-          if (match) onChange(String(match.id), true);
-          else {
-            suppressSync.current = Boolean(value);
-            onChange('', allowAll === true && next.trim() === '');
-          }
-        }}
-        placeholder={allowAll ? `${t('census.cityWide')} · ${t('census.pickBarangay')}` : t('census.pickBarangay')}
-        autoComplete="off"
-        className={inputCls}
-        aria-label={t('census.meta.barangay')}
-      />
-      <datalist id="census-barangay-options">{data?.data.map((barangay) => <option key={barangay.id} value={barangay.name} />)}</datalist>
+      <Select value={value} onChange={(event) => onChange(event.target.value, event.target.value !== '' || allowAll === true)} className={inputCls}>
+        <option value="">{allowAll ? t('census.cityWide') : t('census.pickBarangay')}</option>
+        {districtOptions(data?.data)}
+      </Select>
     </Field>
   );
 }
@@ -71,12 +47,12 @@ export function CensusSummaryPage() {
   }));
   const sheet = useRef<HTMLDivElement>(null);
   return (
-    <div className="mx-auto max-w-[110rem]">
+    <div className="w-full">
       <style media="print">{'@page { size: A4 landscape; margin: 10mm; }'}</style>
       <div className="mb-6 flex flex-wrap items-end gap-3 print:hidden">
-        <h1 className="mr-auto text-2xl font-semibold tracking-tight">{t('census.summary.title')}</h1>
-        <div className="w-64"><BarangaySelect value={barangayId} onChange={(id, valid) => { setBarangayId(id); setBarangayValid(valid); }} /></div>
-        {data && <><Field label="Search owner"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Owner name" className={inputCls} /></Field><Field label="Sort by"><select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={inputCls}><option value="owner_name">Owner</option><option value="dogs">Most dogs</option><option value="cats">Most cats</option></select></Field><Field label="Direction"><select value={direction} onChange={(e) => setDirection(e.target.value as typeof direction)} className={inputCls}><option value="asc">Ascending</option><option value="desc">Descending</option></select></Field></>}
+        <h1 className="w-full text-2xl font-semibold tracking-tight">{t('census.summary.title')}</h1>
+        <div className="w-full sm:w-72"><BarangaySelect value={barangayId} onChange={(id, valid) => { setBarangayId(id); setBarangayValid(valid); }} /></div>
+        {data && <><Field label="Search owner"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Owner name" className={inputCls} /></Field><Field label="Sort by"><Select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={inputCls}><option value="owner_name">Owner</option><option value="dogs">Most dogs</option><option value="cats">Most cats</option></Select></Field><Field label="Direction"><Select value={direction} onChange={(e) => setDirection(e.target.value as typeof direction)} className={inputCls}><option value="asc">Ascending</option><option value="desc">Descending</option></Select></Field></>}
         {rows.length > 0 && <PrintButton target={sheet} />}
       </div>
       {loading && <Loading />}
@@ -85,7 +61,7 @@ export function CensusSummaryPage() {
       {data && !rows.length && <p className="py-10 text-center text-sm text-slate-500">{t('census.summary.empty')}</p>}
       {data && rows.length > 0 && rows.length !== data.data.length && <p className="mb-2 text-xs text-slate-500">Showing {rows.length} of {data.data.length} owners; totals reflect the filtered rows.</p>}
       {rows.length > 0 && (
-        <div ref={sheet} className="bg-white"><CensusSummarySheet barangay={data?.barangay?.name ?? ''} rows={sheetRows} /></div>
+        <div ref={sheet} className="overflow-x-auto rounded-2xl bg-white p-5 text-black shadow-panel ring-1 ring-slate-200 sm:p-8 dark:ring-white/10 print:rounded-none print:p-0 print:shadow-none print:ring-0 print:overflow-visible"><CensusSummarySheet barangay={data?.barangay?.name ?? ''} rows={sheetRows} /></div>
       )}
     </div>
   );
@@ -106,18 +82,18 @@ export function CensusFrontPage() {
   const sheet = useRef<HTMLDivElement>(null);
   const pair = (dogs: number, cats: number) => (<><td className={cell}>D= {dogs}</td><td className={cell}>C= {cats}</td></>);
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <style media="print">{'@page { size: portrait; margin: 15mm; }'}</style>
       <div className="mb-6 flex flex-wrap items-end gap-3 print:hidden">
-        <h1 className="mr-auto text-2xl font-semibold tracking-tight">{t('census.frontpage.title')}</h1>
-        <div className="w-56"><BarangaySelect value={barangayId} onChange={(id, valid) => { setBarangayId(id); setBarangayValid(valid); }} allowAll /></div>
+        <h1 className="w-full text-2xl font-semibold tracking-tight">{t('census.frontpage.title')}</h1>
+        <div className="w-full sm:w-72"><BarangaySelect value={barangayId} onChange={(id, valid) => { setBarangayId(id); setBarangayValid(valid); }} allowAll /></div>
         <div className="w-28"><Field label={t('census.year')}><input inputMode="numeric" maxLength={4} value={year} onChange={(e) => setYear(e.target.value)} className={inputCls} /></Field></div>
         {n && <PrintButton target={sheet} />}
       </div>
       {loading && <Loading />}
       {error && <Notice kind="error">{error.message}</Notice>}
       {n && data && (
-        <div ref={sheet} className="mx-auto w-full max-w-[180mm] bg-white text-black [font-family:Arial,sans-serif]">
+        <div ref={sheet} className="mx-auto w-full max-w-[180mm] [font-family:Arial,sans-serif] rounded-2xl bg-white p-5 text-black shadow-panel ring-1 ring-slate-200 sm:p-8 dark:ring-white/10 print:rounded-none print:p-0 print:shadow-none print:ring-0">
           <Letterhead seals title="Census Front Page" />
           <p className="mt-6 text-sm">BARANGAY: <span className="inline-block min-w-48 border-b border-black px-1 font-semibold">{data.barangay?.name ?? t('census.cityWide')}</span></p>
           <table className="mt-4 w-full border-collapse text-[13px] leading-tight tabular-nums">

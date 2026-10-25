@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Archive, ArchiveRestore, Bell, ExternalLink, Mail, MailOpen } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/useApi';
-import { Loading, Modal, Notice, btnGhost, btnPrimary } from '../components/ui';
+import { Loading, Modal, Notice, btnGhost, btnPrimary, tabItem, tabList } from '../components/ui';
 
 type View = 'unread' | 'read' | 'archived';
 type Notification = { id: number; kind: string; title: string; body: string | null; link: string | null; created_at: string; read_at: string | null; archived_at: string | null };
@@ -64,17 +64,17 @@ export function InboxPage() {
     navigate(destination);
   };
 
-  return <div className="mx-auto max-w-4xl">
+  return <div className="w-full">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><h1 className="text-2xl font-semibold">Notifications</h1><p className="mt-1 text-sm text-slate-500">{data?.counts.unread ?? 0} unread · {data?.counts.read ?? 0} read</p></div>
       <button type="button" onClick={() => void markAllRead()} disabled={!data?.counts.unread || busyAll} className={btnGhost}>
         {busyAll ? 'Marking…' : 'Mark all read'}
       </button>
     </div>
-    <div role="tablist" aria-label="Notification inbox" className="mt-5 flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700">
+    <div role="tablist" aria-label="Notification inbox" className={`${tabList} mt-5 w-full`}>
       {tabs.map((tab) => <button key={tab.key} role="tab" type="button" aria-selected={view === tab.key} onClick={() => changeView(tab.key)}
-        className={`rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium ${view === tab.key ? 'border-brand-600 text-brand-700 dark:text-brand-300' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white'}`}>
-        {tab.label}<span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">{data?.counts[tab.key] ?? 0}</span>
+        className={tabItem(view === tab.key)}>
+        {tab.label}<span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-xs tabular-nums">{data?.counts[tab.key] ?? 0}</span>
       </button>)}
     </div>
     {error && <div className="mt-4"><Notice kind="error">{error.message}</Notice></div>}

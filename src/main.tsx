@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { AuthProvider } from './lib/auth';
+import 'lenis/dist/lenis.css';
 import './styles.css';
+import { startSegmentedThumbs } from './lib/segmented';
+
+startSegmentedThumbs();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

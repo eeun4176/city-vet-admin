@@ -1,7 +1,7 @@
-import { DocumentReaderButton } from './DocumentReaderButton';
-import { ArrowLeft, ArrowUp, Bell, Menu, X } from 'lucide-react';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Bell, ChevronUp, CircleAlert, CircleCheck, Database, Menu, X } from 'lucide-react';
+import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import Lenis from 'lenis';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useT } from '../i18n';
@@ -9,7 +9,6 @@ import { filterNav, findActive, flatten, NAV, type NavNode } from '../nav/nav';
 import { Sidebar } from './Sidebar';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { useReportBasket } from '../lib/reportBasket';
 import { Loading, Spinner } from './ui';
 import { isAbort,readQueries } from '../lib/readQueries';
 import { useNavigationBadges } from '../lib/useNavigationBadges';
@@ -21,6 +20,7 @@ import { PageErrorBoundary } from './PageErrorBoundary';
 const COLLAPSE_KEY = 'cv.nav.collapsed';
 
 type Toast = { message: string; kind: 'success' | 'error'; undoToken?: string;undoLabel?:string };
+const toastMs = (toast: Toast) => toast.undoToken ? 5 * 60_000 : 6000;
 
 export function useVisibleNav(): NavNode[] {
   const { can, featureEnabled } = useAuth();
@@ -33,7 +33,6 @@ export function useVisibleNav(): NavNode[] {
 export function AppShell() {
   const { t } = useT();
   const { account } = useAuth();
-  const { items: reportItems } = useReportBasket();
   const location = useLocation();
   const navigate = useNavigate();
   const nodes = useVisibleNav();
@@ -62,10 +61,13 @@ export function AppShell() {
   const navUpdates=useNavigationBadges();
   const unread=navUpdates.badges.inbox?.pending??0;
   const [toast, setToast] = useState<Toast | null>(null);
+  const toastKey = useMemo(() => Math.random(), [toast]);
   const [pendingWrites, setPendingWrites] = useState(0);
   const [showReturnTop, setShowReturnTop] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
   const db = databaseStatus(online, dbState);
+  const showBack = !['/dashboard', '/programs', '/program-day'].includes(location.pathname);
   const dbDot = <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${db === 'active' ? 'bg-emerald-500' : db === 'loading' ? 'bg-amber-500 motion-safe:animate-pulse' : db === 'error' ? 'bg-red-600' : 'bg-slate-400'}`} />;
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export function AppShell() {
   }, []);
   useEffect(() => {
     if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), toast.undoToken ? 5 * 60_000 : 6000);
+    const timeout = window.setTimeout(() => setToast(null), toastMs(toast));
     return () => window.clearTimeout(timeout);
   }, [toast]);
   useEffect(() => {
@@ -147,6 +149,14 @@ export function AppShell() {
   });
 
   useEffect(() => setDrawer(false), [location.pathname]);
+  // Smooth wheel scrolling on the page area, as in e-Vet Field (skipped under reduced motion). Nested scroll areas, menus and dialogs keep native scrolling.
+  useEffect(() => {
+    const main = document.getElementById('main');
+    if (!main || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const lenis = new Lenis({ wrapper: main, content: main, autoRaf: true, lerp: 0.1, naiveDimensions: true, allowNestedScroll: true, prevent: (node) => node.closest('[role="dialog"], [data-lenis-prevent]') !== null });
+    lenisRef.current = lenis;
+    return () => { lenisRef.current = null; lenis.destroy(); };
+  }, []);
   useEffect(() => {
     const main = document.getElementById('main');
     if (!main) return;
@@ -168,12 +178,12 @@ export function AppShell() {
   }, [drawer]);
 
   return (
-    <div className="flex h-dvh gap-3 p-3 print:block print:h-auto print:p-0">
-      <aside className={`hidden shrink-0 transition-[width] duration-200 md:block print:hidden ${collapsed ? 'w-[76px]' : 'w-72'}`}>
+    <div className="flex h-dvh print:block print:h-auto">
+      <aside className={`hidden shrink-0 p-3 transition-[width] duration-[640ms] ease-spring motion-reduce:transition-none md:block print:hidden ${collapsed ? 'w-[88px]' : 'w-[288px]'}`}>
         <Sidebar nodes={nodes} activeId={activeId} activeAncestors={activeAncestors} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} badges={navUpdates.badges} badgeError={!!navUpdates.error} refreshBadges={navUpdates.reload}/>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col print:block">
+      <div className="flex min-w-0 flex-1 flex-col p-3 md:bg-white md:p-0 md:dark:bg-surface-dark print:block print:p-0">
         <header className="mb-3 flex items-center gap-3 md:hidden print:hidden">
           <button type="button" onClick={() => setDrawer(true)} aria-label={t('nav.menu')}
             className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-800 dark:bg-surface-dark dark:text-slate-300">
@@ -181,25 +191,31 @@ export function AppShell() {
           </button>
           <p className="hidden truncate text-sm font-semibold sm:block">{t('app.name')}</p>
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
-          <Link to="/report-basket" className="relative rounded-lg border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200">Basket{reportItems.length > 0 && <span className="ml-1 rounded-full bg-brand-700 px-1.5 text-white">{reportItems.length}</span>}</Link>
-          <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : t(`db.${db}`)} className="inline-flex shrink-0 items-center p-1">{dbDot}</span>
+          <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : t(`db.${db}`)} className="relative grid h-9 w-9 shrink-0 place-items-center text-slate-500 dark:text-slate-300"><Database aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px]" /><span className="absolute right-1.5 top-1.5 flex rounded-full ring-2 ring-canvas dark:ring-canvas-dark">{dbDot}</span></span>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative shrink-0 rounded-xl p-2.5 text-slate-600 dark:text-slate-300"><Bell aria-hidden className="h-5 w-5"/>{unread>0&&<span className="absolute right-0 top-0 rounded-full bg-red-600 px-1 text-[10px] text-white">{unread}</span>}</Link>
         </header>
-        <header className="mb-3 hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-panel dark:border-slate-800 dark:bg-surface-dark md:flex print:hidden">
+        <header className="hidden h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-8 dark:border-slate-800 md:flex print:hidden">
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
-          <Link to="/report-basket" className="relative rounded-lg border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200">Report basket{reportItems.length > 0 && <span className="ml-1 rounded-full bg-brand-700 px-1.5 text-white">{reportItems.length}</span>}</Link>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"><Bell aria-hidden className="h-5 w-5" />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] text-white">{unread}</span>}</Link>
-          <span role="status" title={errorLog ? t('db.lastError', { message: errorLog }) : t('db.title')} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">{dbDot}{t(`db.${db}`)}</span>
+          <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : `${t('db.title')}: ${t(`db.${db}`)}`} className="relative grid h-9 w-9 place-items-center rounded-lg text-slate-500 dark:text-slate-300"><Database aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px]" /><span className="absolute right-1.5 top-1.5 flex rounded-full ring-2 ring-white dark:ring-surface-dark">{dbDot}</span></span>
         </header>
-        <main id="main" className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-panel dark:border-slate-800 dark:bg-surface-dark md:p-8 print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none">
-          {!['/dashboard', '/programs', '/program-day'].includes(location.pathname) && <div className="mb-4 print:hidden"><button type="button" onClick={() => navigate(-1)} className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300 dark:hover:bg-slate-800"><ArrowLeft aria-hidden className="h-4 w-4" />{t('common.back')}</button></div>}
+        <main id="main" className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-panel dark:border-slate-800 dark:bg-surface-dark md:rounded-none md:border-0 md:px-8 md:py-6 md:shadow-none print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          {/* Back sits above the page. */}
+          {showBack && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden"><button type="button" onClick={() => navigate(-1)} className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300 dark:hover:bg-slate-800"><ArrowLeft aria-hidden className="h-4 w-4" />{t('common.back')}</button></div>}
           {pendingWrites > 0 && <div className="fixed left-4 bottom-4 z-[60] rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-medium text-brand-800 shadow-lg dark:border-brand-900 dark:bg-surface-dark dark:text-brand-100"><Spinner /></div>}
-          <div key={location.pathname} className="page-transition"><PageErrorBoundary key={`${location.pathname}${location.search}`}><Suspense fallback={<Loading label="Loading page…" />}><div className="mb-4 flex justify-end print:hidden"><DocumentReaderButton/></div><Outlet /></Suspense></PageErrorBoundary></div>
+          <div key={location.pathname} className="page-transition"><PageErrorBoundary key={`${location.pathname}${location.search}`}><Suspense fallback={<Loading label="Loading page…" />}><Outlet /></Suspense></PageErrorBoundary></div>
         </main>
       </div>
 
-      {toast && <div role={toast.kind === 'error' ? 'alert' : 'status'} aria-live={toast.kind === 'error' ? 'assertive' : 'polite'} className={`ui-toast fixed right-4 top-4 z-[61] flex w-[calc(100vw-2rem)] max-w-sm items-start gap-3 rounded-xl border p-3 text-sm shadow-lg ${toast.kind === 'error' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100'}`}><div className="min-w-0 flex-1 break-words">{toast.message}{toast.undoToken && <div className="mt-1"><button type="button" className="min-h-11 font-semibold underline" onClick={() => { const token = toast.undoToken!; setToast(null); void api<{undoToken:string;undoLabel:string}>('POST', `/undo/${token}`, {direction:toast.undoLabel==='Redo'?'redo':'undo'}).then(result => setToast({message:toast.undoLabel==='Redo'?'Change restored.':'Change undone.',kind:'success',undoToken:result.undoToken,undoLabel:result.undoLabel})); }}>{toast.undoLabel??'Undo'} · 5 min</button></div>}</div><button type="button" aria-label={t('common.close')} onClick={() => setToast(null)} className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><X aria-hidden className="h-4 w-4" /></button></div>}
-      {showReturnTop && <button type="button" onClick={() => document.getElementById('main')?.scrollTo({ top: 0, behavior: 'smooth' })} className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 print:hidden"><ArrowUp aria-hidden className="h-4 w-4" />Return to Top</button>}
+      {/* Bottom-centre toast as in e-Vet Field: a dark pill whose timer line shrinks until it closes. */}
+      {toast && <div key={toastKey} role={toast.kind === 'error' ? 'alert' : 'status'} aria-live={toast.kind === 'error' ? 'assertive' : 'polite'} style={{ '--toast-ms': `${toastMs(toast)}ms` } as CSSProperties} className="ui-toast fixed inset-x-0 bottom-6 z-[61] mx-auto flex w-[calc(100vw-2rem)] max-w-md items-center gap-3 overflow-hidden rounded-xl bg-[#1d1f1e] px-4 py-3 text-sm text-white shadow-lg ring-1 ring-white/10 dark:bg-[#2e2e2e] print:hidden">
+        {toast.kind === 'error' ? <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" /> : <CircleCheck aria-hidden className="h-4 w-4 shrink-0 text-[#5BE3A0]" />}
+        <div className="min-w-0 flex-1 break-words">{toast.message}</div>
+        {toast.undoToken && <button type="button" title="Available for 5 minutes" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-[#5BE3A0] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5BE3A0]" onClick={() => { const token = toast.undoToken!; setToast(null); void api<{undoToken:string;undoLabel:string}>('POST', `/undo/${token}`, {direction:toast.undoLabel==='Redo'?'redo':'undo'}).then(result => setToast({message:toast.undoLabel==='Redo'?'Change restored.':'Change undone.',kind:'success',undoToken:result.undoToken,undoLabel:result.undoLabel})); }}>{toast.undoLabel??'Undo'}</button>}
+        <button type="button" aria-label={t('common.close')} onClick={() => setToast(null)} className="shrink-0 rounded-md p-0.5 text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"><X aria-hidden className="h-4 w-4" /></button>
+        <span aria-hidden className={`toast-timer absolute inset-x-0 bottom-0 h-[3px] ${toast.kind === 'error' ? 'bg-red-400' : 'bg-[#5BE3A0]'}`} />
+      </div>}
+      {showReturnTop && <button type="button" onClick={() => lenisRef.current ? lenisRef.current.scrollTo(0) : document.getElementById('main')?.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Return to top" title="Return to top" className="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-panel hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-surface-bar dark:text-slate-200 dark:hover:bg-slate-800 print:hidden"><ChevronUp aria-hidden strokeWidth={2.2} className="h-5 w-5" /></button>}
 
       {drawer && createPortal(
         <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>

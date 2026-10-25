@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger } from '../components/ui';
+import { Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions } from '../components/ui';
 import { api } from '../lib/api';
 import { GRANT_PERMISSIONS_BY_ROLE, type GrantPermission } from '../../shared/permissions';
 import { useAuth } from '../lib/auth';
@@ -77,13 +77,13 @@ export function AccessGrantsPage() {
     finally { setBusy(false); }
   };
 
-  return <div className="mx-auto max-w-6xl space-y-5">
-    <div><h1 className="text-2xl font-semibold">Temporary access grants</h1><p className="mt-1 text-sm text-slate-500">Grant a supported permission to an active Admin or Paravet for up to 30 days.</p></div>
+  return <div className="w-full space-y-5">
+    <div><h1 className="text-2xl font-semibold">Temporary Access Grants</h1><p className="mt-1 text-sm text-slate-500">Grant a supported permission to an active Admin or Paravet for up to 30 days.</p></div>
     {error && <Notice kind="error">{error}</Notice>}
     <form onSubmit={(event) => void grant(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
-      <Field label="Account"><select required className={inputCls} value={granteeId} onChange={(event) => chooseTarget(event.target.value)}><option value="">Choose an active staff account</option>{targets.map((target) => <option key={target.id} value={target.id}>{target.name} · {target.type}</option>)}</select></Field>
-      <Field label="Permission"><select disabled={!selectedTarget} className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{availablePermissions.length > 1 && <option value="all">All permissions available to {selectedTarget?.type}</option>}{availablePermissions.map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
-      <Field label="Barangay scope"><select className={inputCls} value={barangayId} onChange={(event) => setBarangayId(event.target.value)}><option value="">All barangays</option>{barangays.map((item) => <option key={item.id} value={item.id}>{item.name}{selectedTarget?.type === 'Paravet' && selectedTarget.barangayId === item.id ? ' · assigned barangay' : ''}</option>)}</select></Field>
+      <Field label="Account"><Select required className={inputCls} value={granteeId} onChange={(event) => chooseTarget(event.target.value)}><option value="">Choose an active staff account</option>{targets.map((target) => <option key={target.id} value={target.id}>{target.name} · {target.type}</option>)}</Select></Field>
+      <Field label="Permission"><Select disabled={!selectedTarget} className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{availablePermissions.length > 1 && <option value="all">All permissions available to {selectedTarget?.type}</option>}{availablePermissions.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
+      <Field label="Barangay scope"><Select className={inputCls} value={barangayId} onChange={(event) => setBarangayId(event.target.value)}><option value="">All barangays</option>{districtOptions(barangays, (item) => item.id, (item) => `${item.name}${selectedTarget?.type === 'Paravet' && selectedTarget.barangayId === item.id ? ' · assigned barangay' : ''}`)}</Select></Field>
       <Field label="Duration (days)"><input className={inputCls} type="number" min={1} max={30} value={days} onChange={(event) => setDays(Number(event.target.value))} /></Field>
       <Field label="Reason"><input className={inputCls} required minLength={3} maxLength={300} value={reason} onChange={(event) => setReason(event.target.value)} /></Field>
       <div className="flex items-end"><button className={btnPrimary} disabled={busy || !granteeId || reason.trim().length < 3}>Grant access</button></div>
@@ -154,16 +154,16 @@ export function AccessRequestsPage() {
   const setDraft = (id: number, value: Partial<{ reason: string; remarks: string; days: number }>) =>
     setDrafts((current) => ({ ...current, [id]: { ...draftFor(id), ...value } }));
 
-  return <div className="mx-auto max-w-6xl space-y-5">
-    <div><h1 className="text-2xl font-semibold">Permission requests</h1><p className="mt-1 text-sm text-slate-500">{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</p></div>
+  return <div className="w-full space-y-5">
+    <div><h1 className="text-2xl font-semibold">Permission Requests</h1><p className="mt-1 text-sm text-slate-500">{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</p></div>
     {error && <Notice kind="error">{error}</Notice>}
     {!isSuperAdmin && <form onSubmit={(event) => void submit(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
-      <Field label="Permission"><select className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{permissions.map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
-      <Field label="Barangay scope"><select className={inputCls} value={barangayId} onChange={(event) => setBarangayId(event.target.value)}><option value="">All barangays</option>{barangays.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+      <Field label="Permission"><Select className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{permissions.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
+      <Field label="Barangay scope"><Select className={inputCls} value={barangayId} onChange={(event) => setBarangayId(event.target.value)}><option value="">All barangays</option>{districtOptions(barangays)}</Select></Field>
       <Field label="Reason"><input className={inputCls} required minLength={3} maxLength={300} value={reason} onChange={(event) => setReason(event.target.value)} /></Field>
       <div className="flex items-end"><button className={btnPrimary} disabled={busy || reason.trim().length < 3}>Submit request</button></div>
     </form>}
-    <div className="flex items-end gap-3"><Field label="Request status"><select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="all">All</option></select></Field><button type="button" className={btnGhost} onClick={() => setReload((value) => value + 1)}>Refresh</button><button type="button" className={btnGhost} onClick={() => { setStatus('pending'); setPage(1); }}>Clear filters</button></div>
+    <div className="flex items-end gap-3"><Field label="Request status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="all">All</option></Select></Field><button type="button" className={btnGhost} onClick={() => setReload((value) => value + 1)}>Refresh</button><button type="button" className={btnGhost} onClick={() => { setStatus('pending'); setPage(1); }}>Clear filters</button></div>
     {loading ? <Loading /> : <div className="space-y-3">
       {rows.map((row) => {
         const draft = draftFor(row.id);
@@ -215,9 +215,9 @@ export function IssuesPage() {
     } catch (failure) { setError(errorMessage(failure, 'Could not update this issue.')); }
     finally { setBusy(null); }
   };
-  return <div className="mx-auto max-w-6xl">
-    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue reports</h1><p className="mt-1 text-sm text-slate-500">Track reports submitted by Admins and Paravets.</p></div>
-      <div className="flex items-end gap-2"><Field label="Status"><select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All</option></select></Field><button type="button" className={btnGhost} onClick={() => { setStatus('open'); setPage(1); }}>Clear filters</button></div></div>
+  return <div className="w-full">
+    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue Reports</h1><p className="mt-1 text-sm text-slate-500">Track reports submitted by Admins and Paravets.</p></div>
+      <div className="flex items-end gap-2"><Field label="Status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All</option></Select></Field><button type="button" className={btnGhost} onClick={() => { setStatus('open'); setPage(1); }}>Clear filters</button></div></div>
     {error && <div className="mt-4"><Notice kind="error">{error}</Notice></div>}
     {loading ? <Loading /> : <div className="mt-4 space-y-3">
       {rows.map((row) => {
@@ -227,7 +227,7 @@ export function IssuesPage() {
           <p className="mt-1 text-sm text-slate-500">From {row.reporterName} · {date(row.createdAt)}</p>
           <p className="mt-3 whitespace-pre-wrap text-sm">{row.description}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
-            <Field label="Status"><select className={inputCls} value={draft.status} onChange={(event) => setDrafts((current) => ({ ...current, [row.id]: { ...draft, status: event.target.value } }))}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select></Field>
+            <Field label="Status"><Select className={inputCls} value={draft.status} onChange={(event) => setDrafts((current) => ({ ...current, [row.id]: { ...draft, status: event.target.value } }))}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></Select></Field>
             <Field label="Resolution / update"><input className={inputCls} maxLength={1000} value={draft.resolution} onChange={(event) => setDrafts((current) => ({ ...current, [row.id]: { ...draft, resolution: event.target.value } }))} /></Field>
             <button type="button" className={btnPrimary} disabled={busy === row.id || (['resolved', 'dismissed'].includes(draft.status) && draft.resolution.trim().length < 3)} onClick={() => void update(row)}>{busy === row.id ? 'Saving…' : 'Save update'}</button>
           </div>
@@ -255,14 +255,14 @@ export function NewIssuePage() {
     } catch (failure) { setError(errorMessage(failure, 'Could not submit the issue report.')); }
     finally { setBusy(false); }
   };
-  return <div className="mx-auto max-w-2xl">
-    <h1 className="text-2xl font-semibold">Report an issue</h1>
+  return <div className="max-w-3xl">
+    <h1 className="text-2xl font-semibold">Report an Issue</h1>
     <p className="mt-1 text-sm text-slate-500">Provide enough detail for the system administrator to investigate.</p>
     <form onSubmit={(event) => void submit(event)} className={`${card} mt-4 space-y-4`}>
       {error && <Notice kind="error">{error}</Notice>}{message && <Notice kind="success">{message}</Notice>}
       <Field label="Short title"><input required minLength={3} maxLength={120} className={inputCls} value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
       <Field label="What happened?"><textarea required minLength={10} maxLength={2000} rows={6} className={inputCls} value={description} onChange={(event) => setDescription(event.target.value)} /></Field>
-      <Field label="Severity"><select className={inputCls} value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></Field>
+      <Field label="Severity"><Select className={inputCls} value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></Select></Field>
       <button type="submit" disabled={busy || title.trim().length < 3 || description.trim().length < 10} className={btnPrimary}>{busy ? 'Submitting…' : 'Submit issue report'}</button>
     </form>
   </div>;

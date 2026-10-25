@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { btnGhost, btnPrimary, inputCls, Loading, Modal, Notice } from '../../components/ui';
+import { btnGhost, btnPrimary, inputCls, Loading, Modal, Notice, Select } from '../../components/ui';
 import { useApi } from '../../lib/useApi';
 import { useAuth } from '../../lib/auth';
 import type { Decision, OwnerDetail } from '../../lib/census';
@@ -48,14 +48,14 @@ export function CensusOwnerReviewCard({ submissionId, owner, editable, choice, o
   return <li className="space-y-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
     <CensusRecordDetails title={`Owner entry ${owner.lineNo}`} record={incoming}/>
     {editable ? <div className="space-y-3">
-      <label className="block text-sm font-medium">Approval action<select value={choice.decision} onChange={(e) => onChoose({ decision: e.target.value as Decision, matchedOwnerId: null, reason: '', reviewed: false })} className={`${inputCls} mt-1`}>
+      <label className="block text-sm font-medium">Approval action<Select value={choice.decision} onChange={(e) => onChoose({ decision: e.target.value as Decision, matchedOwnerId: null, reason: '', reviewed: false })} className={`${inputCls} mt-1`}>
         {Object.entries(censusActionLabel).filter(([key]) => owner.candidates.length || !matchAction(key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-      </select></label>
+      </Select></label>
       <p className="text-sm text-slate-500">{censusActionEffect[choice.decision]}</p>
       {matchAction(choice.decision) && <>
-        <label className="block text-sm font-medium">Choose the registry owner<select value={choice.matchedOwnerId ?? ''} onChange={(e) => onChoose({ ...choice, matchedOwnerId: e.target.value || null, reason: '', comparisonToken: undefined, reviewed: false })} className={`${inputCls} mt-1`}>
+        <label className="block text-sm font-medium">Choose the registry owner<Select value={choice.matchedOwnerId ?? ''} onChange={(e) => onChoose({ ...choice, matchedOwnerId: e.target.value || null, reason: '', comparisonToken: undefined, reviewed: false })} className={`${inputCls} mt-1`}>
           <option value="">Select an owner explicitly</option>{owner.candidates.map((c) => <option key={c.registryOwnerId} value={c.registryOwnerId}>{c.ownerName} · {c.address} · {c.petCount} active pets · {c.registryOwnerId.slice(0,8)}</option>)}
-        </select></label>
+        </Select></label>
         <button type="button" disabled={!choice.matchedOwnerId} className={btnGhost} onClick={() => setCompare(true)}>{choice.reviewed ? 'Review comparison again' : 'Compare owner and pets'}</button>
         {choice.reviewed ? <p className="text-sm text-emerald-700 dark:text-emerald-300">Comparison confirmed · {choice.reason}</p> : <p className="text-sm text-amber-700 dark:text-amber-300">Compare the records and provide a reason before saving this decision.</p>}
       </>}

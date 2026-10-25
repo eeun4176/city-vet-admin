@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  ArrowLeftRight, BarChart3, Bug, CalendarDays, ClipboardCheck, ClipboardList, Database, FileText, Folder,
+  ArrowLeftRight, BarChart3, Bug, CalendarDays, CircleCheck, CircleX, ClipboardCheck, ClipboardList, Database, FileText, Folder, Hourglass,
   KeyRound, LayoutDashboard, MapPin, PawPrint, ScrollText, ShieldCheck, Stethoscope, Ticket, UserCog, Users,
 } from 'lucide-react';
 import type { Capability } from '../../shared/permissions';
@@ -42,9 +42,9 @@ export const NAV: NavSection[] = [
           { id: 'census-mine', label: 'nav.censusMine', icon: ClipboardList, to: '/census/mine', cap: 'census.submit' },
           {
             id: 'census-review', label: 'nav.censusReview', icon: ClipboardCheck, cap: 'census.review', children: [
-              { id: 'census-pending', label: 'nav.pending', to: '/census/review/pending' },
-              { id: 'census-approved', label: 'nav.approved', to: '/census/review/approved' },
-              { id: 'census-rejected', label: 'nav.rejected', to: '/census/review/rejected' },
+              { id: 'census-pending', label: 'nav.pending', icon: Hourglass, to: '/census/review/pending' },
+              { id: 'census-approved', label: 'nav.approved', icon: CircleCheck, to: '/census/review/approved' },
+              { id: 'census-rejected', label: 'nav.rejected', icon: CircleX, to: '/census/review/rejected' },
             ],
           },
           { id: 'census-summary', label: 'nav.censusSummary', icon: FileText, to: '/census/summary', cap: 'census.reports' },
@@ -69,7 +69,6 @@ export const NAV: NavSection[] = [
       },
       {
         id: 'insights', label: 'nav.insights', icon: BarChart3, children: [
-          { id: 'report-basket', label: 'nav.reportBasket', icon: FileText, to: '/report-basket' },
           { id: 'reports', label: 'nav.reports', icon: BarChart3, to: '/reports', cap: 'reports.view', feature: 'reports' },
           { id: 'quality', label: 'nav.quality', icon: ShieldCheck, to: '/data-quality', cap: 'quality.view', feature: 'data-quality' },
         ],

@@ -13,6 +13,11 @@ import type { SearchPage } from '../../shared/search';
 import { roleLabel } from '../../shared/permissions';
 
 const card = 'min-w-0 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-surface-dark sm:p-5';
+/** Today in Manila as "Monday, Apr 17 2026" (shown uppercase above the welcome). */
+export function todayLabel(date = new Date()) {
+  const part = (type: string) => new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' }).formatToParts(date).find((p) => p.type === type)?.value ?? '';
+  return `${part('weekday')}, ${part('month')} ${part('day')} ${part('year')}`;
+}
 const linkRow = 'group flex min-w-0 items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-slate-800';
 
 export function DashboardWorkList({ items, waiting = false }: { items: DashboardWork[]; waiting?: boolean }) {
@@ -40,7 +45,7 @@ export function DashboardPage() {
   const programsLink = links.find(({ node }) => node.id === 'program-day');
   return <div className="mx-auto min-w-0 max-w-7xl space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Your workspace</p>
+      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300"><time dateTime={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })}>{todayLabel()}</time></p>
         <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">{t('dashboard.welcome', { name: account?.name ?? '' })}</h1>
         <p className="mt-2 text-sm text-slate-500">{t('common.signedInAs', { name: roleLabel(account?.type ?? '') })}{account?.barangay ? ` · ${account.barangay}` : ' · Citywide'}</p>
       </div>
@@ -49,7 +54,7 @@ export function DashboardPage() {
 
     <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <section aria-labelledby="work-title" className={card} aria-busy={overview.loading}>
-        <div className="mb-3 flex items-center gap-2"><ClipboardCheck aria-hidden className="h-5 w-5 text-brand-600" /><h2 id="work-title" className="text-lg font-semibold">Needs your attention</h2></div>
+        <div className="mb-3 flex items-center gap-2"><ClipboardCheck aria-hidden className="h-5 w-5 text-brand-600" /><h2 id="work-title" className="text-lg font-semibold">Needs Your Attention</h2></div>
         <p className="mb-4 text-sm text-slate-500">{account?.type === 'Paravet' ? 'Your submissions, barangay interest lists, and assigned stub batches.' : 'Unresolved work within your current permissions.'}</p>
         {overview.error ? <LoadError message={overview.error.message} onRetry={overview.reload} /> : !overview.data ? <Loading label="Loading your pending work…" /> : <>
           {overview.data.tasks.length ? <DashboardWorkList items={overview.data.tasks} /> : <EmptyState title="No pending tasks in these queues" description="New work will appear here after the next refresh."><CheckCircle2 aria-hidden className="mx-auto h-6 w-6 text-brand-600" /></EmptyState>}
@@ -74,13 +79,13 @@ export function DashboardPage() {
     </div>
 
     <section aria-labelledby="shortcuts-title">
-      <h2 id="shortcuts-title" className="text-lg font-semibold">Quick access</h2>
-      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3">{shortcuts.map(({ node }) => { const Icon = node.icon; return <Link key={node.id} to={node.to!} className={`${linkRow} border border-slate-200 dark:border-slate-700`}>{Icon && <Icon aria-hidden className="h-5 w-5 shrink-0 text-brand-600" />}<span className="min-w-0 flex-1 break-words text-sm font-medium">{t(node.label)}</span><ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-slate-400" /></Link>; })}</div>
-      <details className="mt-4"><summary className="w-fit cursor-pointer rounded-lg py-2 text-sm font-medium text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-brand-300">All sections</summary><ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{links.map(({ node, ancestors }) => <li key={node.id}><Link to={node.to!} className={linkRow}><span className="min-w-0"><strong className="block text-sm font-medium">{t(node.label)}</strong>{ancestors[0] && <span className="block text-xs text-slate-500">{t(ancestors[0].label)}</span>}</span></Link></li>)}</ul></details>
+      <h2 id="shortcuts-title" className="text-lg font-semibold">Quick Access</h2>
+      <div className="mt-3 grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3">{shortcuts.map(({ node, ancestors }) => { const Icon = node.icon ?? ancestors.at(-1)?.icon; return <Link key={node.id} to={node.to!} className={`${linkRow} border border-slate-200 dark:border-slate-700`}>{Icon && <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300"><Icon className="h-[18px] w-[18px]" /></span>}<span className="min-w-0 flex-1 break-words text-sm font-medium">{t(node.label)}</span><ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-slate-400" /></Link>; })}</div>
+      <details className="mt-4"><summary className="w-fit cursor-pointer rounded-lg py-2 text-sm font-medium text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-brand-300">All sections</summary><ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{links.map(({ node, ancestors }) => { const Icon = node.icon ?? ancestors.at(-1)?.icon; return <li key={node.id}><Link to={node.to!} className={linkRow}>{Icon && <Icon aria-hidden className="h-[18px] w-[18px] shrink-0 text-slate-400 group-hover:text-brand-600" />}<span className="min-w-0"><strong className="block text-sm font-medium">{t(node.label)}</strong>{ancestors[0] && <span className="block text-xs text-slate-500">{t(ancestors[0].label)}</span>}</span></Link></li>; })}</ul></details>
     </section>
 
     <section aria-labelledby="recent-title" className={card} aria-busy={recent.loading}>
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="recent-title" className="text-lg font-semibold">Recent updates</h2><p className="mt-1 text-sm text-slate-500">The 10 latest record updates within your current access.</p></div><DataFreshness updatedAt={recent.updatedAt} loading={recent.loading} onRefresh={recent.reload} maxAgeMs={60000} /></div>
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="recent-title" className="text-lg font-semibold">Recent Updates</h2><p className="mt-1 text-sm text-slate-500">The 10 latest record updates within your current access.</p></div><DataFreshness updatedAt={recent.updatedAt} loading={recent.loading} onRefresh={recent.reload} maxAgeMs={60000} /></div>
       <label className="my-4 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={recentHistory} onChange={e => setRecentHistory(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-brand-600" />{t('search.history')}</label>
       {recent.error ? <LoadError message={recent.error.message} onRetry={recent.reload} /> : !recent.data ? <Loading label="Loading recent updates…" /> : !recent.data.data.length ? <EmptyState title="No recent updates" description="Record changes within your access will appear here." /> : <ul className="divide-y divide-slate-100 dark:divide-slate-800">{recent.data.data.map(item => <li key={item.key}><Link to={item.to} className={`${linkRow} flex-wrap sm:flex-nowrap`}><span className="min-w-0 flex-1"><strong className="block break-words text-sm font-medium">{item.label}</strong><span className="mt-1 block text-xs text-slate-500">{item.source} · {item.status}{item.history ? ' · History' : ''}</span></span><time dateTime={item.updatedAt} className="shrink-0 text-xs text-slate-500">{formatDate(item.updatedAt)}</time><ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-slate-400" /></Link></li>)}</ul>}
     </section>
