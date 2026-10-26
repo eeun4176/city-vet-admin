@@ -20,7 +20,7 @@ export const BADGE_NODES: Record<string, { cap?: Capability; features?: string[]
   paravets: { cap:'paravets.manage',features:['field-team'],to:'/paravets',reads:['/records/paravets'] },
   accounts: { cap:'accounts.manage_portal',features:['accounts'],to:'/accounts',reads:['/accounts'] },
   barangays: { cap:'barangays.view',to:'/barangays',reads:['/barangays'] },
-  reports: { cap:'reports.view',features:['reports'],to:'/reports',reads:['/program-outcomes','/analytics','/reports','/spay-neuter-report'] },
+  reports: { cap:'reports.view',features:['reports'],to:'/reports',reads:['/program-outcomes','/program-kpis','/analytics','/reports','/spay-neuter-report'] },
   quality: { cap:'quality.view',features:['data-quality','registry'],to:'/data-quality',reads:['/data-quality'] },
   access: { cap:'grants.manage',to:'/access',reads:['/access/requests','/access/grants'] },
   'access-request': { cap:'requests.submit',to:'/access/requests',reads:['/access/requests'] },

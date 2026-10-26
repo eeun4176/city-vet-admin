@@ -23,7 +23,7 @@ describe('dashboard record contract', () => {
   });
 
   it('normalizes phone fields and rejects invalid dates with field-specific errors', () => {
-    expect(normalizeRecordInputs({ id: '1', contact: '09171234567' }).contact).toBe('0917-123-4567');
+    expect(normalizeRecordInputs({ id: '1', contact: '0917-123 4567' }).contact).toBe('09171234567');
     expect(() => normalizeRecordInputs({ id: '1', mobile: '123' })).toThrow(/Mobile number is incorrect/);
     expect(() => normalizeRecordInputs({ id: '1', censusDate: '2026-02-30' })).toThrow(/real date/);
   });

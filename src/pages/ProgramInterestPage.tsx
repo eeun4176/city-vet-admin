@@ -1,5 +1,5 @@
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
-import { InfoTip, ConfirmDialog, Select } from '../components/ui';
+import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits } from '../components/ui';
 import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -361,7 +361,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
                 <td className={`${td} text-center text-xs tabular-nums text-slate-400`}>{n}</td>
                 {index === 0 ? <>
                   <td className={td}><input required aria-label="Owner name" placeholder="Owner name" className={sheetCell} maxLength={120} value={ownerName} onChange={(event) => {setOwnerName(event.target.value);setRegistryOwnerId(undefined);}} /></td>
-                  <td className={td}><input aria-label="Mobile number" className={sheetCell} inputMode="tel" placeholder="09XX-XXX-XXXX" value={mobile} onChange={(event) => setMobile(event.target.value)} /></td>
+                  <td className={td}><input aria-label="Mobile number" className={sheetCell} {...mobileInput} value={mobile} onChange={(event) => setMobile(mobileDigits(event.target.value))} /></td>
                   <td className={td}><Select required aria-label="Residence barangay" className={sheetCell} value={residenceBarangayId} onChange={(event) => {setResidenceBarangayId(event.target.value);setRegistryOwnerId(undefined);}}><option value="">Choose</option>{editableResidents.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</Select></td>
                 </> : <td colSpan={3} className="h-10 px-2.5 text-xs text-slate-400">Same owner as above</td>}
                 <td className={td}><input aria-label={`Row ${n} pet name`} placeholder="Pet name" className={sheetCell} maxLength={80} value={pet.name} onChange={(event) => setPet('name', event.target.value)} /></td>

@@ -57,10 +57,14 @@ try {
   }
   const { batchId } = await action({ action: 'request-batch', campaignId: campaign.id, quantity: 12, recipientId: paravet.id }, paravetCookie);
   await action({ action: 'review-batch', batchId, decision: 'approve', quantity: 12 });
+  const stub = (await database.query('select id,code from ekapon.stub_tickets where batch_id=$1 order by id limit 1', [batchId])).rows[0];
+  // Stubs print only once the barangay has an owner: encode one before printing.
+  if (acceptance) await database.query("insert into ekapon.program_interest_people(campaign_id,owner_name,residence_barangay_id,pets,created_by) values($1,'Practice requested owner',$2,'[]'::jsonb,$3)", [campaign.id, host.id, paravet.id]);
+  if (!acceptance) await action({ action: 'issue', stubId: stub.id, owner: { name: 'Demo Owner', mobile: '', address: 'Synthetic demonstration record', barangayId: host.id }, pets: [{ name: 'Milo', species: 'Dog', sex: 'Male', ageMonths: 24, processes: ['Microchipping', 'Anti-Rabies Vaccine'] }, { name: 'Luna', species: 'Cat', sex: 'Female', ageMonths: 18, processes: ['Neuter/Spay'] }] }, paravetCookie);
   await action({ action: 'confirm-print', batchId });
   await action({ action: 'handover', batchId });
-  const stub = (await database.query('select id,code from ekapon.stub_tickets where batch_id=$1 order by id limit 1', [batchId])).rows[0];
-  if (!acceptance) await action({ action: 'issue', stubId: stub.id, owner: { name: 'Demo Owner', mobile: '', address: 'Synthetic demonstration record', barangayId: host.id }, pets: [{ name: 'Milo', species: 'Dog', sex: 'Male', ageMonths: 24, processes: ['Microchipping', 'Anti-Rabies Vaccine'] }, { name: 'Luna', species: 'Cat', sex: 'Female', ageMonths: 18, processes: ['Neuter/Spay'] }] }, paravetCookie);
+  // Sent to the barangay, so e-Vet Field lists the stubs under Programs > Stubs.
+  await action({ action: 'send-to-barangay', batchId });
   if(process.argv.includes('--insights')){
     const fixtures=[
       ['owners','insights-owner-1',{name:'Mara Santos',barangay:host.name,address:'Synthetic address A',mobile:'09171234567'}],

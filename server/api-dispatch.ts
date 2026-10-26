@@ -18,6 +18,7 @@ const routeEntries: Array<{ path: string; load: () => Promise<{ default: RouteHa
   { path: '/api/v1/activity', load: () => import('../api-handlers/v1/activity'), feature: 'reports' },
   { path: '/api/v1/analytics', load: () => import('../api-handlers/v1/analytics'), feature: 'reports' },
   { path: '/api/v1/program-outcomes', load: () => import('../api-handlers/v1/program-outcomes'), feature: 'reports' },
+  { path: '/api/v1/program-kpis', load: () => import('../api-handlers/v1/program-kpis'), feature: 'reports' },
   { path: '/api/v1/data-quality', load: () => import('../api-handlers/v1/data-quality'), feature: 'data-quality' },
   { path: '/api/v1/registry-workspace', load: () => import('../api-handlers/v1/registry-workspace'), feature: 'registry' },
   { path: '/api/v1/field-records', load: () => import('../api-handlers/v1/field-records'), feature: 'operations' },

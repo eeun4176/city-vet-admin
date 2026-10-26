@@ -7,6 +7,7 @@ import { requireAuth, type Session } from '../../../server/auth';
 import { conflict, forbidden, notFound, unprocessable } from '../../../server/errors';
 import { normalizeProgramStatus, programProcessesFrom, PROGRAM_PROCESSES } from '../../../shared/programs';
 import { cancelInterestStubs, syncInterestStubs } from '../../../server/stubWorkflow';
+import { isPhMobile, phMobileDigits, PH_MOBILE_MESSAGE } from '../../../server/phone';
 const processes = z.array(z.enum(PROGRAM_PROCESSES)).min(1).max(3);
 const pet = z.object({
   name: z.string().trim().min(1).max(80),
@@ -404,10 +405,8 @@ export default route({
       return created(result);
     }
     if (body.action === 'add-interest') {
-      const mobile = body.mobile.trim();
-      if (mobile && !/^09\d{2}[- ]?\d{3}[- ]?\d{4}$/.test(mobile)) {
-        throw unprocessable('INVALID_MOBILE', 'Enter a mobile number in the format 09XX-XXX-XXXX or leave it blank.', { field: 'mobile' });
-      }
+      const mobile = phMobileDigits(body.mobile.trim());
+      if (mobile && !isPhMobile(mobile)) throw unprocessable('INVALID_MOBILE', PH_MOBILE_MESSAGE, { field: 'mobile' });
       const campaign = await requireCampaignScope(sql(), session, body.campaignId, body.residenceBarangayId);
       if (!['gathering', 'scheduled'].includes(campaign.status)) throw conflict('LIST_CLOSED', 'This interest list is no longer accepting entries.');
       if (body.pets.some((item) => item.processes.some((process) => !campaign.processes.includes(process)))) {
@@ -459,8 +458,8 @@ export default route({
       if (body.pets.some((item) => item.processes.some((process) => !campaign.processes.includes(process)))) {
         throw unprocessable('PROCESS_NOT_AVAILABLE', 'Choose only processes included in this program.');
       }
-      const mobile = body.mobile.trim();
-      if (mobile && !/^09\d{2}[- ]?\d{3}[- ]?\d{4}$/.test(mobile)) throw unprocessable('INVALID_MOBILE', 'Enter a valid mobile number or leave it blank.');
+      const mobile = phMobileDigits(body.mobile.trim());
+      if (mobile && !isPhMobile(mobile)) throw unprocessable('INVALID_MOBILE', PH_MOBILE_MESSAGE, { field: 'mobile' });
       const phoneKey = normalizePhone(mobile);
       await tx(session.id, async (q) => {
         const [locked] = await q`select status, program_record_id from ekapon.program_interest_campaigns where id = ${body.campaignId} for update`;

@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
 import { DataFreshness } from '../components/DataFreshness';
 import { InfoTip, Loading,Notice,Pagination,inputCls,btnGhost,tabItem,tabList, Select, districtOptions } from '../components/ui';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { EvidenceRecordSearch,ReportBuilder,ReportsPage as RegistryReports,WorkbookTools } from './InsightsPages';
 
 type Outcomes={totals:{ownerVisits:number;petVisits:number;completedProcedures:number;stubVisits:number;walkInVisits:number;programsWithAttendance:number};
   breakdown:{process:string;requested:number;completed:number;deferred:number;notEligible:number}[];
   programs:{id:number;recordId:string;title:string;date:string;barangay:string;status:string;archived:boolean;ownerVisits:number;petVisits:number;completedProcedures:number}[];total:number};
-const sections=[['outcomes','Program outcomes'],['registry','Registry statistics'],['evidence','Find records'],['builder','Create report'],['workbook','Monthly workbook']] as const;
+const sections=[['analytics','Analytics'],['outcomes','Program outcomes'],['registry','Registry statistics'],['evidence','Find records'],['builder','Create report'],['workbook','Monthly workbook']] as const;
 
 function ProgramOutcomes(){
   const [year,setYear]=useState(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'}).slice(0,4));
@@ -41,15 +42,15 @@ function ReportTask({task}:{task:'evidence'|'builder'}){
 }
 
 export function ReportsPage(){
-  const [section,setSection]=useState<(typeof sections)[number][0]>('outcomes');
-  return <div className="w-full space-y-6"><header><h1 className="text-2xl font-semibold">Reports<InfoTip>Review program results, find evidence, or prepare a report.</InfoTip></h1></header>
+  const [section,setSection]=useState<(typeof sections)[number][0]>('analytics');
+  return <div className="w-full space-y-6"><header><h1 className="text-2xl font-semibold">Reports<InfoTip>Analytics: KPI cards with their graphs, from fixed formulas, ready to print or export. The other tabs review program results, find evidence, or prepare a report.</InfoTip></h1></header>
     <div role="tablist" aria-label="Reporting tasks" className={`${tabList} w-full`}>{sections.map(([id,label],index)=><button key={id} id={`report-tab-${id}`} role="tab" tabIndex={section===id?0:-1} aria-selected={section===id} aria-controls="report-content" onClick={()=>setSection(id)} onKeyDown={e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();
       const next=e.key==='Home'?0:e.key==='End'?sections.length-1:(index+(e.key==='ArrowRight'?1:-1)+sections.length)%sections.length;
       setSection(sections[next][0]);document.getElementById(`report-tab-${sections[next][0]}`)?.focus();
     }} className={tabItem(section===id)}>{label}</button>)}</div>
     <div key={section} className="page-transition" id="report-content" role="tabpanel" aria-labelledby={`report-tab-${section}`}>
-      {section==='outcomes'?<ProgramOutcomes/>:section==='registry'?<RegistryReports/>:section==='workbook'?<WorkbookTools/>:<ReportTask key={section} task={section}/>}
+      {section==='analytics'?<AnalyticsDashboard/>:section==='outcomes'?<ProgramOutcomes/>:section==='registry'?<RegistryReports/>:section==='workbook'?<WorkbookTools/>:<ReportTask key={section} task={section}/>}
     </div>
   </div>;
 }

@@ -1,5 +1,5 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
-import { InfoTip, ConfirmDialog, Select } from '../components/ui';
+import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits } from '../components/ui';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Field, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary } from '../components/ui';
@@ -212,8 +212,8 @@ export function AccountDetails({ account, onClose, onSaved }: { account: Account
         <Field label="Middle name"><input className={inputCls} maxLength={80} value={draft.middleName ?? ''} onChange={(event) => setDraft({ ...draft, middleName: event.target.value })} /></Field>
         <Field label="Last name"><input className={inputCls} required maxLength={80} value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} /></Field>
         <Field label="Suffix"><input className={inputCls} maxLength={80} value={draft.suffix ?? ''} onChange={(event) => setDraft({ ...draft, suffix: event.target.value })} /></Field>
-        <Field label="Mobile number" hint="Use a Philippine mobile number like 0917-123-4567.">
-          <input className={inputCls} required pattern="09[0-9]{2}[- ]?[0-9]{3}[- ]?[0-9]{4}" placeholder="0917-123-4567" value={draft.mobile ?? ''} onChange={(event) => setDraft({ ...draft, mobile: event.target.value })} onBlur={() => { const digits = String(draft.mobile ?? '').replace(/\D/g, ''); if (/^09\d{9}$/.test(digits)) setDraft({ ...draft, mobile: `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}` }); }} />
+        <Field label="Mobile number" hint="11 digits starting with 09, like 09171234567.">
+          <input className={inputCls} required {...mobileInput} value={draft.mobile ?? ''} onChange={(event) => setDraft({ ...draft, mobile: mobileDigits(event.target.value) })} />
         </Field>
         {hasBarangayAssignment
           ? <Field label="Barangay">

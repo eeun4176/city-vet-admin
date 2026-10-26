@@ -2,7 +2,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useT } from '../i18n';
 import { emptyOwner, emptyPet, todayManila, toPayload, type OwnerDraft, type OwnerPayload, type PetDraft } from '../lib/census';
-import { btnGhost, btnPrimary, DateInput, Field, inputCls, Notice, Select } from './ui';
+import { btnGhost, btnPrimary, DateInput, Field, inputCls, Notice, Select, mobileInput, mobileDigits } from './ui';
 import { ReferenceInput, type ReferenceSuggestion } from './ReferenceInput';
 
 function text(value: unknown): string | undefined {
@@ -10,11 +10,6 @@ function text(value: unknown): string | undefined {
 }
 function CensusFlag({value,onChange,label}:{value:boolean|null;onChange:(value:boolean|null)=>void;label:string}){
  return <Field label={label}><Select className={inputCls} value={value===null?'unknown':value?'yes':'no'} onChange={e=>onChange(e.target.value==='unknown'?null:e.target.value==='yes')}><option value="unknown">Not recorded</option><option value="yes">Yes</option><option value="no">No</option></Select></Field>;
-}
-
-function formatMobile(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  return /^09\d{9}$/.test(digits) ? `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}` : value;
 }
 
 function enumValue<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
@@ -166,7 +161,7 @@ export function CensusSheetEditor({ initial, showMeta = true, barangay, submitLa
               contact: text(suggestion.contact ?? suggestion.mobile) ?? owner.contact,
             })} required maxLength={120} className={inputCls} /></Field>
             <Field label={t('census.owner.address')}><input required maxLength={240} value={owner.address} onChange={(e) => setOwner(index, { ...owner, address: e.target.value })} className={inputCls} /></Field>
-            <Field label={`${t('census.owner.contact')} (${t('common.optional')})`}><input type="tel" inputMode="tel" placeholder="0917-123-4567" pattern="09\d{2}[\- ]?\d{3}[\- ]?\d{4}" value={owner.contact} onChange={(e) => setOwner(index, { ...owner, contact: e.target.value })} onBlur={() => setOwner(index, { ...owner, contact: formatMobile(owner.contact) })} className={inputCls} /></Field>
+            <Field label={`${t('census.owner.contact')} (${t('common.optional')})`}><input {...mobileInput} value={owner.contact} onChange={(e) => setOwner(index, { ...owner, contact: mobileDigits(e.target.value) })} className={inputCls} /></Field>
           </div>
           <div className="mt-4 space-y-3">
             {owner.pets.map((pet, petIndex) => (

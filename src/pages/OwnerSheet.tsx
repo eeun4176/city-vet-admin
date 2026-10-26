@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/useApi';
-import { InfoTip, Notice, Select, Spinner, btnPrimary, districtOptions } from '../components/ui';
+import { InfoTip, Notice, Select, Spinner, btnPrimary, districtOptions, mobileDigits, mobileInput } from '../components/ui';
 import { emptyRegistryPet, type RegistryDraft, type RegistryPreview } from '../../shared/registry';
 import { groupOwnerRows, type OwnerRow } from './ownerSheetRows';
 import { sheetCell as cell, sheetHead as head } from '../components/PetSheet';
@@ -62,7 +62,7 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
             <td className="!h-10 !p-0"><input aria-label={`Row ${n} owner`} value={row.owner} onChange={(e) => setRow(index, { owner: e.target.value })} maxLength={120} placeholder={index ? 'Same as above' : 'Owner name'} className={cell} /></td>
             <td className="!h-10 !p-0"><Select aria-label={`Row ${n} barangay`} disabled={cont} value={row.barangayId} onChange={(e) => setRow(index, { barangayId: e.target.value })} className={`${cell} disabled:opacity-40`}><option value="">{cont ? '—' : 'Choose'}</option>{districtOptions(areas.data?.data)}</Select></td>
             <td className="!h-10 !p-0"><input aria-label={`Row ${n} address`} disabled={cont} value={row.address} onChange={(e) => setRow(index, { address: e.target.value })} maxLength={300} placeholder={cont ? '' : 'Street, purok'} className={`${cell} disabled:opacity-40`} /></td>
-            <td className="!h-10 !p-0"><input aria-label={`Row ${n} contact`} disabled={cont} value={row.contact} onChange={(e) => setRow(index, { contact: e.target.value })} maxLength={20} inputMode="tel" placeholder={cont ? '' : '09XX-XXX-XXXX'} className={`${cell} disabled:opacity-40`} /></td>
+            <td className="!h-10 !p-0"><input aria-label={`Row ${n} contact`} disabled={cont} value={row.contact} {...mobileInput} onChange={(e) => setRow(index, { contact: mobileDigits(e.target.value) })} placeholder={cont ? '' : mobileInput.placeholder} className={`${cell} disabled:opacity-40`} /></td>
             <td className="!h-10 !p-0"><input aria-label={`Row ${n} pet`} value={row.pet} onChange={(e) => setRow(index, { pet: e.target.value })} maxLength={80} placeholder="Pet name" className={cell} /></td>
             <td className="!h-10 !p-0"><Select aria-label={`Row ${n} species`} value={row.species} onChange={(e) => setRow(index, { species: e.target.value as OwnerRow['species'] })} className={cell}><option>Dog</option><option>Cat</option></Select></td>
             <td className="!h-10 !p-0"><Select aria-label={`Row ${n} sex`} value={row.sex} onChange={(e) => setRow(index, { sex: e.target.value as OwnerRow['sex'] })} className={cell}><option value="">Not recorded</option><option>Male</option><option>Female</option></Select></td>

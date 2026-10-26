@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { requiredMobile } from './phone';
 
 const name = z.string().trim().min(1, 'Required').max(80);
 const optional = z.string().trim().max(80).optional().transform((v) => (v ? v : undefined));
-export const mobile = z.string().trim().regex(/^09\d{2}[-\s]?\d{3}[-\s]?\d{4}$/, 'Use a PH mobile number like 0917-123-4567');
+export const mobile = requiredMobile;
 
 export const createAccount = z.object({
   accountType: z.enum(['Paravet']),

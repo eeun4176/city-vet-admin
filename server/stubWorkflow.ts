@@ -4,13 +4,14 @@ import { z } from 'zod';
 import type { Session } from './auth';
 import type { Tx } from './db';
 import { forbidden, notFound, unprocessable } from './errors';
+import { optionalMobile } from './phone';
 import { PROGRAM_PROCESSES, normalizeProgramStatus, programProcessesFrom } from '../shared/programs';
 import type { AttendancePet, StubBatch, StubOwner, StubPet, StubProgram, StubTicket, ProgramAttendance } from '../shared/stubs';
 
 export const ownerSchema = z.object({
   registryOwnerId:z.string().max(100).optional(),
   name: z.string().trim().min(1).max(120),
-  mobile: z.string().trim().max(20).default('').refine((value) => !value || /^09\d{2}[- ]?\d{3}[- ]?\d{4}$/.test(value), 'Use a Philippine mobile number such as 0917-123-4567.'),
+  mobile: optionalMobile(),
   address: z.string().trim().max(300).default(''),
   barangayId: z.number().int().positive(),
 });

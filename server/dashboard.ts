@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { notFound, unprocessable } from './errors';
+import { PH_MOBILE_MESSAGE } from './phone';
 import { normalizeProgramStatus, programProcessesFrom } from '../shared/programs';
 
 export const DATASETS = [
@@ -37,9 +38,9 @@ export function normalizeRecordInputs(record: Record<string, unknown>, kind?: Da
       const digits = value.replace(/\D/g, '');
       if (!/^09\d{9}$/.test(digits)) {
         const label = field.toLowerCase() === 'contact' ? 'Contact number' : 'Mobile number';
-        throw unprocessable('INVALID_MOBILE', `${label} is incorrect. Use a Philippine mobile number like 0917-123-4567.`, { field, expected: '0917-123-4567' });
+        throw unprocessable('INVALID_MOBILE', `${label} is incorrect. ${PH_MOBILE_MESSAGE}`, { field, expected: '09171234567' });
       }
-      normalized[field] = `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+      normalized[field] = digits;
       continue;
     }
     const actualServiceDate = kind === 'services' && /^(date|service_?date|served_?on|visit_?date)$/i.test(field);

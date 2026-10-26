@@ -14,9 +14,10 @@ import { likePattern } from '../../server/listing';
 import type { RegistryDraft } from '../../shared/registry';
 import { jsonValue } from '../../server/dashboard';
 import { syncCensusRegistry } from '../../server/censusRegistryBridge';
+import { optionalMobile } from '../../server/phone';
 
 const text=(max:number)=>z.string().trim().max(max);
-const ownerSchema=z.object({name:text(120).min(1),address:text(300),contact:text(20).refine(v=>!v||/^09\d{2}[- ]?\d{3}[- ]?\d{4}$/.test(v),'Use a Philippine mobile number such as 0917-123-4567.'),barangayId:z.number().int().positive()}).strict();
+const ownerSchema=z.object({name:text(120).min(1),address:text(300),contact:optionalMobile(),barangayId:z.number().int().positive()}).strict();
 const petSchema=z.object({name:text(80).min(1),species:z.enum(['Dog','Cat']),sex:z.enum(['','Male','Female']),ageMonths:z.number().int().min(0).max(600).nullable(),breed:text(100),breedClass:z.enum(BREED_CLASSES).default('Unknown'),vaccinationStatus:z.enum(HEALTH_STATUSES).default('Unknown'),sterilizationStatus:z.enum(HEALTH_STATUSES).default('Unknown'),vaccineType:text(100).default(''),vaccinationDate:text(10).default('').refine(v=>!v||(/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v&&v<=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Manila'})),'Enter a valid past vaccination date.'),color:text(100),remarks:text(300)}).strict();
 const draftSchema=z.object({intake:z.object({source:z.enum(['interest','stub','attendance']),id:z.number().int().positive()}).optional(),requestId:z.string().uuid(),mode:z.enum(['create-owner','add-pets','edit-owner','edit-pet','link-owner']),ownerId:text(100).min(1).optional(),petId:text(100).min(1).optional(),owner:ownerSchema.optional(),pets:z.array(petSchema).max(30).optional(),reason:text(1000).default('')}).strict().superRefine((d,c)=>{
  const fail=(message:string)=>c.addIssue({code:z.ZodIssueCode.custom,message});
@@ -130,7 +131,7 @@ export default route({GET:async(c)=>{
    await syncCensusRegistry(q,kind,id,data);
   };
   let ownerData=s.owner?.record_data;
-  if(d.owner){const digits=d.owner.contact.replace(/\D/g,'');ownerData={...(ownerData??{}),id:ownerId,name:d.owner.name,address:d.owner.address,contact:digits?`${digits.slice(0,4)}-${digits.slice(4,7)}-${digits.slice(7)}`:'',barangay:s.barangay.name,barangayId:s.barangay.id};
+  if(d.owner){const digits=d.owner.contact.replace(/\D/g,'');ownerData={...(ownerData??{}),id:ownerId,name:d.owner.name,address:d.owner.address,contact:digits,barangay:s.barangay.name,barangayId:s.barangay.id};
    if(d.intake)ownerData.source=`Verified ${d.intake.source} intake`;
    if('mobile' in ownerData)ownerData.mobile=ownerData.contact;if('owner_name' in ownerData)ownerData.owner_name=ownerData.name;
    await save('owners',ownerId,s.owner,ownerData,s.owner?'owner-updated':'owner-created');

@@ -19,6 +19,7 @@ const paths = [
   '/api/v1/navigation-badges',
   '/api/v1/reports',
   '/api/v1/program-outcomes',
+  '/api/v1/program-kpis',
   '/api/v1/data-quality',
   '/api/v1/registry-workspace',
   '/api/v1/field-records',

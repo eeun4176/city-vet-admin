@@ -14,6 +14,10 @@ export const btnDanger = 'inline-flex items-center justify-center gap-2 rounded-
 export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800';
 export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white text-slate-900 shadow-sm dark:bg-surface-bar dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`;
 
+/** Mobile number inputs everywhere: digits only, at most 11, starting with 09 (the API stores the same 11 digits). No maxLength: a pasted 0917-123-4567 would be cut before its dashes are dropped. */
+export const mobileInput = { type: 'tel', inputMode: 'numeric', pattern: '09[0-9]{9}', placeholder: '09XXXXXXXXX', title: '11 digits starting with 09, like 09171234567' } as const;
+export const mobileDigits = (value: string) => value.replace(/\D/g, '').slice(0, 11);
+
 /** A page's explanation kept out of the layout: an (i) beside the title shows it on hover, focus or tap. */
 export function InfoTip({ children, label = 'More details' }: { children: ReactNode; label?: string }) {
   const id = useId();

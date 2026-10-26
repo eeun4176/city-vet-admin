@@ -10,7 +10,7 @@ import type { ProgramProcess } from '../../shared/programs';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
-import { InfoTip, Check, Field, Loading, Modal, Notice, Pagination, Spinner, btnDanger, btnGhost, btnPrimary, formatDate, inputCls, tabItem, tabList, Select, districtOptions } from '../components/ui';
+import { InfoTip, Check, Field, Loading, Modal, Notice, Pagination, Spinner, btnDanger, btnGhost, btnPrimary, formatDate, inputCls, tabItem, tabList, Select, districtOptions, mobileInput, mobileDigits } from '../components/ui';
 import { StubScanner } from '../components/StubScanner';
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
 import { StubPrintSheet } from '../components/StubPrintSheet';
@@ -233,7 +233,7 @@ function OwnerPetForm({ title, mode, program, stub, isAdmin, onClose, onSaved }:
       <fieldset disabled={saving} className="space-y-2"><legend className="mb-2 font-semibold">Owner</legend>
         <Sheet minWidth="52rem" heads={[['Full name', 'w-56'], ['Mobile (optional)', 'w-40'], ['Residence barangay', 'w-52'], ['Address (optional)', 'w-64']]}><tr>
           <td className={td}><input aria-label="Owner full name" placeholder="Owner name" className={sheetCell} required disabled={identityLocked} maxLength={120} value={owner.name} onChange={(event) => setOwnerField('name', event.target.value)} /></td>
-          <td className={td}><input aria-label="Owner mobile" className={sheetCell} type="tel" maxLength={20} pattern="09[0-9]{2}[- ]?[0-9]{3}[- ]?[0-9]{4}" placeholder="0917-123-4567" value={owner.mobile} onChange={(event) => setOwnerField('mobile', event.target.value)} /></td>
+          <td className={td}><input aria-label="Owner mobile" className={sheetCell} {...mobileInput} value={owner.mobile} onChange={(event) => setOwnerField('mobile', mobileDigits(event.target.value))} /></td>
           <td className={td}><Select aria-label="Residence barangay" required disabled={identityLocked} className={sheetCell} value={owner.barangayId} onChange={(event) => setOwnerField('barangayId', Number(event.target.value))}>{districtOptions(ownerBarangays)}</Select></td>
           <td className={td}><input aria-label="Owner address" placeholder="Street, purok" className={sheetCell} maxLength={300} value={owner.address} onChange={(event) => setOwnerField('address', event.target.value)} /></td>
         </tr></Sheet>

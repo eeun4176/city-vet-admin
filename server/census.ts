@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Session } from './auth';
 import type { Sql, Tx } from './db';
 import { conflict, notFound } from './errors';
+import { requiredMobile } from './phone';
 
 const blankToUndefined = (value: unknown) => (typeof value === 'string' && value.trim() === '' ? undefined : value);
 const text = (max: number) => z.preprocess(blankToUndefined, z.string().trim().max(max).optional());
@@ -32,7 +33,7 @@ export const petSchema = z.object({
 export const ownerSchema = z.object({
   ownerName: z.string().trim().min(1, 'Owner name is required').max(120),
   address: z.string().trim().min(1, 'Address is required').max(240),
-  contact: z.preprocess(blankToUndefined, z.string().trim().regex(/^09\d{2}[-\s]?\d{3}[-\s]?\d{4}$/, 'Use a PH mobile number like 0917-123-4567').optional()),
+  contact: z.preprocess(blankToUndefined, requiredMobile.optional()),
   pets: z.array(petSchema).min(1, 'Each owner needs at least one pet').max(30),
 });
 
