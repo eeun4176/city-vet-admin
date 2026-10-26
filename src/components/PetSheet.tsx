@@ -5,9 +5,9 @@ import { BREED_CLASSES, HEALTH_STATUSES, PET_BREEDS } from '../../shared/petRefe
 import { useApi } from '../lib/useApi';
 import { Select } from './ui';
 
-export const sheetCell = 'h-10 w-full min-w-0 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-brand-50/60 focus:ring-2 focus:ring-inset focus:ring-brand-500 dark:text-white dark:focus:bg-brand-900/20';
-export const sheetHead = 'h-9 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-slate-800 dark:bg-surface-bar';
-export const sheetAdd = 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-brand-300 dark:hover:bg-slate-800';
+export const sheetCell = 'h-10 w-full min-w-0 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-brand-50/60 focus:ring-2 focus:ring-inset focus:ring-brand-500 dark:text-night-text dark:focus:bg-brand-900/20';
+export const sheetHead = 'h-9 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-night-border dark:bg-surface-bar';
+export const sheetAdd = 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 disabled:opacity-40 dark:border-night-border dark:text-brand-300 dark:hover:bg-night-tile';
 const td = '!h-10 !p-0';
 
 /** A spreadsheet table: the house style shared by the Owners sheet, pet sheets and review tables. */
@@ -47,7 +47,7 @@ export function PetSheet({ pets, onChange, fixed = false, readOnly = false, allo
         <td className={td}><input aria-label={`Row ${n} vaccine type`} maxLength={100} value={pet.vaccineType ?? ''} onChange={(e) => set(index, { vaccineType: e.target.value })} className={sheetCell} /></td>
         <td className={td}><input aria-label={`Row ${n} vaccination date`} type="date" max={today} value={pet.vaccinationDate ?? ''} onChange={(e) => set(index, { vaccinationDate: e.target.value })} className={sheetCell} /></td>
         <td className={td}><input aria-label={`Row ${n} remarks`} maxLength={300} value={pet.remarks} onChange={(e) => set(index, { remarks: e.target.value })} className={sheetCell} /></td>
-        {!fixed && <td className={td}><button type="button" aria-label={`Remove row ${n}`} disabled={pets.length === 1 && !allowEmpty} onClick={() => onChange?.(pets.filter((_, i) => i !== index))} className="grid h-10 w-11 place-items-center text-slate-400 hover:text-slate-700 disabled:opacity-30 dark:hover:text-white"><Trash2 aria-hidden className="h-4 w-4" /></button></td>}
+        {!fixed && <td className={td}><button type="button" aria-label={`Remove row ${n}`} disabled={pets.length === 1 && !allowEmpty} onClick={() => onChange?.(pets.filter((_, i) => i !== index))} className="grid h-10 w-11 place-items-center text-slate-400 hover:text-slate-700 disabled:opacity-30 dark:hover:text-night-text"><Trash2 aria-hidden className="h-4 w-4" /></button></td>}
       </tr>;
     })}</Sheet>}
     {!readOnly && !fixed && <button type="button" disabled={pets.length >= max} onClick={() => onChange?.([...pets, emptyRegistryPet()])} className={sheetAdd}><Plus aria-hidden className="h-4 w-4" />Add pet row</button>}

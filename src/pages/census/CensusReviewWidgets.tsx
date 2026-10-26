@@ -12,12 +12,12 @@ export const savedCensusChoice = (o: OwnerDetail): CensusChoice => ({ decision: 
   reason: o.decisionReason ?? '', reviewed: o.matchReviewed });
 
 export function CensusRecordDetails({ record, title }: { record: CensusReviewRecord; title: string }) {
-  return <section className="min-w-0 space-y-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+  return <section className="min-w-0 space-y-3 rounded-xl border border-slate-200 p-3 dark:border-night-border">
     <h3 className="font-semibold">{title}</h3><p className="break-words font-medium">{record.name}</p>
     <dl className="space-y-1 text-sm"><div><dt className="text-slate-500">Address</dt><dd className="break-words">{censusReviewValue(record.address)}</dd></div>
       <div><dt className="text-slate-500">Contact</dt><dd>{censusReviewValue(record.contact)}</dd></div></dl>
     <h4 className="text-sm font-semibold">Linked pets ({record.pets.length})</h4>
-    {record.pets.map((pet) => <details key={pet.id} className="rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700">
+    {record.pets.map((pet) => <details key={pet.id} className="rounded-lg border border-slate-200 p-2 text-sm dark:border-night-border">
       <summary className="cursor-pointer font-medium">{pet.name} · {censusReviewValue(pet.fields.species)} · {censusReviewValue(pet.fields.sex)}{pet.archived ? ' · Archived' : ''}</summary>
       <dl className="mt-2 grid gap-2 sm:grid-cols-2">{Object.entries(pet.fields).filter(([key]) => key !== 'lineNo').map(([key, value]) => <div key={key} className="min-w-0">
         <dt className="text-xs text-slate-500">{censusReviewLabels[key] ?? key.replaceAll('_', ' ')}</dt><dd className="break-words">{censusReviewValue(value)}</dd>
@@ -45,7 +45,7 @@ export function CensusOwnerReviewCard({ submissionId, owner, editable, choice, o
   const { can } = useAuth();
   const incoming: CensusReviewRecord = { id: owner.id, name: owner.ownerName, address: owner.address, contact: owner.contact,
     pets: owner.pets.map(({ id, petName, ...fields }) => ({ id, name: petName, fields })) };
-  return <li className="space-y-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+  return <li className="space-y-3 rounded-2xl border border-slate-200 p-4 dark:border-night-border">
     <CensusRecordDetails title={`Owner entry ${owner.lineNo}`} record={incoming}/>
     {editable ? <div className="space-y-3">
       <label className="block text-sm font-medium">Approval action<Select value={choice.decision} onChange={(e) => onChoose({ decision: e.target.value as Decision, matchedOwnerId: null, reason: '', reviewed: false })} className={`${inputCls} mt-1`}>
@@ -61,7 +61,7 @@ export function CensusOwnerReviewCard({ submissionId, owner, editable, choice, o
       </>}
       {!owner.candidates.length && <p className="text-xs text-slate-500">No suggested owner with this name in the census barangay. Suggestions are review cues only.</p>}
     </div> : <div className="space-y-2 text-sm"><p className="font-medium">{censusActionLabel[owner.decision]}</p>{owner.decisionReason && <p>Reason: {owner.decisionReason}</p>}
-      {owner.registryOwnerId && can('registry.view') && <Link className="text-brand-700 underline dark:text-brand-200" to={`/registry/owners?recordId=${encodeURIComponent(owner.registryOwnerId)}`}>View registry owner and pets</Link>}
+      {owner.registryOwnerId && can('registry.view') && <Link className="text-brand-700 underline dark:text-brand-300" to={`/registry/owners?recordId=${encodeURIComponent(owner.registryOwnerId)}`}>View registry owner and pets</Link>}
     </div>}
     {compare && <ComparisonModal key={`${choice.matchedOwnerId}:${choice.decision}`} submissionId={submissionId} owner={owner} choice={choice} onClose={() => setCompare(false)} onConfirm={(token, reason) => { onChoose({ ...choice, comparisonToken: token, reason, reviewed: true }); setCompare(false); }}/>} 
   </li>;
@@ -73,9 +73,9 @@ export function CensusApprovalModal({ submissionId, busy, failure, onClose, onCo
     {failure && <div className="mb-3"><Notice kind="error">{failure}</Notice></div>}
     {loading ? <Loading label="Checking saved decisions and current registry records…"/> : error ? <Notice kind="error">{error.message}</Notice> : data && <div className="space-y-4">
       <p className="text-sm">Approval applies these saved decisions together. Census entries and review history are retained.</p>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">{(['new','merge','replace','keep','reject'] as const).map((key) => <div key={key} className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800"><dt className="text-xs">{censusActionLabel[key]}</dt><dd className="text-xl font-semibold">{data.counts[key]}</dd></div>)}<div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800"><dt className="text-xs">Pets submitted (includes excluded entries)</dt><dd className="text-xl font-semibold">{data.petCount}</dd></div></dl>
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">{(['new','merge','replace','keep','reject'] as const).map((key) => <div key={key} className="rounded-lg bg-slate-50 p-3 dark:bg-night-tile"><dt className="text-xs">{censusActionLabel[key]}</dt><dd className="text-xl font-semibold">{data.counts[key]}</dd></div>)}<div className="rounded-lg bg-slate-50 p-3 dark:bg-night-tile"><dt className="text-xs">Pets submitted (includes excluded entries)</dt><dd className="text-xl font-semibold">{data.petCount}</dd></div></dl>
       {data.issues.map((issue) => <Notice key={issue} kind="error">{issue}</Notice>)}
-      <ul className="space-y-3">{data.owners.map((o) => <li key={o.id} className="rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700"><p className="font-medium">{o.name} · {o.petCount} {o.petCount === 1 ? 'pet' : 'pets'}</p><p>{censusActionLabel[o.decision]}{o.matchName ? ` → ${o.matchName}` : ''}</p><p className="mt-1 text-slate-500">{o.effect}</p>{o.reason && <p className="mt-1">Reason: {o.reason}</p>}</li>)}</ul>
+      <ul className="space-y-3">{data.owners.map((o) => <li key={o.id} className="rounded-lg border border-slate-200 p-3 text-sm dark:border-night-border"><p className="font-medium">{o.name} · {o.petCount} {o.petCount === 1 ? 'pet' : 'pets'}</p><p>{censusActionLabel[o.decision]}{o.matchName ? ` → ${o.matchName}` : ''}</p><p className="mt-1 text-slate-500">{o.effect}</p>{o.reason && <p className="mt-1">Reason: {o.reason}</p>}</li>)}</ul>
       <div className="flex flex-wrap justify-end gap-2"><button className={btnGhost} disabled={busy} onClick={onClose}>Back to review</button><button className={btnGhost} disabled={busy} onClick={reload}>Refresh summary</button><button className={btnPrimary} disabled={busy || !data.ready || !data.token} onClick={() => onConfirm(data.token!)}>{busy ? 'Applying approval…' : 'Approve these reviewed decisions'}</button></div>
     </div>}
     {busy && <Loading label="Saving approval and registry records…"/>}

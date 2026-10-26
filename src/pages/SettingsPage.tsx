@@ -8,8 +8,8 @@ import { InfoTip, Notice, Spinner, btnGhost, tabItem, tabList } from '../compone
 
 // Settings sections as e-Vet Field cards: an icon tile, the heading, then the controls. Choices are segmented switchers with the chosen one in green.
 function SectionCard({ icon: Icon, title, id, children }: { icon: LucideIcon; title: string; id: string; children: ReactNode }) {
-  return <section aria-labelledby={id} className="rounded-2xl p-5 ring-1 ring-slate-200 dark:ring-slate-800">
-    <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-brand-600 dark:bg-slate-800 dark:text-brand-300"><Icon aria-hidden className="h-5 w-5" /></span><h2 id={id} className="font-semibold">{title}</h2></div>
+  return <section aria-labelledby={id} className="rounded-2xl p-5 ring-1 ring-slate-200 dark:ring-night-border">
+    <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-brand-600 dark:bg-night-tile dark:text-brand-300"><Icon aria-hidden className="h-5 w-5" /></span><h2 id={id} className="font-semibold">{title}</h2></div>
     <div className="mt-4">{children}</div>
   </section>;
 }

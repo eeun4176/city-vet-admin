@@ -68,7 +68,7 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
             <td className="!h-10 !p-0"><Select aria-label={`Row ${n} sex`} value={row.sex} onChange={(e) => setRow(index, { sex: e.target.value as OwnerRow['sex'] })} className={cell}><option value="">Not recorded</option><option>Male</option><option>Female</option></Select></td>
             <td className="!h-10 !p-0"><input aria-label={`Row ${n} age in months`} type="number" min={0} max={600} value={row.ageMonths} onChange={(e) => setRow(index, { ageMonths: e.target.value })} className={cell} /></td>
             <td className="!h-10 !p-0"><input aria-label={`Row ${n} color`} value={row.color} onChange={(e) => setRow(index, { color: e.target.value })} maxLength={100} className={cell} /></td>
-            <td className="!h-10 !p-0"><button type="button" aria-label={`Remove row ${n}`} disabled={rows.length === 1} onClick={() => { setRows((all) => all.filter((_, i) => i !== index)); setFlags({}); }} className="grid h-10 w-11 place-items-center text-slate-400 hover:text-slate-700 disabled:opacity-30 dark:hover:text-white"><Trash2 aria-hidden className="h-4 w-4" /></button></td>
+            <td className="!h-10 !p-0"><button type="button" aria-label={`Remove row ${n}`} disabled={rows.length === 1} onClick={() => { setRows((all) => all.filter((_, i) => i !== index)); setFlags({}); }} className="grid h-10 w-11 place-items-center text-slate-400 hover:text-slate-700 disabled:opacity-30 dark:hover:text-night-text"><Trash2 aria-hidden className="h-4 w-4" /></button></td>
           </tr>;
         })}</tbody>
       </table>
@@ -80,8 +80,8 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
     {error && <Notice kind="error">{error}</Notice>}
     {areas.error && <Notice kind="error">{areas.error.message}</Notice>}
     <div className="flex flex-wrap items-center gap-2">
-      <button type="button" onClick={() => setRows((all) => [...all, blank()])} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 dark:border-slate-700 dark:text-brand-300 dark:hover:bg-slate-800"><Plus aria-hidden className="h-4 w-4" />Add row</button>
-      <button type="button" onClick={() => setRows((all) => [...all, blank(), blank(), blank(), blank(), blank()])} className="inline-flex h-10 items-center rounded-xl px-3 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white">Add 5 rows</button>
+      <button type="button" onClick={() => setRows((all) => [...all, blank()])} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 dark:border-night-border dark:text-brand-300 dark:hover:bg-night-tile"><Plus aria-hidden className="h-4 w-4" />Add row</button>
+      <button type="button" onClick={() => setRows((all) => [...all, blank(), blank(), blank(), blank(), blank()])} className="inline-flex h-10 items-center rounded-xl px-3 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-night-tile dark:hover:text-night-text">Add 5 rows</button>
       <button type="button" disabled={busy || !grouped.owners.length} onClick={() => void save()} className={`${btnPrimary} ml-auto`}>{busy ? <Spinner label="Saving owners…" /> : grouped.owners.length ? `Save ${grouped.owners.length} owner${grouped.owners.length === 1 ? '' : 's'}` : 'Save owners'}</button>
     </div>
   </section>;

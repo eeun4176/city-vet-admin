@@ -118,7 +118,7 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
     navigate(`${datasetRoutes[record.dataset]}?${query.toString()}`);
   };
 
-  return <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+  return <section className="rounded-xl border border-slate-200 p-4 dark:border-night-border">
     <div>
       <h2 className="text-lg font-semibold">Search Evidence Records</h2>
       <p className="mt-1 text-sm text-slate-500">Search records included in the selected source, date scope, and your existing access scope. Results are paginated; selecting a record opens its usual record page.</p>
@@ -147,10 +147,10 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
       <p aria-live="polite" className="mt-3 text-xs text-slate-500">Showing {data.records.length} of {data.total} matching {data.source} records {data.dateScope === 'all' ? 'across all dates, including undated records' : `for ${data.year}`}.</p>
       <div className="mt-2 data-table overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>
             <th className="p-2">Record</th><th className="p-2">Type</th><th className="p-2">Date</th><th className="p-2">Barangay</th><th className="p-2">Details</th><th className="p-2"><span className="sr-only">Open</span></th>
           </tr></thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-slate-100 dark:divide-night-border">
             {data.records.map((record) => <tr key={`${record.dataset}:${record.id}`}>
               <td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td>
               <td className="p-2">{datasetLabels[record.dataset]}</td><td className="p-2">{record.date || '—'}</td>
@@ -182,9 +182,9 @@ function MonthlyServicesChart({ data, monthLabel, labels }: {
     { key: 'kapon', value: row.current.spayNeuterServices, color: chartColors.kapon },
     { key: 'microchip', value: row.current.microchipServices, color: chartColors.microchip },
   ];
-  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-night-border">
     <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{labels.chart}</h3><SaveChartImage name={labels.chart} /></div>
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
+    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-night-muted">
       {([
         ['rabies', labels.rabies, chartColors.rabies],
         ['kapon', labels.kapon, chartColors.kapon],
@@ -197,7 +197,7 @@ function MonthlyServicesChart({ data, monthLabel, labels }: {
           const value = ceiling - index * step;
           const lineY = y(value);
           return <g key={value}>
-            <line x1={plot.left} y1={lineY} x2={plot.right} y2={lineY} stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeDasharray={value === 0 ? undefined : '3 4'} />
+            <line x1={plot.left} y1={lineY} x2={plot.right} y2={lineY} stroke="currentColor" className="text-slate-200 dark:text-night-border" strokeDasharray={value === 0 ? undefined : '3 4'} />
             <text x={plot.left - 8} y={lineY + 4} textAnchor="end" className="fill-slate-500 text-[10px]">{value}</text>
           </g>;
         })}
@@ -238,9 +238,9 @@ function PetRegistrationChart({ data, monthLabel, labels }: {
     const previousObserved = previousRow && (series === 'current' ? previousRow.currentObserved : previousRow.previousObserved);
     return `${previousObserved ? 'L' : 'M'}${x(index)},${y(row[series].petRegistrations)}`;
   }).filter(Boolean).join(' ');
-  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+  return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-night-border">
     <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{labels.chart}</h3><SaveChartImage name={labels.chart} /></div>
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
+    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-night-muted">
       <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-brand-700" />{labels.current}</span>
       <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-slate-400" />{labels.previous}</span>
     </div>
@@ -250,7 +250,7 @@ function PetRegistrationChart({ data, monthLabel, labels }: {
           const value = ceiling - index * step;
           const lineY = y(value);
           return <g key={value}>
-            <line x1={plot.left} y1={lineY} x2={plot.right} y2={lineY} stroke="currentColor" className="text-slate-200 dark:text-slate-700" strokeDasharray={value === 0 ? undefined : '3 4'} />
+            <line x1={plot.left} y1={lineY} x2={plot.right} y2={lineY} stroke="currentColor" className="text-slate-200 dark:text-night-border" strokeDasharray={value === 0 ? undefined : '3 4'} />
             <text x={plot.left - 8} y={lineY + 4} textAnchor="end" className="fill-slate-500 text-[10px]">{value}</text>
           </g>;
         })}
@@ -280,24 +280,24 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
   const counts = new Map(data.map((row) => [`${row.barangay}:${row.month}`, row]));
   const maximum = Math.max(0, ...data.map((row) => row.antiRabies + row.kapon));
   const cellClass = (value: number) => {
-    if (!value) return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+    if (!value) return 'bg-slate-100 text-slate-500 dark:bg-night-tile dark:text-night-muted';
     if (value / maximum >= 0.75) return 'bg-brand-800 text-white dark:bg-brand-700';
     if (value / maximum >= 0.5) return 'bg-brand-600 text-white dark:bg-brand-600';
     if (value / maximum >= 0.25) return 'bg-brand-400 text-brand-950 dark:bg-brand-500 dark:text-white';
-    return 'bg-brand-200 text-brand-950 dark:bg-brand-900 dark:text-brand-100';
+    return 'bg-brand-200 text-brand-950 dark:bg-brand-900 dark:text-brand-300';
   };
   return <section data-chart>
     <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">{labels.title}</h2>{barangays.length > 0 && <SaveChartImage name={labels.title} />}</div>
     <p className="mt-1 text-sm text-slate-500">{labels.help}</p>
-    {!barangays.length ? <p className="mt-3 rounded-xl border border-slate-200 p-5 text-sm text-slate-500 dark:border-slate-700">{labels.empty}</p> : <>
+    {!barangays.length ? <p className="mt-3 rounded-xl border border-slate-200 p-5 text-sm text-slate-500 dark:border-night-border">{labels.empty}</p> : <>
       <div className="mt-3 data-table overflow-x-auto">
         <table className="w-full min-w-[920px] text-center text-xs">
-          <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900"><tr>
-            <th className="sticky left-0 min-w-40 bg-slate-50 p-3 text-left dark:bg-slate-900">{labels.barangay}</th>
+          <thead className="bg-slate-50 text-slate-500 dark:bg-night-surface"><tr>
+            <th className="sticky left-0 min-w-40 bg-slate-50 p-3 text-left dark:bg-night-surface">{labels.barangay}</th>
             {Array.from({ length: 12 }, (_, index) => <th key={index + 1} className="min-w-12 p-2">{monthLabel(index + 1)}</th>)}
           </tr></thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{barangays.map((barangay) => <tr key={barangay}>
-            <th scope="row" className="sticky left-0 bg-white p-3 text-left font-medium dark:bg-slate-950">
+          <tbody className="divide-y divide-slate-100 dark:divide-night-border">{barangays.map((barangay) => <tr key={barangay}>
+            <th scope="row" className="sticky left-0 bg-white p-3 text-left font-medium dark:bg-night-canvas">
               <button type="button" onClick={() => onSelectBarangay(barangay)} className="text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-300">{barangay}</button>
             </th>
             {Array.from({ length: 12 }, (_, index) => {
@@ -317,7 +317,7 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
         <span>{labels.fewer}</span>
-        {['bg-slate-100 dark:bg-slate-800', 'bg-brand-200 dark:bg-brand-900', 'bg-brand-400 dark:bg-brand-500', 'bg-brand-600', 'bg-brand-800 dark:bg-brand-700'].map((color) => <span key={color} className={`h-4 w-5 rounded ${color}`} />)}
+        {['bg-slate-100 dark:bg-night-tile', 'bg-brand-200 dark:bg-brand-900', 'bg-brand-400 dark:bg-brand-500', 'bg-brand-600', 'bg-brand-800 dark:bg-brand-700'].map((color) => <span key={color} className={`h-4 w-5 rounded ${color}`} />)}
         <span>{labels.more}</span>
       </div>
     </>}
@@ -397,11 +397,11 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
   profile: BarangayProfile | null; loading: boolean; error: Error | null; onClose: () => void;
 }) {
   if (!profile && !loading && !error) return null;
-  return <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-950/20" aria-live="polite">
+  return <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-900/20" aria-live="polite">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div>
         {profile && <><h2 className="text-lg font-semibold">{profile.barangay.name} profile</h2>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Barangay ID {profile.barangay.id} · Code {profile.barangay.code} · {profile.barangay.districtLabel} · ZIP {profile.barangay.zip} · {profile.source === 'sample' ? 'Sample data only' : 'Live records only'}</p></>}
+          <p className="mt-1 text-xs text-slate-600 dark:text-night-muted">Barangay ID {profile.barangay.id} · Code {profile.barangay.code} · {profile.barangay.districtLabel} · ZIP {profile.barangay.zip} · {profile.source === 'sample' ? 'Sample data only' : 'Live records only'}</p></>}
       </div>
       <button type="button" className={btnGhost} onClick={onClose}>Close</button>
     </div>
@@ -415,11 +415,11 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
           ['Sterilized pets', profile.registry.sterilized], ['Active Paravets', profile.paravets.length],
           ['Archived resident pre-listings', profile.source === 'sample' ? 'Live-only; not included' : profile.prelistings.count],
           ['Archived pre-listings submitted (90d)', profile.source === 'sample' ? 'Live-only; not included' : profile.prelistings.recent],
-        ].map(([label, value]) => <article key={String(label)} className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 font-semibold">{value}</p></article>)}
+        ].map(([label, value]) => <article key={String(label)} className="rounded-lg border border-slate-200 bg-white p-3 dark:border-night-border dark:bg-night-surface"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 font-semibold">{value}</p></article>)}
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div><h3 className="text-sm font-semibold">Active Paravets</h3>
-          {profile.paravets.length ? <ul className="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900">{profile.paravets.map((paravet) => <li key={paravet.id} className="flex justify-between gap-3 p-2 text-sm"><span>{paravet.name}</span><span className="text-slate-500">{paravet.code}</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No active Paravets assigned.</p>}
+          {profile.paravets.length ? <ul className="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-night-border dark:border-night-border dark:bg-night-surface">{profile.paravets.map((paravet) => <li key={paravet.id} className="flex justify-between gap-3 p-2 text-sm"><span>{paravet.name}</span><span className="text-slate-500">{paravet.code}</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No active Paravets assigned.</p>}
         </div>
         <div><h3 className="text-sm font-semibold">Census submissions</h3>
           {profile.census.length ? <ul className="mt-2 space-y-1 text-sm">{profile.census.map((row) => <li key={row.status} className="flex justify-between gap-3"><span>{statusLabel(row.status)}</span><span>{row.submissions} submissions · {row.households_visited} households · {row.census_owners} owners · {row.census_pets} pets</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No census submissions for this source.</p>}
@@ -427,7 +427,7 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div><h3 className="text-sm font-semibold">Dashboard records by dataset</h3>
-          {profile.dashboardRecords.length ? <ul className="mt-2 grid grid-cols-2 gap-2 text-sm">{profile.dashboardRecords.map((row) => <li key={row.dataset} className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900"><span className="capitalize">{row.dataset}</span><strong className="float-right">{row.count}</strong></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No dashboard records for this source.</p>}
+          {profile.dashboardRecords.length ? <ul className="mt-2 grid grid-cols-2 gap-2 text-sm">{profile.dashboardRecords.map((row) => <li key={row.dataset} className="rounded-lg border border-slate-200 bg-white p-2 dark:border-night-border dark:bg-night-surface"><span className="capitalize">{row.dataset}</span><strong className="float-right">{row.count}</strong></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No dashboard records for this source.</p>}
         </div>
       </div>
     </>}
@@ -454,10 +454,10 @@ export function ReportBuilder({ source, year }: { source: 'live' | 'sample'; yea
     setRequestPath(`/reports?${params.toString()}`);
   };
   const clear = () => { setTitle(''); setBarangayId(''); setAccountId(''); setPetId(''); setParavetId(''); setRecordSearch(''); setResetKey((value) => value + 1); setCategories(reportCategories.map(([key]) => key)); setRequestPath(null); };
-  return <section className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+  return <section className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-night-border">
     <div><h2 className="text-lg font-semibold">Build a Consolidated Report</h2><p className="mt-1 text-sm text-slate-500">Select categories and records to assemble one printable report with a Census-sheet-inspired office header. Report data is source-isolated; only supported database records are included.</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <label className="text-xs text-slate-500">Report title<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="Municipal veterinary operations report" className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
+      <label className="text-xs text-slate-500">Report title<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="Municipal veterinary operations report" className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface" /></label>
       <ReportOptionSearch key={`${resetKey}-barangay`} source={source} kind="barangay" label="Barangay" placeholder="Search barangays…" onSelect={setBarangayId} />
       <ReportOptionSearch key={`${resetKey}-account`} source={source} kind="account" label="Account" placeholder="Search accounts…" onSelect={setAccountId} />
       <ReportOptionSearch key={`${resetKey}-pet`} source={source} kind="pet" label="Pet" placeholder="Search pets…" onSelect={setPetId} />
@@ -471,17 +471,17 @@ export function ReportBuilder({ source, year }: { source: 'live' | 'sample'; yea
     {loading && <p role="status" className="text-sm text-slate-500">Generating report…</p>}
     {error && <Notice kind="error">{error.message}</Notice>}
     {data && !loading && !error && <>
-      <div className="report-cover rounded-xl border border-slate-300 bg-white p-5 text-center text-slate-900 print:border-slate-300 print:bg-white print:text-black dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+      <div className="report-cover rounded-xl border border-slate-300 bg-white p-5 text-center text-slate-900 print:border-slate-300 print:bg-white print:text-black dark:border-night-border dark:bg-night-surface dark:text-night-text">
         <Letterhead title={data.header.title} />
         <p className="mt-2 text-xs text-slate-500">Reporting year {data.header.year} · {data.header.source === 'sample' ? 'SAMPLE DATA' : 'LIVE RECORDS'} · Prepared by {data.header.preparedBy} · Generated {new Date(data.header.generatedAt).toLocaleString()}</p>
         <p className="mt-1 text-xs text-slate-500">{data.filters.barangay ? `${data.filters.barangay.name} · Code ${data.filters.barangay.code} · ID ${data.filters.barangay.id}` : 'All barangays'}{data.filters.account ? ` · Account: ${data.filters.account.name} (${data.filters.account.type})` : ''}{data.filters.pet ? ` · Pet: ${data.filters.pet.name} (${data.filters.pet.species})` : ''}{data.filters.paravet ? ` · Paravet: ${data.filters.paravet.name} (${data.filters.paravet.code})` : ''}</p>
       </div>
       <div className="flex justify-end print:hidden"><button type="button" onClick={() => window.print()} className={btnGhost}>Print report</button></div>
       <div className="space-y-5">{data.categories.map((section) => {
-        return <section key={section.key} className="report-section rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+        return <section key={section.key} className="report-section rounded-xl border border-slate-200 p-4 dark:border-night-border">
           <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="text-base font-semibold">{section.title}</h3><span className="text-sm text-slate-500">{section.key==='overview'?`${section.total} records across ${section.records.length} categories`:section.records.length < section.total ? `Showing ${section.records.length} of ${section.total} records (limit 300)` : `${section.total} records`}</span></div>
-          {section.records.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900"><tr><th className="p-2">Record</th><th className="p-2">Status / Type</th><th className="p-2">Date / Year</th><th className="p-2">Barangay</th><th className="p-2">Details</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{section.records.map((record) => <tr key={`${section.key}:${record.id}`}><td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td><td className="p-2">{record.status || '—'}</td><td className="p-2">{record.date || '—'}</td><td className="p-2">{record.barangay || '—'}</td><td className="p-2">{record.detail || '—'}</td></tr>)}</tbody></table>
-            {section.records.some((record) => /^\d+$/.test(record.detail)) && <ComparisonBars className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900" title={`${section.title} visual summary`} rows={section.records.filter((record) => /^\d+$/.test(record.detail)).map((record) => ({ label: record.label, value: Number(record.detail) }))} />}
+          {section.records.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500 dark:bg-night-surface"><tr><th className="p-2">Record</th><th className="p-2">Status / Type</th><th className="p-2">Date / Year</th><th className="p-2">Barangay</th><th className="p-2">Details</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-night-border">{section.records.map((record) => <tr key={`${section.key}:${record.id}`}><td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td><td className="p-2">{record.status || '—'}</td><td className="p-2">{record.date || '—'}</td><td className="p-2">{record.barangay || '—'}</td><td className="p-2">{record.detail || '—'}</td></tr>)}</tbody></table>
+            {section.records.some((record) => /^\d+$/.test(record.detail)) && <ComparisonBars className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-night-surface" title={`${section.title} visual summary`} rows={section.records.filter((record) => /^\d+$/.test(record.detail)).map((record) => ({ label: record.label, value: Number(record.detail) }))} />}
           </div> : <p className="mt-3 text-sm text-slate-500">No records match the selected filters.</p>}
         </section>;
       })}</div>
@@ -579,10 +579,10 @@ export function ReportsPage() {
       <button type="button" onClick={download} className={btnGhost}>{t('reports.export')}</button>
     </div>
     <div className="flex flex-wrap items-end gap-3">
-      <label className="text-xs text-slate-500">{t('reports.source')}<Select value={source} onChange={(event) => setSource(event.target.value as typeof source)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <label className="text-xs text-slate-500">{t('reports.source')}<Select value={source} onChange={(event) => setSource(event.target.value as typeof source)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface">
         <option value="live">{t('reports.liveOnly')}</option>
       </Select></label>
-      <label className="text-xs text-slate-500">{t('reports.year')}<Select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <label className="text-xs text-slate-500">{t('reports.year')}<Select value={year} onChange={(event) => setYear(Number(event.target.value))} className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface">
         {Array.from({ length: 6 }, (_, index) => new Date().getFullYear() - index).map((value) => <option key={value} value={value}>{value}</option>)}
       </Select></label>
       {!!data?.syntheticRecords&&<Notice>Includes synthetic reference records. These illustrate trends and never qualify as predictive evidence.</Notice>}
@@ -593,7 +593,7 @@ export function ReportsPage() {
     {referenceData.error && <Notice kind="error">{referenceData.error.message}</Notice>}
 
     <section aria-label={t('reports.title')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map(([label, value]) => <article key={label} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      {cards.map(([label, value]) => <article key={label} className="rounded-xl border border-slate-200 p-4 dark:border-night-border">
         <p className="text-sm text-slate-500">{t(label)}</p><p className="mt-2 text-3xl font-semibold">{value}</p>
       </article>)}
     </section>
@@ -603,8 +603,8 @@ export function ReportsPage() {
       <h2 className="text-lg font-semibold">{t('reports.petSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.petHelp')}</p>
       <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.petCount', 'reports.withVaccineFlag', 'reports.sterilizedCol', 'reports.laps', 'reports.noVaccineFlag'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.barangays.map((row) => <tr key={row.barangay}>
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{(['reports.barangay', 'reports.petCount', 'reports.withVaccineFlag', 'reports.sterilizedCol', 'reports.laps', 'reports.noVaccineFlag'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-night-border">{data.barangays.map((row) => <tr key={row.barangay}>
           <td className="p-3 font-medium"><button type="button" onClick={() => {
             const reference = referenceData.data?.barangays.find((item) => item.name.toLowerCase() === row.barangay.toLowerCase());
             if (reference) setSelectedBarangayId(reference.id);
@@ -621,8 +621,8 @@ export function ReportsPage() {
       <p className="mt-2 text-sm font-medium">{t('reports.censusSummary', { covered: censusCovered, total: censusCoverage.length, year: data.year, pending: censusPending })}</p>
       <details className="mt-2"><summary className="cursor-pointer text-sm text-brand-800 dark:text-brand-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
         <div className="mt-2 data-table overflow-x-auto"><table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{censusCoverage.map((row) => <tr key={row.barangay}>
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-night-border">{censusCoverage.map((row) => <tr key={row.barangay}>
             <td className="p-3 font-medium">{row.barangay}</td><td className="p-3">{row.approved}</td><td className="p-3">{row.pending}</td><td className="p-3">{row.rejected}</td>
             <td className="p-3">{row.owners}</td><td className="p-3">{row.pets}</td><td className="p-3">{row.lastCensus ?? t('reports.noCensus')}</td>
           </tr>)}</tbody>
@@ -630,7 +630,7 @@ export function ReportsPage() {
       </details>
     </section>}
 
-    <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer font-semibold">Trends and barangay activity</summary><div className="mt-5 space-y-5">
+    <details className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><summary className="cursor-pointer font-semibold">Trends and barangay activity</summary><div className="mt-5 space-y-5">
     <section className="grid gap-4 lg:grid-cols-2" aria-label={t('reports.trendSection')}>
       <PetRegistrationChart
         data={data.monthly}
@@ -672,7 +672,7 @@ export function ReportsPage() {
       }}
     />
     <label className="block max-w-md text-xs text-slate-500">Open any barangay profile
-      <Select value={selectedBarangayId ?? ''} onChange={(event) => setSelectedBarangayId(event.target.value ? Number(event.target.value) : null)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <Select value={selectedBarangayId ?? ''} onChange={(event) => setSelectedBarangayId(event.target.value ? Number(event.target.value) : null)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface">
         <option value="">Choose a barangay…</option>
         {districtOptions(referenceData.data?.barangays, (row) => row.id, (row) => `${row.name} · ${row.code} · ID ${row.id}`)}
       </Select>
@@ -685,20 +685,20 @@ export function ReportsPage() {
     />
     </div></details>
 
-    <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer font-semibold">Service records and planning</summary><div className="mt-5">
+    <details className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><summary className="cursor-pointer font-semibold">Service records and planning</summary><div className="mt-5">
     <section>
       <h2 className="text-lg font-semibold">{t('reports.serviceSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.serviceHelp')}</p>
       <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="p-3">{t('reports.serviceType')}</th><th className="p-3">{t('reports.records')}</th><th className="p-3">{t('reports.completed')}</th></tr></thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.serviceBreakdown.map((row) => <tr key={row.service}><td className="p-3 font-medium">{row.service}</td><td className="p-3">{row.total}</td><td className="p-3">{row.completed}</td></tr>)}
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr><th className="p-3">{t('reports.serviceType')}</th><th className="p-3">{t('reports.records')}</th><th className="p-3">{t('reports.completed')}</th></tr></thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-night-border">{data.serviceBreakdown.map((row) => <tr key={row.service}><td className="p-3 font-medium">{row.service}</td><td className="p-3">{row.total}</td><td className="p-3">{row.completed}</td></tr>)}
         {!data.serviceBreakdown.length && <tr><td colSpan={3} className="p-5 text-slate-500">{t('reports.noServices')}</td></tr>}</tbody>
       </table></div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><p className="text-sm text-slate-500">{t('reports.antiRabies', { month: data.comparisonMonths ? monthLabel(data.comparisonMonths) : t('reports.noActivity') })}</p><p className="mt-2 text-2xl font-semibold">{data.comparison.antiRabiesServices.current}</p><p className="text-xs text-slate-500">{countChange(data.comparison.antiRabiesServices.percentChange)}</p></article>
-        <article className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><p className="text-sm text-slate-500">{t('reports.kapon', { month: data.comparisonMonths ? monthLabel(data.comparisonMonths) : t('reports.noActivity') })}</p><p className="mt-2 text-2xl font-semibold">{data.comparison.spayNeuterServices.current}</p><p className="text-xs text-slate-500">{countChange(data.comparison.spayNeuterServices.percentChange)}</p></article>
+        <article className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><p className="text-sm text-slate-500">{t('reports.antiRabies', { month: data.comparisonMonths ? monthLabel(data.comparisonMonths) : t('reports.noActivity') })}</p><p className="mt-2 text-2xl font-semibold">{data.comparison.antiRabiesServices.current}</p><p className="text-xs text-slate-500">{countChange(data.comparison.antiRabiesServices.percentChange)}</p></article>
+        <article className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><p className="text-sm text-slate-500">{t('reports.kapon', { month: data.comparisonMonths ? monthLabel(data.comparisonMonths) : t('reports.noActivity') })}</p><p className="mt-2 text-2xl font-semibold">{data.comparison.spayNeuterServices.current}</p><p className="text-xs text-slate-500">{countChange(data.comparison.spayNeuterServices.percentChange)}</p></article>
       </div>
-      <article className="mt-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      <article className="mt-3 rounded-xl border border-slate-200 p-4 dark:border-night-border">
         <h3 className="text-sm font-semibold">{t('reports.planningBaseline')}</h3>
         <p className="mt-1 text-xs text-slate-500">{t('reports.planningEvidence', {
           records: data.forecast.sampleSize,
@@ -724,8 +724,8 @@ export function ReportsPage() {
       <h2 className="text-lg font-semibold">{t('reports.turnoutSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.turnoutHelp')}</p>
       <div className="mt-3 data-table overflow-x-auto"><table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.program', 'reports.barangay', 'reports.date', 'reports.interested', 'reports.namedStubs', 'reports.namedCame', 'reports.showUp', 'reports.otherServed'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{programTurnout.map((row) => <tr key={row.id}>
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{(['reports.program', 'reports.barangay', 'reports.date', 'reports.interested', 'reports.namedStubs', 'reports.namedCame', 'reports.showUp', 'reports.otherServed'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-night-border">{programTurnout.map((row) => <tr key={row.id}>
           <td className="p-3 font-medium">{row.title}</td><td className="p-3">{row.barangay}</td><td className="p-3">{row.date}</td><td className="p-3">{row.interested}</td>
           <td className="p-3">{row.named}</td><td className="p-3">{row.namedAttended}</td><td className="p-3">{percentOf(row.namedAttended, row.named)}</td><td className="p-3">{row.attended - row.namedAttended}</td>
         </tr>)}
@@ -734,12 +734,12 @@ export function ReportsPage() {
     </section>}
 
     </div></details>
-    <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer font-semibold">Monthly comparison table</summary><div className="mt-5">
+    <details className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><summary className="cursor-pointer font-semibold">Monthly comparison table</summary><div className="mt-5">
     <section>
       <h2 className="text-lg font-semibold">{t('reports.trendSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.trendHelp')}</p>
       <div className="mt-3 data-table overflow-x-auto"><table className="w-full min-w-[920px] text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{[
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{[
           t('reports.month'),
           t('reports.metricPair', { metric: t('reports.petCount'), year: data.year, previous: data.previousYear }),
           t('reports.momPets'),
@@ -751,7 +751,7 @@ export function ReportsPage() {
           t('reports.metricPair', { metric: t('reports.households'), year: data.year, previous: data.previousYear }),
           t('reports.metricPair', { metric: t('reports.censusAnimals'), year: data.year, previous: data.previousYear }),
         ].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{data.monthly.map((row) => <tr key={row.month}>
+        <tbody className="divide-y divide-slate-100 dark:divide-night-border">{data.monthly.map((row) => <tr key={row.month}>
           <td className="p-3 font-medium">{monthLabel(row.month)}</td>
           <td className="p-3">{monthlyValue(row, 'current', 'petRegistrations')} / {monthlyValue(row, 'previous', 'petRegistrations')}</td>
           <td className="p-3">{monthOverMonth(row.month, 'petRegistrations')}</td>
@@ -777,8 +777,8 @@ function WorkbookDrop({ file, disabled, onFile }: { file: File | null; disabled:
   const [error, setError] = useState('');
   const take = (next?: File) => { if (!next) return; if (!/\.xlsx$/i.test(next.name)) { setError('Choose an Excel workbook (.xlsx).'); return; } setError(''); onFile(next); };
   return <div onDragOver={(event) => { event.preventDefault(); if (!disabled) setOver(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(false); }} onDrop={(event) => { event.preventDefault(); setOver(false); if (!disabled) take(event.dataTransfer.files[0]); }}
-    className={`flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-5 py-5 text-center transition-colors sm:flex-row sm:text-left ${over ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-white/[0.02]'}`}>
-    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-brand-600 shadow-[0_8px_20px_-10px_rgb(1_168_90/0.5)] ring-1 ring-slate-200 dark:bg-surface-bar dark:text-brand-300 dark:ring-slate-700"><FileSpreadsheet className="h-6 w-6" /></span>
+    className={`flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-5 py-5 text-center transition-colors sm:flex-row sm:text-left ${over ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-300 bg-slate-50 dark:border-night-border dark:bg-white/[0.02]'}`}>
+    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-brand-600 shadow-[0_8px_20px_-10px_rgb(1_168_90/0.5)] ring-1 ring-slate-200 dark:bg-surface-bar dark:text-brand-300 dark:ring-night-border"><FileSpreadsheet className="h-6 w-6" /></span>
     <div className="min-w-0 flex-1">
       <p className="truncate font-semibold">{file ? file.name : 'Select completed monthly workbook'}</p>
       <p className="mt-0.5 text-sm text-slate-500">{file ? `${Math.max(1, Math.round(file.size / 1024))} KB · ready to validate` : 'Drag the .xlsx here or browse. Up to 3 MB.'}</p>
@@ -878,7 +878,7 @@ export function WorkbookTools() {
   return <div className="w-full">
 
     {reportBusy&&<Modal title="Loading workbook" onClose={()=>{}} dismissible={false}><Loading label="Processing workbook information…"/></Modal>}
-    <section className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+    <section className="rounded-2xl border border-slate-200 p-5 dark:border-night-border">
       <h2 className="text-lg font-semibold">Spay and Neuter Monthly Report (.xlsx)</h2>
       <p className="mt-1 text-sm text-slate-500">Download a blank standard workbook, fill it in, preview validation, and import live searchable records. You can also export previously imported report records in the same workbook format.</p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -904,10 +904,10 @@ export function WorkbookTools() {
           {reportBusy ? 'Working…' : 'Validate workbook'}
         </button>
       </div>
-      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
+      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-night-tile/60">
         <h3 className="font-semibold">Accepted format and data rules</h3>
-        <p className="mt-1 text-slate-600 dark:text-slate-300">Keep the exact eight column headers in row 7: Date, Name of Client, Barangay, No. Castrated Canine (Male), No. Spayed Canine (Female), No. Castrated Feline (Male), No. Spayed Feline (Female), Remarks.</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600 dark:text-slate-300">
+        <p className="mt-1 text-slate-600 dark:text-night-muted">Keep the exact eight column headers in row 7: Date, Name of Client, Barangay, No. Castrated Canine (Male), No. Spayed Canine (Female), No. Castrated Feline (Male), No. Spayed Feline (Female), Remarks.</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600 dark:text-night-muted">
           <li>Put each record beneath its month heading. Use a real Excel date or YYYY-MM-DD and ensure the date matches that month.</li>
           <li>Client and barangay are required; barangay must match a name in the system. Use whole, non-negative numbers for the four procedure counts, with at least one procedure per record.</li>
           <li>Leave unused count cells blank or enter 0. Remarks are optional (up to 500 characters). Keep formula totals below the data rows; formula rows are never imported.</li>
@@ -928,8 +928,8 @@ export function WorkbookTools() {
           {reportPreview.errors.length === 100 && <p className="mt-2 text-xs">Only the first 100 validation errors are displayed.</p>}
         </div>}
         {reportPreview.records.length > 0 && <div className="mt-3 data-table overflow-x-auto">
-          <table className="w-full min-w-[38rem] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['Date','Client','Barangay','Procedures','Sheet / row'].map((item) => <th key={item} className="p-2">{item}</th>)}</tr></thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{reportPreview.records.map((record) => <tr key={`${record.worksheet}:${record.rowNumber}`}>
+          <table className="w-full min-w-[38rem] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{['Date','Client','Barangay','Procedures','Sheet / row'].map((item) => <th key={item} className="p-2">{item}</th>)}</tr></thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-night-border">{reportPreview.records.map((record) => <tr key={`${record.worksheet}:${record.rowNumber}`}>
               <td className="p-2">{record.date}</td><td className="p-2">{record.clientName}</td><td className="p-2">{record.barangay}</td>
               <td className="p-2">{record.totalProcedures}</td><td className="p-2">{record.worksheet} · {record.rowNumber}</td>
             </tr>)}</tbody></table>
@@ -957,16 +957,16 @@ export function AuditPage() {
   const rows = data?.data ?? [];
   return <div className="w-full"><h1 className="text-2xl font-semibold">Activity Log<InfoTip>Recent recorded administrative actions.</InfoTip></h1>
     <div className="mt-4 flex flex-wrap items-end gap-3">
-      <label className="text-xs text-slate-500">Search<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="User, action, details" className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-      <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></Select></label>
-      <label className="text-xs text-slate-500">Direction<Select value={direction} onChange={(e) => { setDirection(e.target.value as typeof direction); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
-      <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-      <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
+      <label className="text-xs text-slate-500">Search<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="User, action, details" className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface" /></label>
+      <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-night-border dark:bg-night-surface"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></Select></label>
+      <label className="text-xs text-slate-500">Direction<Select value={direction} onChange={(e) => { setDirection(e.target.value as typeof direction); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-night-border dark:bg-night-surface"><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
+      <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => { setYear(e.target.value); setPage(1); }} className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-night-border dark:bg-night-surface" /></label>
+      <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => { setMonth(e.target.value); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-night-border dark:bg-night-surface"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
       <button type="button" onClick={() => { setSearch(''); setSort('time'); setDirection('desc'); setYear(''); setMonth(''); setPage(1); }} className={btnGhost}>Clear filters</button>
     </div>
     {loading && !data ? <Loading /> : error && !data ? <Notice kind="error">{error.message}</Notice> : <>
       {error && <div className="mt-3"><Notice kind="error">{error.message}</Notice></div>}
       {loading && <p role="status" className="mt-3 text-xs text-slate-500">Updating results…</p>}
-      <div className="mt-5 data-table overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['Time','User','Action','Details'].map((x)=><th key={x} className="p-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{rows.map((x)=><tr key={x.id}><td className="whitespace-nowrap p-3">{x.time}</td><td className="p-3">{x.user}</td><td className="p-3 font-medium">{x.action}</td><td className="p-3 text-slate-500">{x.detail}</td></tr>)}</tbody></table>{!rows.length && <p className="p-5 text-sm text-slate-500">No matching activity.</p>}</div><Pagination page={page} pageSize={pageSize} total={data?.total ?? 0} onPage={setPage} />
+      <div className="mt-5 data-table overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{['Time','User','Action','Details'].map((x)=><th key={x} className="p-3">{x}</th>)}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-night-border">{rows.map((x)=><tr key={x.id}><td className="whitespace-nowrap p-3">{x.time}</td><td className="p-3">{x.user}</td><td className="p-3 font-medium">{x.action}</td><td className="p-3 text-slate-500">{x.detail}</td></tr>)}</tbody></table>{!rows.length && <p className="p-5 text-sm text-slate-500">No matching activity.</p>}</div><Pagination page={page} pageSize={pageSize} total={data?.total ?? 0} onPage={setPage} />
     </>}</div>;
 }

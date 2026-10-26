@@ -3,7 +3,7 @@ import { forwardRef,useRef,useState,type InputHTMLAttributes } from 'react';
 export const FileInput=forwardRef<HTMLInputElement,InputHTMLAttributes<HTMLInputElement>>(function FileInput(props,ref){
  const input=useRef<HTMLInputElement|null>(null),[over,setOver]=useState(false),[error,setError]=useState('');
  const accepts=(file:File)=>!props.accept||props.accept.split(',').some(raw=>{const v=raw.trim().toLowerCase();return v.startsWith('.')?file.name.toLowerCase().endsWith(v):v.endsWith('/*')?file.type.startsWith(v.slice(0,-1)):file.type===v;});
- return <span className={`inline-flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-dashed p-2 text-xs ${over?'border-brand-500 bg-brand-50':'border-slate-300 dark:border-slate-600'}`} onDragOver={e=>{e.preventDefault();if(!props.disabled)setOver(true);}} onDragLeave={()=>setOver(false)} onDrop={e=>{
+ return <span className={`inline-flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-dashed p-2 text-xs ${over?'border-brand-500 bg-brand-50':'border-slate-300 dark:border-night-border-strong'}`} onDragOver={e=>{e.preventDefault();if(!props.disabled)setOver(true);}} onDragLeave={()=>setOver(false)} onDrop={e=>{
   e.preventDefault();e.stopPropagation();setOver(false);if(props.disabled||!input.current)return;
   const files=Array.from(e.dataTransfer.files);if(files.some(f=>!accepts(f))){setError('Choose a supported file type.');return;}
   if(!props.multiple&&files.length>1){setError('Choose one file at a time.');return;}

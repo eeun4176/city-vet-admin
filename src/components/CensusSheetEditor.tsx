@@ -38,7 +38,7 @@ function PetFields({ pet, index, onChange, onRemove, canRemove }: { pet: PetDraf
   const set = <K extends keyof PetDraft>(name: K, value: PetDraft[K]) => onChange({ ...pet, [name]: value });
   const thisYear = new Date().getFullYear();
   return (
-    <fieldset className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+    <fieldset className="rounded-xl border border-slate-200 p-3 dark:border-night-border">
       <legend className="px-1 text-xs font-semibold text-slate-500">{t('census.pet', { n: index + 1 })}</legend>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label={t('census.pet.name')} className="sm:col-span-2"><ReferenceInput source="pets" value={pet.petName} onChange={(value) => set('petName', value)} onSelect={(suggestion) => onChange(petFromSuggestion(pet, suggestion))} required maxLength={80} className={inputCls} /></Field>
@@ -144,7 +144,7 @@ export function CensusSheetEditor({ initial, showMeta = true, barangay, submitLa
       )}
 
       {owners.map((owner, index) => (
-        <section key={owner.key} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+        <section key={owner.key} className="rounded-2xl border border-slate-200 p-4 dark:border-night-border">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold">{t('census.owner', { n: index + 1 })}</h3>
             {owners.length > 1 && (

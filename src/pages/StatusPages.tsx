@@ -39,7 +39,7 @@ export function MaintenancePage() {
       <div className="max-w-sm">
         <h1 className="text-xl font-semibold">{t('maintenance.title')}</h1>
         <p className="mt-2 text-sm text-slate-500">{t('maintenance.body')}</p>
-        <button type="button" onClick={() => setConfirm(true)} className="mt-5 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">{t('nav.logout')}</button>
+        <button type="button" onClick={() => setConfirm(true)} className="mt-5 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:border-night-border dark:hover:bg-night-tile">{t('nav.logout')}</button>
       </div>
       {confirm && <ConfirmDialog title="Sign out?" message="You will need to sign in again to continue." confirmLabel="Sign out" onClose={() => setConfirm(false)} onConfirm={() => { setConfirm(false); void logout(); }} />}
     </div>

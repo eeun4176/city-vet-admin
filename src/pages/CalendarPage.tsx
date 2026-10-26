@@ -15,7 +15,7 @@ const COLORS: Record<string, string> = {
   followup: 'bg-violet-100 text-violet-900 ring-1 ring-inset ring-violet-200 dark:bg-violet-950 dark:text-violet-100 dark:ring-violet-900',
 };
 const DOTS: Record<string, string> = { paravet: 'bg-brand-500', vaccination: 'bg-sky-500', clinic: 'bg-amber-500', followup: 'bg-violet-500' };
-const calIcon = 'grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300 dark:hover:bg-slate-800';
+const calIcon = 'grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-night-muted dark:hover:bg-night-tile';
 const EVENT_TYPES = ['paravet', 'vaccination', 'clinic', 'followup'];
 
 function eventDate(record: Record<string, unknown>) {
@@ -78,14 +78,14 @@ export function CalendarPage({ embedded = false }: { embedded?: boolean }) {
         <div aria-hidden className="grid grid-cols-7 pb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span key={day} className="text-center sm:pl-2.5 sm:text-left">{day}</span>)}
         </div>
-        <div role="grid" aria-label={`Calendar for ${monthLabel}`} className="grid grid-cols-7 overflow-hidden rounded-2xl bg-white shadow-panel ring-1 ring-inset ring-slate-200 dark:bg-surface-dark dark:ring-slate-800">
+        <div role="grid" aria-label={`Calendar for ${monthLabel}`} className="grid grid-cols-7 overflow-hidden rounded-2xl bg-white shadow-panel ring-1 ring-inset ring-slate-200 dark:bg-surface-dark dark:ring-night-border">
           {days.map((day, index) => {
             const inMonth = day > 0 && day <= dayCount;
             const date = inMonth ? `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : '';
             const dayEvents = date ? eventByDate[date] ?? [] : [];
             return <div role="gridcell" key={index} aria-label={date ? `${date}${dayEvents.length ? `, ${dayEvents.length} events` : ''}` : undefined}
-              className={`${embedded ? 'min-h-14' : 'min-h-[4.5rem] sm:min-h-[6.5rem]'} flex min-w-0 flex-col items-center gap-1 border-b border-r border-slate-200 px-0.5 pb-1 pt-1.5 dark:border-slate-800 sm:items-stretch sm:px-1.5 ${index % 7 === 6 ? 'border-r-0' : ''} ${index >= days.length - 7 ? 'border-b-0' : ''} ${inMonth ? '' : 'bg-slate-50/70 dark:bg-white/[0.02]'}`}>
-              <span className={`grid h-[26px] min-w-[26px] place-items-center self-center rounded-full px-1 text-[13px] font-semibold tabular-nums sm:self-start ${date === today ? 'bg-brand-500 text-white' : inMonth ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>{new Date(year, monthIndex, day).getDate()}</span>
+              className={`${embedded ? 'min-h-14' : 'min-h-[4.5rem] sm:min-h-[6.5rem]'} flex min-w-0 flex-col items-center gap-1 border-b border-r border-slate-200 px-0.5 pb-1 pt-1.5 dark:border-night-border sm:items-stretch sm:px-1.5 ${index % 7 === 6 ? 'border-r-0' : ''} ${index >= days.length - 7 ? 'border-b-0' : ''} ${inMonth ? '' : 'bg-slate-50/70 dark:bg-white/[0.02]'}`}>
+              <span className={`grid h-[26px] min-w-[26px] place-items-center self-center rounded-full px-1 text-[13px] font-semibold tabular-nums sm:self-start ${date === today ? 'bg-brand-500 text-white' : inMonth ? 'text-slate-700 dark:text-night-text' : 'text-slate-400'}`}>{new Date(year, monthIndex, day).getDate()}</span>
               <div className="flex w-full min-w-0 flex-col gap-[3px]">
                 {dayEvents.slice(0, embedded ? 2 : 3).map((event) => <Link to={eventLink(event)} key={event.id || `${event.title}-${event.date}`} title={`${event.title}${event.barangay ? ` · ${event.barangay}` : ''} · ${event.status}`}
                   className={`block h-[5px] truncate rounded-[3px] text-[0px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500 sm:h-[22px] sm:rounded-[7px] sm:px-1.5 sm:text-xs sm:font-semibold sm:leading-[22px] ${COLORS[event.kind]}`}>{event.title}</Link>)}
@@ -100,7 +100,7 @@ export function CalendarPage({ embedded = false }: { embedded?: boolean }) {
         <p className="px-1 pb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Today, {new Date(`${today}T00:00:00`).toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
         <ul className="mb-5 space-y-2">
           {todayEvents.map((event) => <EventRow key={event.id || event.title} event={event} to={eventLink(event)} />)}
-          {!todayEvents.length && <li className="rounded-xl bg-slate-100 px-3 py-2.5 text-sm text-slate-500 dark:bg-slate-800">{today.startsWith(`${year}-${String(monthIndex + 1).padStart(2, '0')}`) ? 'Nothing scheduled today.' : 'Today is in another month.'}</li>}
+          {!todayEvents.length && <li className="rounded-xl bg-slate-100 px-3 py-2.5 text-sm text-slate-500 dark:bg-night-tile">{today.startsWith(`${year}-${String(monthIndex + 1).padStart(2, '0')}`) ? 'Nothing scheduled today.' : 'Today is in another month.'}</li>}
         </ul>
         <p className="px-1 pb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">This month · {monthEvents.length}</p>
         <ul className="space-y-2">
@@ -114,7 +114,7 @@ export function CalendarPage({ embedded = false }: { embedded?: boolean }) {
 
 /** An agenda row: a colored bar for the kind, then the title and date / barangay. */
 function EventRow({ event, to, showDate = false }: { event: CalendarEvent; to: string; showDate?: boolean }) {
-  return <li><Link to={to} className="flex gap-2.5 rounded-xl bg-slate-100 px-2.5 py-2 text-[13px] leading-snug hover:bg-slate-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700">
+  return <li><Link to={to} className="flex gap-2.5 rounded-xl bg-slate-100 px-2.5 py-2 text-[13px] leading-snug hover:bg-slate-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-night-tile dark:hover:bg-night-tile-hover">
     <i aria-hidden className={`w-[3px] shrink-0 rounded-full ${DOTS[event.kind]}`} />
     <span className="min-w-0"><b className="block truncate font-semibold">{event.title}</b><small className="block truncate text-xs text-slate-500">{[showDate ? new Date(`${event.date}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : '', event.barangay, event.status].filter(Boolean).join(' · ')}</small></span>
   </Link></li>;

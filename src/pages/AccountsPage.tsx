@@ -110,8 +110,8 @@ export function AccountsPage() {
     <SelectionBar selection={bulk} total={total} rows={accounts}><button className={btnGhost} disabled={!bulk.count(total)} onClick={()=>void bulk.resolve<AccountRow>(bulkPath).then(rows=>exportSelectedCsv(rows as unknown as Record<string,unknown>[],'accounts-selected')).catch(e=>setError(e.message))}>Export selected</button></SelectionBar>
     {loading ? <Loading /> : <div className="mt-5 data-table overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="p-3">Select</th>{['Name','Account','Barangay','Mobile','Status'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr><th className="p-3">Select</th>{['Name','Account','Barangay','Mobile','Status'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-night-border">
           {accounts.map((account) => <tr key={account.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${account.fullName}`} checked={bulk.has(account.id)} onChange={()=>bulk.toggle(account.id)}/></td>
             <td className="p-3 font-medium"><button type="button" onClick={() => setSelected(account)} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account.fullName}</button></td>
             <td className="p-3">{roleLabel(account.accountType)}{(account.accountKey || account.username) && <p className="font-mono text-xs text-slate-500">{account.accountKey ?? account.username}</p>}</td>
@@ -122,7 +122,7 @@ export function AccountsPage() {
         </tbody>
       </table>
       {!accounts.length && <p className="p-8 text-center text-sm text-slate-500">No matching accounts.</p>}
-      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-500 dark:border-slate-800">Showing {accounts.length} of {total} accounts</p>
+      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-500 dark:border-night-border">Showing {accounts.length} of {total} accounts</p>
     </div>}
     {!loading && <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />}
     {selected && <AccountDetails account={selected} onClose={() => setSelected(null)} onSaved={(token) => { setUndoToken(token); setSelected(null); setReload((value) => value + 1); }} />}
@@ -219,23 +219,23 @@ export function AccountDetails({ account, onClose, onSaved }: { account: Account
           ? <Field label="Barangay">
             <ReferenceInput source="barangay" value={draft.barangay?.name ?? ''} onChange={(value) => setDraft({ ...draft, barangay: value ? { id: draft.barangay?.id ?? 0, name: value, acronym: draft.barangay?.acronym ?? '' } : null })} className={inputCls} />
           </Field>
-          : <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Role and login ID:</strong> {roleLabel(account.accountType)} · {account.username ?? account.accountKey}</p>}
+          : <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Role and login ID:</strong> {roleLabel(account.accountType)} · {account.username ?? account.accountKey}</p>}
       </> : <>
-        <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Name:</strong> {account.fullName}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Username / account key:</strong> {account.username ?? account.accountKey}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Mobile:</strong> {account.mobile ?? '—'}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Barangay:</strong> {account.barangay?.name ?? '—'}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-300"><strong>Status:</strong> {account.status}</p>
+        <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Name:</strong> {account.fullName}</p>
+        <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Username / account key:</strong> {account.username ?? account.accountKey}</p>
+        <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Mobile:</strong> {account.mobile ?? '—'}</p>
+        <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Barangay:</strong> {account.barangay?.name ?? '—'}</p>
+        <p className="text-sm text-slate-600 dark:text-night-muted"><strong>Status:</strong> {account.status}</p>
         <p className="text-xs text-slate-500">Role, login ID, and password are managed separately and cannot be changed here.</p>
       </>}
-      {canRenewPassword && <section className="border-t border-slate-200 pt-4 dark:border-slate-700">
+      {canRenewPassword && <section className="border-t border-slate-200 pt-4 dark:border-night-border">
         <h3 className="text-sm font-semibold">Temporary password</h3>
         <p className="mt-1 text-xs text-slate-500">Renewing invalidates the current password and issues a new one-time password. The Paravet must choose a new password at sign-in.</p>
         {renewedPassword && <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100" role="status">
           <p className="font-semibold">Show this password to the Paravet now. It is displayed only once and expires in 15 minutes.</p>
           <code className="mt-2 block select-all text-lg font-bold tracking-wider">{renewedPassword}</code>
         </div>}
-        {confirmRenew && <div className="mt-3 space-y-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+        {confirmRenew && <div className="mt-3 space-y-3 rounded-xl bg-slate-50 p-3 dark:bg-night-tile">
           <p className="text-sm">Issue a fresh temporary password for {account.fullName}? Their current password will stop working immediately.</p>
           <div className="flex justify-end gap-2">
             <button type="button" disabled={busy} onClick={() => setConfirmRenew(false)} className={btnGhost}>Cancel</button>

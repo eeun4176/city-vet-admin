@@ -10,8 +10,8 @@ import type { NavigationBadges } from '../../shared/navigationBadges';
 const STORAGE_KEY = 'cv.nav.open';
 const rowBase = 'flex h-10 w-full items-center gap-3 rounded-full px-[11px] text-left text-sm font-medium transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
 const childRow = 'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
-const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
-const current = 'bg-brand-500/10 font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300';
+const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-night-muted dark:hover:bg-night-tile dark:hover:text-night-text';
+const current = 'bg-brand-500/10 font-medium text-slate-900 dark:text-night-text';
 
 export function useOpenGroups(activeAncestors: string[]) {
   const [open, setOpen] = useState<Set<string>>(() => {
@@ -48,18 +48,18 @@ interface TreeProps {
 export function NavTree({ nodes, open, toggle, activeId, onNavigate, level = 0,badges }: TreeProps) {
   const { t } = useT();
   return (
-    <ul role={level === 0 ? 'tree' : 'group'} className={level === 0 ? 'space-y-1' : `${level === 1 ? 'ml-5' : 'ml-3'} mt-1 space-y-0.5 border-l border-slate-200 pl-2.5 dark:border-slate-700`}>
+    <ul role={level === 0 ? 'tree' : 'group'} className={level === 0 ? 'space-y-1' : `${level === 1 ? 'ml-5' : 'ml-3'} mt-1 space-y-0.5 border-l border-slate-200 pl-2.5 dark:border-night-border`}>
       {nodes.map((node, index) => {
         const Icon = node.icon;
         const hasChildren = Boolean(node.children?.length);
         const expanded = open.has(node.id);
         const row = level === 0 ? rowBase : childRow;
         const chevron = hasChildren && <ChevronRight aria-hidden className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 ease-spring ${expanded ? 'rotate-90' : ''}`} />;
-        const icon = Icon && level === 0 ? <Icon aria-hidden strokeWidth={1.9} className={`h-[18px] w-[18px] shrink-0 ${node.id === activeId ? 'text-brand-600 dark:text-brand-200' : ''}`} /> : null;
+        const icon = Icon && level === 0 ? <Icon aria-hidden strokeWidth={1.9} className={`h-[18px] w-[18px] shrink-0 ${node.id === activeId ? 'text-brand-500' : ''}`} /> : null;
         return (
           <li key={node.id} role="treeitem" aria-expanded={hasChildren ? expanded : undefined} aria-selected={node.id === activeId} className={level ? 'nav-stagger' : undefined} style={level ? { '--i': index } as CSSProperties : undefined}>
             {hasChildren ? (
-              <button type="button" onClick={() => toggle(node.id)} className={`${row} ${idle} ${expanded ? 'text-slate-900 dark:text-white' : ''}`}>
+              <button type="button" onClick={() => toggle(node.id)} className={`${row} ${idle} ${expanded ? 'text-slate-900 dark:text-night-text' : ''}`}>
                 {icon}<span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>{chevron}
               </button>
             ) : (
@@ -141,7 +141,7 @@ function RailItem({ node, activeId, isAncestor, onNavigate,badges }: { node: Nav
       )}
       {shown && (hasChildren ? (
         <Flyout anchor={anchor} onEnter={show} onLeave={hide}>
-          <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">{t(node.label)}</p>
+          <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-slate-700 dark:text-night-text">{t(node.label)}</p>
           <FlyoutLinks nodes={node.children!} activeId={activeId} onNavigate={() => { setShown(false); onNavigate?.(); }} badges={badges}/>
         </Flyout>
       ) : (

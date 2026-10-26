@@ -28,7 +28,7 @@
   /* Segmented switchers (seg-track): lib/segmented.ts measures the chosen item and this pill slides to it. */
   .seg-track { position: relative; isolation: isolate; }
   .seg-track[data-thumb]::before { content: ''; position: absolute; z-index: -1; left: 0; top: 0; width: var(--thumb-w); height: var(--thumb-h); border-radius: var(--thumb-r, .5rem); transform: translate(var(--thumb-x), var(--thumb-y)); background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 1px 1px rgb(0 0 0 / .04); }
-  .dark .seg-track[data-thumb]::before { background: theme('colors.surface.bar'); box-shadow: 0 1px 2px rgb(0 0 0 / .4); }
+  .dark .seg-track[data-thumb]::before { background: theme('colors.night.surface'); }
   .seg-track[data-thumb="on"]::before { transition: transform 420ms cubic-bezier(.32,.72,0,1), width 420ms cubic-bezier(.32,.72,0,1), height 420ms cubic-bezier(.32,.72,0,1); }
   .seg-track[data-thumb] > [aria-selected="true"], .seg-track[data-thumb] > [aria-checked="true"], .seg-track[data-thumb] > [aria-current="page"] { background: transparent !important; box-shadow: none !important; }
   .no-scrollbar { scrollbar-width: none; }
@@ -59,12 +59,12 @@
 /* Record tables ("data-table" on the wrapper): a white card, a tinted sticky header with small uppercase labels, roomy rows that tint on hover.
    Descendant selectors outrank the cells' own padding utilities, so every table keeps one look. */
 @layer components {
-  .data-table { @apply rounded-2xl bg-white shadow-panel ring-1 ring-inset ring-slate-200 dark:bg-surface-dark dark:ring-slate-800; }
+  .data-table { @apply rounded-2xl bg-white shadow-panel ring-1 ring-inset ring-slate-200 dark:bg-surface-dark dark:ring-night-border; }
   .data-table table { @apply border-separate border-spacing-0; }
-  .data-table thead th { @apply sticky top-0 z-[1] h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50/95 px-4 py-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-slate-800 dark:bg-surface-bar; }
+  .data-table thead th { @apply sticky top-0 z-[1] h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50/95 px-4 py-0 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-night-border dark:bg-surface-bar; }
   .data-table thead th:first-child { @apply rounded-tl-2xl; }
   .data-table thead th:last-child { @apply rounded-tr-2xl; }
-  .data-table tbody td { @apply h-[50px] border-b border-slate-200 px-4 py-2.5 dark:border-slate-800; }
+  .data-table tbody td { @apply h-[50px] border-b border-slate-200 px-4 py-2.5 dark:border-night-border; }
   .data-table tbody tr:last-child td { @apply border-b-0; }
   .data-table tbody tr { @apply transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]; }
   /* Rows whose cells stack several values (a name, then its details) start every cell on one top line, so a row reads straight across.

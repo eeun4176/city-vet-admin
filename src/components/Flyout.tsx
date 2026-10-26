@@ -41,7 +41,7 @@ export function Flyout({ anchor, children, onEnter, onLeave, role = 'menu', id, 
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{ top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }}
-      className={`fixed z-50 max-h-[calc(100dvh-16px)] min-w-44 max-w-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-panel dark:border-slate-700 dark:bg-surface-dark ${className}`}
+      className={`fixed z-50 max-h-[calc(100dvh-16px)] min-w-44 max-w-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-panel dark:border-night-border dark:bg-night-menu ${className}`}
     >
       {children}
     </div>,

@@ -35,11 +35,11 @@ function ListFilters({ query, setQuery, year, setYear, month, setMonth, sort, se
   onClear: () => void;
 }) {
   return <div className="mt-4 flex flex-wrap items-end gap-3">
-    <label className="text-xs text-slate-500">Search<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Title, barangay, submitter" className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-    <label className="text-xs text-slate-500">Sort<Select value={sort} onChange={(e) => setSort(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900">{[['created','Recently submitted'],['date','Census date'],['barangay','Barangay'],['title','Title'],['submitter','Submitter'],['status','Status'],['owners','Owner count'],['pets','Pet count']].map(([v,l]) => <option key={v} value={v}>{l}</option>)}</Select></label>
-    <label className="text-xs text-slate-500">Direction<Select value={dir} onChange={(e) => setDir(e.target.value as 'asc' | 'desc')} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
-    <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => setYear(e.target.value)} className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
-    <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => setMonth(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
+    <label className="text-xs text-slate-500">Search<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Title, barangay, submitter" className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-night-border dark:bg-night-surface" /></label>
+    <label className="text-xs text-slate-500">Sort<Select value={sort} onChange={(e) => setSort(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-night-border dark:bg-night-surface">{[['created','Recently submitted'],['date','Census date'],['barangay','Barangay'],['title','Title'],['submitter','Submitter'],['status','Status'],['owners','Owner count'],['pets','Pet count']].map(([v,l]) => <option key={v} value={v}>{l}</option>)}</Select></label>
+    <label className="text-xs text-slate-500">Direction<Select value={dir} onChange={(e) => setDir(e.target.value as 'asc' | 'desc')} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-night-border dark:bg-night-surface"><option value="asc">Ascending</option><option value="desc">Descending</option></Select></label>
+    <label className="text-xs text-slate-500">Year<input type="number" min={2000} max={2100} value={year} onChange={(e) => setYear(e.target.value)} className="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-night-border dark:bg-night-surface" /></label>
+    <label className="text-xs text-slate-500">Month<Select value={month} onChange={(e) => setMonth(e.target.value)} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-night-border dark:bg-night-surface"><option value="">All</option>{Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'long' })}</option>)}</Select></label>
     <button type="button" onClick={onClear} className={btnGhost}>Clear filters</button>
   </div>;
 }
@@ -85,7 +85,7 @@ export function MySubmissionsPage() {
         <ul className="mt-5 space-y-3">
           {data.data.map((s) => (
             <li key={s.id}><label className="mb-2 inline-flex items-center gap-2 text-sm"><input type="checkbox" aria-label={`Select ${s.label}`} checked={bulk.has(s.id)} onChange={()=>bulk.toggle(s.id)}/>Select submission</label>
-              <Link to={`/census/mine/${s.id}`} className="block rounded-2xl border border-slate-200 p-4 transition-colors hover:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700">
+              <Link to={`/census/mine/${s.id}`} className="block rounded-2xl border border-slate-200 p-4 transition-colors hover:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-night-border">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{s.label}</span><StatusBadge status={s.status} />
                 </div>
@@ -136,14 +136,14 @@ export function ReviewListPage({ status }: { status?: (typeof REVIEW_STATUSES)[n
       {data && data.data.length > 0 && (
         <div className="mt-5 data-table overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800">
+            <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-night-tile">
               <tr><th className="p-3">Select</th>{(['census.col.barangay', 'census.col.title', 'census.col.submitter', 'census.col.date', 'census.col.counts', 'census.col.status'] as MessageKey[]).map((key) => <th key={key} scope="col" className="px-4 py-2.5 font-medium">{t(key)}</th>)}</tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-night-border">
               {data.data.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50"><td className="p-3"><input type="checkbox" aria-label={`Select ${s.label}`} checked={bulk.has(s.id)} onChange={()=>bulk.toggle(s.id)}/></td>
+                <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-night-tile/50"><td className="p-3"><input type="checkbox" aria-label={`Select ${s.label}`} checked={bulk.has(s.id)} onChange={()=>bulk.toggle(s.id)}/></td>
                   <td className="px-4 py-3">{s.barangay}</td>
-                  <td className="px-4 py-3"><Link to={`/census/review/${current}/${s.id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-200">{s.label}</Link></td>
+                  <td className="px-4 py-3"><Link to={`/census/review/${current}/${s.id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-300">{s.label}</Link></td>
                   <td className="px-4 py-3">{s.submitter}</td>
                   <td className="px-4 py-3">{formatDate(s.censusDate)}</td>
                   <td className="px-4 py-3"><Counts s={s} /></td>

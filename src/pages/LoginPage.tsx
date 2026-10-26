@@ -12,7 +12,7 @@ import { landingPageForRole, type Role } from '../../shared/permissions';
 type Step = 'signin' | 'first' | 'password';
 
 // Same sign-in as e-Vet Field: floating labels over 54px fields, a soft green focus ring, and a short welcome before the dashboard opens.
-const field = 'peer h-[54px] w-full rounded-xl border border-slate-200 bg-white pb-1.5 pl-11 pt-[21px] text-[15px] text-slate-900 outline-none transition-[border-color,box-shadow] focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white';
+const field = 'peer h-[54px] w-full rounded-xl border border-slate-200 bg-white pb-1.5 pl-11 pt-[21px] text-[15px] text-slate-900 outline-none transition-[border-color,box-shadow] focus:border-brand-500 focus:ring-4 focus:ring-brand-500/20 dark:border-night-border dark:bg-night-surface dark:text-night-text';
 const button = 'relative isolate mt-2 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-brand-500 text-[15px] font-semibold text-white transition-colors duration-300 hover:bg-brand-600 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-default';
 const WELCOME_MS = 1400;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms));
@@ -74,7 +74,7 @@ export function LoginPage() {
     }
   }
 
-  const toggle = <button type="button" onClick={() => setShowPasswords((visible) => !visible)} aria-label={t(showPasswords ? 'login.hidePassword' : 'login.showPassword')} aria-pressed={showPasswords} className="grid h-9 min-h-0 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200">{showPasswords ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}</button>;
+  const toggle = <button type="button" onClick={() => setShowPasswords((visible) => !visible)} aria-label={t(showPasswords ? 'login.hidePassword' : 'login.showPassword')} aria-pressed={showPasswords} className="grid h-9 min-h-0 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-night-tile dark:hover:text-night-text">{showPasswords ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}</button>;
 
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-[#f8faf9] dark:bg-[#121212]">
@@ -85,15 +85,15 @@ export function LoginPage() {
         <div className="flex min-w-0 items-center gap-2.5">
           <img src="/cityvet-logo.png" alt="" className="h-9 w-9 shrink-0" />
           <div className="min-w-0">
-            <p className="flex items-center gap-1.5 whitespace-nowrap text-[18px] font-extrabold leading-5 tracking-[-0.02em] text-slate-900 dark:text-white">{t('app.name')}<span className="rounded-md bg-brand-50 px-1.5 text-[10px] font-bold uppercase leading-4 tracking-wide text-brand-700 dark:bg-brand-900 dark:text-brand-100">{t('app.edition')}</span></p>
+            <p className="flex items-center gap-1.5 whitespace-nowrap text-[18px] font-extrabold leading-5 tracking-[-0.02em] text-slate-900 dark:text-night-text">{t('app.name')}<span className="rounded-md bg-brand-50 px-1.5 text-[10px] font-bold uppercase leading-4 tracking-wide text-brand-700 dark:bg-brand-900 dark:text-brand-300">{t('app.edition')}</span></p>
             <p className="truncate text-xs text-slate-500 max-[600px]:hidden">{t('app.city')}</p>
           </div>
         </div>
-        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-slate-700">Filipino / EN</span>
+        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-slate-200 dark:bg-surface-dark dark:ring-night-border">Filipino / EN</span>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-[420px] rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgb(16_24_20/0.04),0_12px_32px_-12px_rgb(16_24_20/0.12)] dark:border-slate-800 dark:bg-surface-dark sm:p-8">
+        <div className="w-full max-w-[420px] rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgb(16_24_20/0.04),0_12px_32px_-12px_rgb(16_24_20/0.12)] dark:border-night-border dark:bg-surface-dark sm:p-8">
           {welcome !== null ? <div role="status" className="flex flex-col items-center py-4 text-center">
             <svg viewBox="0 0 52 52" className="h-16 w-16" aria-hidden="true">
               <circle cx="26" cy="26" r="24" fill="none" stroke="#01a85a" strokeWidth="2.5" pathLength={1} className="login-draw" />
@@ -101,7 +101,7 @@ export function LoginPage() {
             </svg>
             <h1 className="mt-5 text-[22px] font-semibold">{t('login.welcome', { name: welcome })}</h1>
             <p className="mt-1.5 text-sm text-slate-500">{t('login.opening')}</p>
-            <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className="login-fill h-full rounded-full bg-brand-500" /></div>
+            <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-night-tile"><div className="login-fill h-full rounded-full bg-brand-500" /></div>
           </div> : <>
             {/* The header hides the city on phones: show it here instead. */}
             <p className="mb-1 text-xs font-medium text-slate-500 min-[601px]:hidden">{t('app.city')}</p>

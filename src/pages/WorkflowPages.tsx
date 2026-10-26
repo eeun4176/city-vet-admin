@@ -21,7 +21,7 @@ type Issue = {
   resolution: string | null; resolvedByName: string | null; createdAt: string;
 };
 const permissions = ['archive', 'restore', 'delete_submission', 'export_with_ids'] as const;
-const card = 'rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-surface-dark';
+const card = 'rounded-2xl border border-slate-200 bg-white p-4 dark:border-night-border dark:bg-surface-dark';
 const PAGE_SIZE = 25;
 const date = (value: string | null | undefined) => value ? new Date(value).toLocaleString() : '—';
 const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
@@ -102,7 +102,7 @@ export function AccessGrantsPage() {
 
 export function AccessHubPage() {
   const { account } = useAuth();
-  if (account?.type === 'SuperAdmin') return <div className="space-y-8"><AccessGrantsPage /><div className="border-t border-slate-200 pt-6 dark:border-slate-700"><AccessRequestsPage /></div></div>;
+  if (account?.type === 'SuperAdmin') return <div className="space-y-8"><AccessGrantsPage /><div className="border-t border-slate-200 pt-6 dark:border-night-border"><AccessRequestsPage /></div></div>;
   return <AccessRequestsPage />;
 }
 

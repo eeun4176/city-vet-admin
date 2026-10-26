@@ -32,10 +32,10 @@ function Photo({ submissionId, attachmentId, onOpen }: { submissionId: string; a
       .then((r) => { if (live) setSrc(`data:${r.mime};base64,${r.data}`); }).catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
   }, [submissionId, attachmentId]);
-  if (failed) return <p className="grid h-40 place-items-center rounded-xl border border-slate-200 p-3 text-center text-xs text-slate-500 dark:border-slate-700">{t('census.detail.photoFailed')}</p>;
-  if (!src) return <div className="h-40 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />;
+  if (failed) return <p className="grid h-40 place-items-center rounded-xl border border-slate-200 p-3 text-center text-xs text-slate-500 dark:border-night-border">{t('census.detail.photoFailed')}</p>;
+  if (!src) return <div className="h-40 animate-pulse rounded-xl bg-slate-100 dark:bg-night-tile" />;
   return (
-    <button type="button" onClick={() => onOpen(src)} className="overflow-hidden rounded-xl border border-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700">
+    <button type="button" onClick={() => onOpen(src)} className="overflow-hidden rounded-xl border border-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-night-border">
       <img src={src} alt="" className="h-40 w-full object-cover" />
     </button>
   );
@@ -121,7 +121,7 @@ export function SubmissionDetailPage() {
 
   return (
     <div className="w-full">
-      <Link to={backTo} className="text-sm text-brand-700 hover:underline dark:text-brand-200">← {t('common.back')}</Link>
+      <Link to={backTo} className="text-sm text-brand-700 hover:underline dark:text-brand-300">← {t('common.back')}</Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{submission.label}</h1><StatusBadge status={submission.status} />
       </div>
@@ -133,7 +133,7 @@ export function SubmissionDetailPage() {
       {message && <div className="mt-3"><Notice kind={message.kind}>{message.text}</Notice></div>}
 
       {staff && (
-        <section className="mt-5 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+        <section className="mt-5 rounded-2xl border border-slate-200 p-4 dark:border-night-border">
           <h2 className="text-sm font-semibold">Review Status and History</h2>
           {reviewStatus.error && <div className="mt-3"><Notice kind="error">{reviewStatus.error.message}</Notice></div>}
           {nextStatus === 'rejected' && <label className="mt-3 block text-sm"><span className="font-medium">{t('census.detail.note')}</span>
@@ -156,7 +156,7 @@ export function SubmissionDetailPage() {
           </div>
           {submission.status === 'approved' && reviewStatus.data?.undoReason && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{reviewStatus.data.undoReason}</p>}
           {submission.status === 'pending' && reviewStatus.data?.redoReason && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{reviewStatus.data.redoReason}</p>}
-          {reviewStatus.data?.history.length ? <ol className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs dark:border-slate-700">
+          {reviewStatus.data?.history.length ? <ol className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs dark:border-night-border">
             {reviewStatus.data.history.map((entry, index) => <li key={`${entry.createdAt}:${index}`}>
               <span className="font-medium">{entry.fromStatus} → {entry.toStatus}</span> · {entry.action} · {entry.actorName} · {formatDate(entry.createdAt)}
               {entry.note && <span className="block text-slate-500">{entry.note}</span>}
@@ -174,10 +174,10 @@ export function SubmissionDetailPage() {
         </section>
       )}
 
-      <details className="mt-5 rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer text-sm font-semibold">Printable census forms</summary><SubmissionForms detail={data} /></details>
+      <details className="mt-5 rounded-xl border border-slate-200 p-4 dark:border-night-border"><summary className="cursor-pointer text-sm font-semibold">Printable census forms</summary><SubmissionForms detail={data} /></details>
 
       {staff && pending && submission.source === 'image' && (
-        <section className="mt-6 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+        <section className="mt-6 rounded-2xl border border-slate-200 p-4 dark:border-night-border">
           <h2 className="text-sm font-semibold">{t('census.detail.encode')}</h2>
           <p className="mb-4 mt-1 text-sm text-slate-500">{t('census.detail.encodeHelp')}</p>
           <CensusSheetEditor key={owners.map((o) => o.id).join()} showMeta={false} initial={{ label: '', censusDate: submission.censusDate, householdsVisited: 0, owners: fromDetail(owners) }} submitLabel={t('census.save')} onSubmit={encode} />
@@ -197,7 +197,7 @@ export function SubmissionDetailPage() {
       </section>
 
       {staff && pending && owners.length > 0 && (
-        <section className="mt-6 space-y-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+        <section className="mt-6 space-y-4 rounded-2xl border border-slate-200 p-4 dark:border-night-border">
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={suggest} className={btnGhost}>{t('census.detail.suggest')}</button>
             <button type="button" onClick={saveDecisions} disabled={busy || !dirty || !canSave} className={btnGhost}>{t('census.detail.saveDecisions')}</button>
@@ -214,7 +214,7 @@ export function SubmissionDetailPage() {
         </section>
       )}
 
-      {staff && data.decisionHistory?.length > 0 && <details className="mt-6 rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer text-sm font-semibold">Owner decision history ({data.decisionHistory.length} most recent)</summary><ol className="mt-3 space-y-3">{data.decisionHistory.map((h) => <li key={h.id} className="border-l-2 border-brand-300 pl-3 text-sm"><p className="font-medium">{String(h.after.ownerName)} · {h.actor}</p><p>{censusActionLabel[h.after.decision as CensusAction] ?? String(h.after.decision)}</p><p>{String(h.after.reason ?? 'No match reason required for this action.')}</p><p className="text-xs text-slate-500">{formatDate(h.createdAt)}</p></li>)}</ol></details>}
+      {staff && data.decisionHistory?.length > 0 && <details className="mt-6 rounded-xl border border-slate-200 p-4 dark:border-night-border"><summary className="cursor-pointer text-sm font-semibold">Owner decision history ({data.decisionHistory.length} most recent)</summary><ol className="mt-3 space-y-3">{data.decisionHistory.map((h) => <li key={h.id} className="border-l-2 border-brand-300 pl-3 text-sm"><p className="font-medium">{String(h.after.ownerName)} · {h.actor}</p><p>{censusActionLabel[h.after.decision as CensusAction] ?? String(h.after.decision)}</p><p>{String(h.after.reason ?? 'No match reason required for this action.')}</p><p className="text-xs text-slate-500">{formatDate(h.createdAt)}</p></li>)}</ol></details>}
 
       {staff && pending && owners.length === 0 && (
         <section className="mt-6"><button type="button" onClick={() => setConfirm('reject')} disabled={busy || note.trim().length < 3} className={btnDanger}>{t('census.detail.reject')}</button>

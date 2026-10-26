@@ -6,13 +6,13 @@ import type { MessageKey } from '../i18n/messages';
 import { downloadChartPng } from '../lib/chartImage';
 
 // Same controls as e-Vet Field: subtle borders, rounded-lg, a soft green focus ring, and a 1px press.
-export const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:border-slate-700 dark:bg-surface-dark dark:text-white dark:hover:border-slate-600 dark:disabled:bg-slate-800';
+export const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:border-night-border dark:bg-surface-dark dark:text-night-text dark:hover:border-night-border-strong dark:disabled:bg-night-tile';
 export const btnPrimary = 'inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/40 disabled:pointer-events-none disabled:opacity-50';
-export const btnGhost = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/40 disabled:pointer-events-none disabled:opacity-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white';
+export const btnGhost = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/40 disabled:pointer-events-none disabled:opacity-50 dark:border-night-border dark:bg-transparent dark:text-night-text dark:hover:bg-night-tile dark:hover:text-night-text';
 export const btnDanger = 'inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-red-500/10 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-500/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-red-500/30 disabled:pointer-events-none disabled:opacity-50 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30';
 // Segmented tab switcher, as in e-Vet Field: a tinted track with the selected tab raised on a white pill that slides between tabs (seg-track, see lib/segmented.ts).
-export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800';
-export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white font-semibold text-brand-700 shadow-sm dark:bg-surface-bar dark:text-brand-300' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`;
+export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-night-tile';
+export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white text-slate-900 shadow-sm dark:bg-night-surface dark:text-night-text' : 'text-slate-500 hover:text-slate-900 dark:text-night-muted dark:hover:text-night-text'}`;
 
 /** Mobile number inputs everywhere: digits only, at most 11, starting with 09 (the API stores the same 11 digits). No maxLength: a pasted 0917-123-4567 would be cut before its dashes are dropped. */
 export const mobileInput = { type: 'tel', inputMode: 'numeric', pattern: '09[0-9]{9}', placeholder: '09XXXXXXXXX', title: '11 digits starting with 09, like 09171234567' } as const;
@@ -24,15 +24,15 @@ export function InfoTip({ children, label = 'More details' }: { children: ReactN
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const show = (target: HTMLElement) => { const box = target.getBoundingClientRect(); setPos({ top: box.bottom + 6, left: Math.max(16, Math.min(box.left, window.innerWidth - 16 - 288)) }); };
   return <span className="ml-1.5 inline-flex align-middle" onMouseEnter={(event) => show(event.currentTarget)} onMouseLeave={() => setPos(null)}>
-    <button type="button" aria-label={label} aria-describedby={pos ? id : undefined} onFocus={(event) => show(event.currentTarget)} onBlur={() => setPos(null)} onKeyDown={(event) => { if (event.key === 'Escape') setPos(null); }} className="grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"><Info aria-hidden className="h-4 w-4" /></button>
-    {pos && createPortal(<span role="tooltip" id={id} style={{ top: pos.top, left: pos.left }} className="pointer-events-none fixed z-[70] w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed tracking-normal text-white shadow-lg dark:bg-slate-700">{children}</span>, document.body)}
+    <button type="button" aria-label={label} aria-describedby={pos ? id : undefined} onFocus={(event) => show(event.currentTarget)} onBlur={() => setPos(null)} onKeyDown={(event) => { if (event.key === 'Escape') setPos(null); }} className="grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-night-tile dark:hover:text-night-text"><Info aria-hidden className="h-4 w-4" /></button>
+    {pos && createPortal(<span role="tooltip" id={id} style={{ top: pos.top, left: pos.left }} className="pointer-events-none fixed z-[70] w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed tracking-normal text-white shadow-lg dark:bg-night-tile-hover">{children}</span>, document.body)}
   </span>;
 }
 
 export function Field({ label, hint, children, className = '' }: { label: ReactNode; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <label className={`block text-sm ${className}`}>
-      <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span>
+      <span className="font-medium text-slate-700 dark:text-night-text">{label}</span>
       <span className="mt-1 block">{children}</span>
       {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
     </label>
@@ -130,15 +130,15 @@ export function Select({ value, onChange, children, className = '', disabled, re
     {required ? <span className="relative block">{button}<select tabIndex={-1} aria-hidden required name={name} value={String(value ?? '')} onChange={() => undefined} className="pointer-events-none absolute bottom-0 left-4 h-px w-px opacity-0">{children}</select></span> : button}
     {open && pos && createPortal(
       <div ref={panel} data-lenis-prevent data-side={pos.up ? 'top' : 'bottom'} style={{ top: pos.top, bottom: pos.bottom, left: pos.left, minWidth: pos.width, maxHeight: pos.maxHeight }}
-        className="menu-pop fixed z-[70] flex min-w-44 max-w-[min(26rem,calc(100vw-16px))] flex-col rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-panel dark:border-slate-700 dark:bg-surface-bar">
-        {searchable && <div className="relative mb-1 shrink-0"><Search aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKey} aria-label={`Search ${(heading || 'options').toLowerCase()}`} aria-controls={listId} aria-activedescendant={shown[active] ? `${listId}-${active}` : undefined} placeholder={`Search ${(heading || 'options').toLowerCase()}`} autoComplete="off" className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 dark:border-slate-700 dark:bg-surface-dark dark:text-white" /></div>}
+        className="menu-pop fixed z-[70] flex min-w-44 max-w-[min(26rem,calc(100vw-16px))] flex-col rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-panel dark:border-night-border dark:bg-night-menu">
+        {searchable && <div className="relative mb-1 shrink-0"><Search aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onKey} aria-label={`Search ${(heading || 'options').toLowerCase()}`} aria-controls={listId} aria-activedescendant={shown[active] ? `${listId}-${active}` : undefined} placeholder={`Search ${(heading || 'options').toLowerCase()}`} autoComplete="off" className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 dark:border-night-border dark:bg-surface-dark dark:text-night-text" /></div>}
         {heading && !searchable && <p className="shrink-0 px-2.5 pb-1 pt-1 text-xs font-medium text-slate-500">{heading}</p>}
         <div id={listId} role="listbox" aria-label={heading || undefined} className="min-h-0 overflow-y-auto">
           {shown.map((option, index) => <Fragment key={`${option.group ?? ''}:${option.value}`}>
-            {option.group && option.group !== shown[index - 1]?.group && <p role="presentation" className="flex items-center gap-2 px-2.5 pb-1 pt-2 text-xs font-semibold text-brand-700 after:h-px after:flex-1 after:bg-slate-200 dark:text-brand-300 dark:after:bg-slate-700">{option.group}</p>}
+            {option.group && option.group !== shown[index - 1]?.group && <p role="presentation" className="flex items-center gap-2 px-2.5 pb-1 pt-2 text-xs font-semibold text-brand-700 after:h-px after:flex-1 after:bg-slate-200 dark:text-brand-300 dark:after:bg-night-tile-hover">{option.group}</p>}
             <div id={`${listId}-${index}`} role="option" aria-selected={option === current} aria-disabled={option.disabled || undefined} data-active={index === active || undefined} style={{ '--i': Math.min(index, 8) } as CSSProperties}
               onMouseEnter={() => setActive(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(option)}
-              className={`menu-item flex min-h-9 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 ${index === active ? 'bg-slate-100 dark:bg-white/[0.06]' : ''} ${option.disabled ? 'cursor-not-allowed opacity-50' : ''} ${option === current ? 'font-medium text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200'}`}>
+              className={`menu-item flex min-h-9 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 ${index === active ? 'bg-slate-100 dark:bg-white/[0.06]' : ''} ${option.disabled ? 'cursor-not-allowed opacity-50' : ''} ${option === current ? 'font-medium text-slate-900 dark:text-night-text' : 'text-slate-700 dark:text-night-text'}`}>
               <span className="min-w-0 flex-1">{option.label}</span>{option === current && <CheckIcon aria-hidden className="h-4 w-4 shrink-0" />}
             </div>
           </Fragment>)}
@@ -154,7 +154,7 @@ export function DateInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, 'ty
 
 export function Check({ checked, onChange, children, disabled }: { checked: boolean; onChange: (value: boolean) => void; children: ReactNode; disabled?: boolean }) {
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+    <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-night-text">
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
       {children}
     </label>
@@ -163,9 +163,9 @@ export function Check({ checked, onChange, children, disabled }: { checked: bool
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  approved: 'bg-brand-50 text-brand-700 dark:bg-brand-900/60 dark:text-brand-100',
+  approved: 'bg-brand-50 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300',
   rejected: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-200',
-  withdrawn: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  withdrawn: 'bg-slate-100 text-slate-600 dark:bg-night-tile dark:text-night-muted',
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -178,15 +178,15 @@ export const statusLabel = (status: string | null | undefined) => status ? statu
 
 export function Notice({ kind = 'info', children }: { kind?: 'info' | 'error' | 'success'; children: ReactNode }) {
   const style = kind === 'error' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200'
-    : kind === 'success' ? 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900 dark:bg-brand-900/40 dark:text-brand-100'
-    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200';
+    : kind === 'success' ? 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900 dark:bg-brand-900/40 dark:text-brand-300'
+    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-night-border dark:bg-night-tile dark:text-night-text';
   return <div role={kind === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${style}`}>{children}</div>;
 }
 
 export function Loading({ label }: { label?: string } = {}) {
   const { t } = useT();
   // Skeleton cards stand in for the content while it loads; the label is for screen readers.
-  return <div role="status" className="space-y-3 py-2"><span className="sr-only">{label ?? t('common.loading')}</span>{[0, 1, 2].map((i) => <div key={i} aria-hidden style={{ opacity: 1 - i * 0.22 }} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-800"><div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 motion-safe:animate-pulse dark:bg-slate-800" /><div className="flex-1 space-y-2"><div className="h-3.5 w-2/5 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-slate-800" /><div className="h-3 w-3/4 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-slate-800" /></div></div>)}</div>;
+  return <div role="status" className="space-y-3 py-2"><span className="sr-only">{label ?? t('common.loading')}</span>{[0, 1, 2].map((i) => <div key={i} aria-hidden style={{ opacity: 1 - i * 0.22 }} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 dark:border-night-border"><div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 motion-safe:animate-pulse dark:bg-night-tile" /><div className="flex-1 space-y-2"><div className="h-3.5 w-2/5 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-night-tile" /><div className="h-3 w-3/4 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-night-tile" /></div></div>)}</div>;
 }
 
 /** Comparison bars: one row per value, the largest in green (and bold), the rest grey; bars grow in once. */
@@ -195,10 +195,10 @@ export function ComparisonBars({ title, rows, className = '' }: { title?: string
   const top = rows.reduce((best, row, index) => (row.value > rows[best].value ? index : best), 0);
   return <div data-chart className={`grid gap-3 ${className}`}>
     {title && <div className="flex items-center justify-between gap-2"><p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-slate-500">{title}</p><SaveChartImage name={title} /></div>}
-    <ul aria-label={title} className="grid gap-3">{rows.map((row, index) => <li key={index} aria-label={`${row.label}: ${row.value}`} className={`grid grid-cols-[minmax(3rem,8rem)_1fr_auto] items-center gap-2.5 text-xs ${index === top ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-500 dark:text-slate-400'}`}>
+    <ul aria-label={title} className="grid gap-3">{rows.map((row, index) => <li key={index} aria-label={`${row.label}: ${row.value}`} className={`grid grid-cols-[minmax(3rem,8rem)_1fr_auto] items-center gap-2.5 text-xs ${index === top ? 'font-semibold text-slate-900 dark:text-night-text' : 'font-medium text-slate-500 dark:text-night-muted'}`}>
       <span aria-hidden className="truncate capitalize">{row.label}</span>
-      <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-slate-800"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></span>
-      <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>{row.value}</span>
+      <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-night-tile"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></span>
+      <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-night-muted'}`}>{row.value}</span>
     </li>)}</ul>
   </div>;
 }
@@ -214,8 +214,8 @@ export function ColumnChart({ bars, unit = '', legend }: { bars: { label: string
   // Many columns (a year of months) keep a readable width and scroll sideways inside the card on phones.
   return <div className="overflow-x-auto"><div role="img" style={{ minWidth: `${bars.length * (legend ? 4.5 : 3)}rem` }} aria-label={bars.map((bar) => `${bar.label}: ${shown(bar.value)}${bar.second !== undefined && legend ? `, ${legend[1]} ${shown(bar.second)}` : ''}`).join('; ')}>
     {/* pt-5 leaves room for the number above the tallest column. */}
-    <div aria-hidden className="grid h-40 gap-2 border-b border-slate-200 pt-5 dark:border-slate-700" style={columns}>{bars.map((bar, index) => <div key={bar.label} className="flex min-w-0 items-end justify-center gap-1">
-      <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">{shown(bar.value)}</span><i style={{ height: height(bar.value), '--i': index } as CSSProperties} className={`col-grow block w-full rounded-b-[3px] rounded-t-[7px] print:border print:border-slate-700 ${bar.value === top && top > 0 && bar.second === undefined ? 'bg-gradient-to-t from-brand-600 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></div>
+    <div aria-hidden className="grid h-40 gap-2 border-b border-slate-200 pt-5 dark:border-night-border" style={columns}>{bars.map((bar, index) => <div key={bar.label} className="flex min-w-0 items-end justify-center gap-1">
+      <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-slate-700 dark:text-night-text">{shown(bar.value)}</span><i style={{ height: height(bar.value), '--i': index } as CSSProperties} className={`col-grow block w-full rounded-b-[3px] rounded-t-[7px] print:border print:border-slate-700 ${bar.value === top && top > 0 && bar.second === undefined ? 'bg-gradient-to-t from-brand-600 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></div>
       {bar.second !== undefined && <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-brand-700 dark:text-brand-300">{shown(bar.second)}</span><i style={{ height: height(bar.second), '--i': index } as CSSProperties} className="col-grow block w-full rounded-b-[3px] rounded-t-[7px] bg-gradient-to-t from-brand-600 to-brand-400 print:border print:border-slate-700" /></div>}
     </div>)}</div>
     <div aria-hidden className="mt-2 grid gap-2 text-center font-mono text-[10.5px] font-medium leading-tight text-slate-500" style={columns}>{bars.map((bar) => <span key={bar.label} className="min-w-0 break-words">{bar.label}{bar.note && <span className="mt-0.5 block font-sans text-[10px] text-slate-400">{bar.note}</span>}</span>)}</div>
@@ -239,8 +239,8 @@ export function Spinner({ label = 'Working…' }: { label?: string }) {
 }
 
 export function EmptyState({ title, description, children }: { title: string; description?: string; children?: ReactNode }) {
-  return <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-slate-700">
-    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{title}</p>
+  return <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-night-border">
+    <p className="text-sm font-medium text-slate-700 dark:text-night-text">{title}</p>
     {description && <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{description}</p>}
     {children && <div className="mt-4">{children}</div>}
   </div>;
@@ -268,9 +268,9 @@ export function Pagination({ page, pageSize, total, onPage }: {
     <nav aria-label="Table pagination" className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
       <span className="tabular-nums text-slate-500">Showing {firstItem}–{lastItem} of {total}</span>
       <div className="flex items-center gap-1">
-        <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" className={`${pageBtn} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800`}><ChevronLeft aria-hidden className="h-4 w-4" /></button>
-        {shown.map((n, index) => <span key={n} className="flex items-center gap-1">{index > 0 && n - shown[index - 1] > 1 && <span aria-hidden className="px-1 text-slate-400">…</span>}<button type="button" onClick={() => onPage(n)} aria-label={`Page ${n} of ${lastPage}`} aria-current={n === page ? 'page' : undefined} className={`${pageBtn} ${n === page ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>{n}</button></span>)}
-        <button type="button" disabled={page >= lastPage} onClick={() => onPage(page + 1)} aria-label="Next page" className={`${pageBtn} text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800`}><ChevronRight aria-hidden className="h-4 w-4" /></button>
+        <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" className={`${pageBtn} text-slate-600 hover:bg-slate-100 dark:text-night-muted dark:hover:bg-night-tile`}><ChevronLeft aria-hidden className="h-4 w-4" /></button>
+        {shown.map((n, index) => <span key={n} className="flex items-center gap-1">{index > 0 && n - shown[index - 1] > 1 && <span aria-hidden className="px-1 text-slate-400">…</span>}<button type="button" onClick={() => onPage(n)} aria-label={`Page ${n} of ${lastPage}`} aria-current={n === page ? 'page' : undefined} className={`${pageBtn} ${n === page ? 'bg-brand-500 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-night-muted dark:hover:bg-night-tile'}`}>{n}</button></span>)}
+        <button type="button" disabled={page >= lastPage} onClick={() => onPage(page + 1)} aria-label="Next page" className={`${pageBtn} text-slate-600 hover:bg-slate-100 dark:text-night-muted dark:hover:bg-night-tile`}><ChevronRight aria-hidden className="h-4 w-4" /></button>
       </div>
     </nav>
   );
@@ -309,10 +309,10 @@ export function Modal({ title, onClose, children, wide = false, dismissible = tr
   return createPortal(
     <div className="ui-modal-overlay fixed inset-0 z-50 grid place-items-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       {dismissible ? <button type="button" tabIndex={-1} aria-label={t('common.close')} onClick={onClose} className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]" /> : <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"/>}
-      <div ref={panel} tabIndex={-1} data-lenis-prevent className={`ui-modal-panel relative max-h-[92dvh] w-full overflow-auto rounded-[20px] bg-white px-5 pb-5 shadow-[0_24px_64px_-16px_rgb(16_40_28/0.35)] ring-1 ring-slate-900/5 sm:px-6 sm:pb-6 focus:outline-none dark:bg-surface-bar dark:ring-white/10 ${wide ? 'max-w-4xl' : 'max-w-lg'}`}>
+      <div ref={panel} tabIndex={-1} data-lenis-prevent className={`ui-modal-panel relative max-h-[92dvh] w-full overflow-auto rounded-[20px] bg-white px-5 pb-5 shadow-[0_24px_64px_-16px_rgb(16_40_28/0.35)] ring-1 ring-slate-900/5 sm:px-6 sm:pb-6 focus:outline-none dark:bg-night-dialog dark:ring-white/10 ${wide ? 'max-w-4xl' : 'max-w-lg'}`}>
         {/* Clean header: the title and a quiet close button, pinned while the body scrolls. */}
-        <div className="sticky top-0 z-10 -mx-5 flex items-center justify-between gap-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur sm:-mx-6 sm:px-6 sm:pt-5 dark:bg-surface-bar/95">
-          <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.01em] text-slate-900 dark:text-white">{title}</h2>{dismissible&&<button type="button" onClick={onClose} aria-label={t('common.close')} className="-mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-white/10 dark:hover:text-white"><X aria-hidden className="h-[18px] w-[18px]"/></button>}
+        <div className="sticky top-0 z-10 -mx-5 flex items-center justify-between gap-3 bg-white/95 px-5 pb-3 pt-4 backdrop-blur sm:-mx-6 sm:px-6 sm:pt-5 dark:bg-night-dialog/95">
+          <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.01em] text-slate-900 dark:text-night-text">{title}</h2>{dismissible&&<button type="button" onClick={onClose} aria-label={t('common.close')} className="-mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-white/10 dark:hover:text-night-text"><X aria-hidden className="h-[18px] w-[18px]"/></button>}
         </div>
         <div className="mt-1">{children}</div>
       </div>
@@ -332,7 +332,7 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, busy, onCo
   const { t } = useT();
   return (
     <Modal title={title} onClose={onClose} dismissible={!busy}>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
+      <p className="text-sm text-slate-600 dark:text-night-muted">{message}</p>
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" onClick={onClose} disabled={busy} className={btnGhost}>{t('common.cancel')}</button>
         <button type="button" onClick={onConfirm} disabled={busy} className={danger ? btnDanger : btnPrimary}>{busy ? <Spinner label="Saving…" /> : confirmLabel}</button>

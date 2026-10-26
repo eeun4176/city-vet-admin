@@ -37,11 +37,11 @@ export function AccountPage() {
   return <div className="w-full space-y-5">
     <div><h1 className="text-2xl font-semibold tracking-tight">Account<InfoTip>How you appear to other staff. Change your photo, username and password here; an Admin changes your name, role or barangay.</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
-    <section aria-label="Your account" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-slate-800">
-      <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 pb-5 dark:border-slate-800">
+    <section aria-label="Your account" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-night-border">
+      <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 pb-5 dark:border-night-border">
         <span className="relative shrink-0">
-          {account.profilePhoto ? <img src={account.profilePhoto} alt="Your profile" className="h-16 w-16 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
-            : <span aria-hidden className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-xl font-semibold text-brand-700 dark:bg-brand-900 dark:text-brand-100">{initials}</span>}
+          {account.profilePhoto ? <img src={account.profilePhoto} alt="Your profile" className="h-16 w-16 rounded-full object-cover ring-1 ring-slate-200 dark:ring-night-border" />
+            : <span aria-hidden className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-xl font-semibold text-brand-700 dark:bg-brand-900 dark:text-brand-300">{initials}</span>}
           <span aria-hidden className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-brand-500 ring-2 ring-white dark:ring-surface-dark" />
         </span>
         <div className="min-w-0 flex-1"><p className="truncate font-semibold">{account.name}</p><p className="truncate text-sm text-slate-500">{[roleLabel(account.type), account.barangay].filter(Boolean).join(' · ')}</p></div>
@@ -55,8 +55,8 @@ export function AccountPage() {
       </div>
       <dl className="grid gap-4 pt-5 sm:grid-cols-2">
         {details.map(([label, value]) => <div key={label}>
-          <dt className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</dt>
-          <dd className="mt-1.5 flex h-11 cursor-not-allowed items-center gap-2 rounded-xl bg-slate-100/80 px-3.5 text-sm font-medium text-slate-900 dark:bg-slate-800/70 dark:text-white" title="Locked">
+          <dt className="text-sm font-medium text-slate-700 dark:text-night-text">{label}</dt>
+          <dd className="mt-1.5 flex h-11 cursor-not-allowed items-center gap-2 rounded-xl bg-slate-100/80 px-3.5 text-sm font-medium text-slate-900 dark:bg-night-tile/70 dark:text-night-text" title="Locked">
             <span className="min-w-0 flex-1 truncate">{value || <span className="font-normal text-slate-400">Not set</span>}</span><Lock aria-label="Locked" className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           </dd>
         </div>)}
@@ -88,7 +88,7 @@ function SignInDetails({ username, onSaved }: { username: string; onSaved: () =>
     } catch (failure) { setMessage({ kind: 'error', text: failure instanceof Error ? failure.message : 'Could not save your sign-in details.' }); }
     finally { setBusy(false); }
   };
-  return <form onSubmit={(event) => void submit(event)} aria-label="Sign-in details" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-slate-800">
+  return <form onSubmit={(event) => void submit(event)} aria-label="Sign-in details" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-night-border">
     <h2 className="font-semibold">Username and password</h2>
     {message && <div className="mt-3"><Notice kind={message.kind}>{message.text}</Notice></div>}
     <div className="mt-4 grid gap-4 sm:grid-cols-2">

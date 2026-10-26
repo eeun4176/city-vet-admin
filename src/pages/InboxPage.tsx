@@ -79,21 +79,21 @@ export function InboxPage() {
     </div>
     {error && <div className="mt-4"><Notice kind="error">{error.message}</Notice></div>}
     {actionError && <div className="mt-4"><Notice kind="error">{actionError}</Notice></div>}
-    {loading ? <Loading /> : <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-700">
+    {loading ? <Loading /> : <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-night-border dark:border-night-border">
       {!data?.data.length ? <div className="p-8 text-center text-sm text-slate-500"><Bell aria-hidden className="mx-auto mb-2 h-5 w-5" />No {view} notifications.</div> : data.data.map((item) => <article key={item.id} className={`flex items-center gap-3 p-4 ${!item.read_at && !item.archived_at ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}>
         <span aria-hidden className="text-slate-400">{item.read_at ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}</span>
         <button type="button" onClick={() => void openMessage(item)} className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
           <span className="block truncate text-sm font-semibold">{item.title}</span>
-          <span className="mt-1 block truncate text-sm text-slate-600 dark:text-slate-300">{item.body || 'Open to review this notification.'}</span>
+          <span className="mt-1 block truncate text-sm text-slate-600 dark:text-night-muted">{item.body || 'Open to review this notification.'}</span>
           <span className="mt-2 block text-xs text-slate-400">{item.kind} · {new Date(item.created_at).toLocaleString()}</span>
         </button>
         {view === 'archived'
-          ? <button type="button" disabled={busyId === item.id} onClick={() => void update('restore', item)} aria-label={`Restore ${item.title}`} title="Restore notification" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-800"><ArchiveRestore aria-hidden className="h-4 w-4" /></button>
-          : <button type="button" disabled={busyId === item.id} onClick={() => void update('archive', item)} aria-label={`Archive ${item.title}`} title="Archive notification" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-800"><Archive aria-hidden className="h-4 w-4" /></button>}
+          ? <button type="button" disabled={busyId === item.id} onClick={() => void update('restore', item)} aria-label={`Restore ${item.title}`} title="Restore notification" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-night-tile"><ArchiveRestore aria-hidden className="h-4 w-4" /></button>
+          : <button type="button" disabled={busyId === item.id} onClick={() => void update('archive', item)} aria-label={`Archive ${item.title}`} title="Archive notification" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-night-tile"><Archive aria-hidden className="h-4 w-4" /></button>}
       </article>)}
     </div>}
     {selected && <Modal title={selected.title} onClose={() => setSelected(null)}>
-      <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{selected.body || 'There are no additional details for this notification.'}</p>
+      <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-night-text">{selected.body || 'There are no additional details for this notification.'}</p>
       <p className="mt-3 text-xs text-slate-500">{selected.kind} · {new Date(selected.created_at).toLocaleString()}</p>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button type="button" onClick={() => void update('archive', selected)} disabled={busyId === selected.id} className={btnGhost}><Archive aria-hidden className="h-4 w-4" />Archive</button>
