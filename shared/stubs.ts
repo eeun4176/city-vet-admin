@@ -32,11 +32,12 @@ export type StubPageData = {
   role: string; assignedBarangayId: number | null; programs: StubProgram[]; paravets: StubParavet[];
   batches: StubBatch[]; page: number; pageSize: number; total: number;
 };
-export type StubBatchDetails = { batch: StubBatch; program: StubProgram; stubs: StubTicket[]; page: number; pageSize: number; total: number };
+/** requestedOwners: owners on the barangay's program request; with no requested or issued owners the batch cannot be printed. */
+export type StubBatchDetails = { batch: StubBatch; program: StubProgram; stubs: StubTicket[]; page: number; pageSize: number; total: number; requestedOwners: number };
 export type StubLookup = { stub: StubTicket; program: StubProgram };
-export type StubPrintData = { batch: StubBatch; program: StubProgram; stubs: { id: number; code: string; ownerName?:string|null; status?:string; services?: ProgramProcess[]; ownerConfirmedAt?: string | null }[] };
+export type StubPrintData = { batch: StubBatch; program: StubProgram; stubs: { id: number; code: string; ownerName?:string|null; status?:string; services?: ProgramProcess[]; ownerConfirmedAt?: string | null }[]; requestedOwners: number };
 /** A program's stubs for scanning with no signal (Salin downloads it before program day). */
-export type StubDayPack = { program: StubProgram; generatedAt: string; stubs: { id: number; code: string; status: StubTicket['status']; owner: StubOwner | null; pets: StubPet[]; redeemedAt: string | null; barangayId: number }[] };
+export type StubDayPack = { program: StubProgram; generatedAt: string; stubs: { id: number; batchId: number; code: string; status: StubTicket['status']; owner: StubOwner | null; pets: StubPet[]; redeemedAt: string | null; barangayId: number }[] };
 export type ProgramAttendance = {
   id: number; campaignId: number; source: 'Stub' | 'Walk-in'; stubId: number | null; owner: StubOwner;
   pets: AttendancePet[]; attendedOn: string; encodedBy: string; createdAt: string; status: 'Submitted' | 'Voided'; voidReason: string | null;
@@ -44,5 +45,6 @@ export type ProgramAttendance = {
 export type AttendancePageData = {
   program: StubProgram; data: ProgramAttendance[]; page: number; pageSize: number; total: number;
   /** owners counts recorded owner visits; names are never treated as proven identities. */
-  summary: { owners: number; pets: number; completedServices: number };
+  /** notScanned: encoded (issued) stubs not yet scanned; absent once the program day is over. */
+  summary: { owners: number; pets: number; completedServices: number; notScanned: number };
 };

@@ -1,7 +1,7 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ClipboardCheck, Copy } from 'lucide-react';
+import { Pencil, UserCheck, UserX } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi, useDebouncedValue } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
@@ -25,13 +25,15 @@ function newRecord(dataset: RecordDataset): RecordRow {
   return { id, name: '', date: '', barangay: '', status: 'Planned', program: '' };
 }
 
-/** A Paravet's account key; clicking copies it to share with the Paravet. */
+/** A Paravet's account key: clicking it copies it, to share with the Paravet. */
 function CopyKey({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return <button type="button" title="Copy account key" aria-label={`Copy account key ${value}`} onClick={() => void navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => window.prompt('Copy the account key:', value))} className="inline-flex items-center gap-1 rounded font-mono text-slate-700 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-200 dark:hover:text-brand-300">
-    {value}{copied ? <ClipboardCheck aria-hidden className="h-3.5 w-3.5 text-brand-600" /> : <Copy aria-hidden className="h-3.5 w-3.5" />}<span role="status" className="sr-only">{copied ? 'Copied' : ''}</span>
+    {value}<span role="status" className={copied ? 'rounded bg-brand-50 px-1.5 font-sans text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200' : 'sr-only'}>{copied ? 'Copied' : ''}</span>
   </button>;
 }
+
+const rowIcon = 'grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white';
 
 type RecordDataset = 'owners' | 'pets' | 'paravets' | 'respondents' | 'households' | 'animals' | 'stubs' | 'services' | 'programs' | 'participants';
 const PAGE_SIZE = 25;
@@ -73,12 +75,12 @@ export function RecordsPage({ dataset, title, writeCap = 'registry.write', readO
     const duration = row.durationMinutes !== null && row.durationMinutes !== undefined && Number.isFinite(Number(row.durationMinutes)) ? Number(row.durationMinutes) : null;
     const durationText = duration == null ? '' : `${Math.floor(duration / 60) ? `${Math.floor(duration / 60)} hr ` : ''}${duration % 60 ? `${duration % 60} min` : ''}`.trim();
     const account = dataset === 'paravets' ? accountOf(row) : undefined;
-    const detail = dataset === 'paravets' ? (account ? <>{account.accountKey && <><CopyKey value={account.accountKey} />{' · '}</>}{[account.mobile, account.archived ? 'Deactivated' : account.status, account.lastLoginAt ? `Last sign-in ${new Date(account.lastLoginAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium' })}` : 'Not signed in yet'].filter(Boolean).join(' · ')}</> : [String(row.mobile ?? ''), 'No sign-in account'].filter(Boolean).join(' · '))
+    const detail = dataset === 'paravets' ? (account ? <>{account.accountKey && <><CopyKey value={account.accountKey} />{' · '}</>}{account.mobile || 'No contact number'}</> : [String(row.mobile ?? ''), 'No sign-in account'].filter(Boolean).join(' · '))
       : dataset === 'owners' ? String(row.address ?? row.contact ?? '')
       : dataset === 'pets' ? `${String(row.species ?? '')} · ${String(row.owner ?? row.owner_name ?? row.owner_id ?? '')}`
         : dataset === 'programs' ? [String(row.date ?? ''), String(row.status ?? ''), programProcesses.join(', '), usedSlots == null ? '' : `Slots used ${usedSlots}${Number.isFinite(slots) ? ` / ${slots}` : ''}`, durationText ? `Duration ${durationText}` : 'Duration not set'].filter(Boolean).join(' · ')
           : `${String(row.program ?? row.date ?? '')} · ${String(row.status ?? '')}`;
-    return <tr key={row.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${row.name??row.id}`} checked={bulk.has(row.id)} onChange={()=>bulk.toggle(row.id)}/></td><td className="p-3 font-medium"><button type="button" onClick={() => { if (account) { setEditingAccount(account); return; } setCreating(false); setConfirm(row); }} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account ? account.fullName : String(dataset === 'programs' ? row.title || row.name || row.program || row.id : row.name ?? row.petName ?? row.title ?? row.owner_name ?? row.pet_name ?? row.id)}</button></td><td className="max-w-md p-3 text-slate-500">{detail}</td><td className="p-3">{account ? account.barangay?.name ?? '—' : String(row.barangay ?? '')}</td><td className="whitespace-nowrap p-3">{editable && account && <><button type="button" onClick={() => setEditingAccount(account)} className="ml-3 text-brand-700 underline dark:text-brand-300">Edit</button><button type="button" onClick={() => setPendingDeactivate(account)} className="ml-3 text-slate-600 underline dark:text-slate-300">{account.archived ? 'Restore' : 'Deactivate'}</button></>}{editable && !(dataset==='paravets'&&row.accountId) && row.workflow !== 'qr-stubs-v1' && <><button type="button" onClick={() => { setCreating(false); setConfirm(row); }} className="ml-3 text-brand-700 underline dark:text-brand-300">Edit</button><button type="button" onClick={() => setPendingArchive(row)} className="ml-3 text-slate-600 underline dark:text-slate-300">{archived ? 'Restore' : 'Archive'}</button></>}</td></tr>;
+    return <tr key={row.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${row.name??row.id}`} checked={bulk.has(row.id)} onChange={()=>bulk.toggle(row.id)}/></td><td className="p-3 font-medium"><button type="button" onClick={() => { if (account) { setEditingAccount(account); return; } setCreating(false); setConfirm(row); }} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account ? account.fullName : String(dataset === 'programs' ? row.title || row.name || row.program || row.id : row.name ?? row.petName ?? row.title ?? row.owner_name ?? row.pet_name ?? row.id)}</button></td><td className="max-w-md p-3 text-slate-500">{detail}</td><td className="p-3">{account ? account.barangay?.name ?? '—' : String(row.barangay ?? '')}</td><td className="whitespace-nowrap p-3">{editable && account && <span className="inline-flex gap-1"><button type="button" title="Edit" aria-label={`Edit ${account.fullName}`} onClick={() => setEditingAccount(account)} className={rowIcon}><Pencil aria-hidden className="h-4 w-4" /></button><button type="button" title={account.archived ? 'Restore' : 'Deactivate'} aria-label={`${account.archived ? 'Restore' : 'Deactivate'} ${account.fullName}`} onClick={() => setPendingDeactivate(account)} className={`${rowIcon} ${account.archived ? '' : 'hover:!bg-red-50 hover:!text-red-700 dark:hover:!bg-red-500/15 dark:hover:!text-red-300'}`}>{account.archived ? <UserCheck aria-hidden className="h-4 w-4" /> : <UserX aria-hidden className="h-4 w-4" />}</button></span>}{editable && !(dataset==='paravets'&&row.accountId) && row.workflow !== 'qr-stubs-v1' && <><button type="button" onClick={() => { setCreating(false); setConfirm(row); }} className="ml-3 text-brand-700 underline dark:text-brand-300">Edit</button><button type="button" onClick={() => setPendingArchive(row)} className="ml-3 text-slate-600 underline dark:text-slate-300">{archived ? 'Restore' : 'Archive'}</button></>}</td></tr>;
   })}</tbody></table>{!loading && tableRows.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No matching records.</p>}</div></>;
   useEffect(() => {
     const recordId = params.get('recordId');

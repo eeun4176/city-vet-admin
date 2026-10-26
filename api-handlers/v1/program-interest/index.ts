@@ -347,6 +347,17 @@ export default route({
       const reference = `PI-${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }).slice(0, 4)}-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;
       const campaignId = await tx(session.id, async (q) => {
         await q`select pg_advisory_xact_lock(73023,${hostId}::int)`;
+        // A request is finished once its program is Completed (its own, or the one it merged into): close it, so the barangay can start the next.
+        const done=await q`select distinct t.id from ekapon.program_interest_campaigns c
+          join ekapon.program_interest_campaigns t on t.id=case when c.status='merged' then c.merged_into_id else c.id end
+          join ekapon.dashboard_records d on d.id=t.program_record_id
+          where c.host_barangay_id=${hostId} and c.campaign_type='program_request' and c.status in ('scheduled','merged')
+            and t.status='scheduled' and lower(coalesce(d.record_data->>'status',''))='completed'`;
+        for(const {id} of done){
+          await q`update ekapon.program_interest_campaigns set status='closed',closed_at=now(),revision=revision+1 where id=${id} and status='scheduled'`;
+          await finishMerged(q,id,'closed');
+          await logAction(q,session,id,null,'closed');
+        }
         const [active]=await q`select c.id,c.reference,c.status,a.full_name as filed_by from ekapon.program_interest_campaigns c left join ekapon.accounts a on a.id=c.created_by where c.host_barangay_id=${hostId} and c.campaign_type='program_request' and c.status in ('gathering','requested','approved','scheduled','merged') limit 1`;
         if(active)throw conflict('ACTIVE_DEMAND_EXISTS',`An active request already exists: ${active.reference}. Open it to collaborate.`,{campaignId:active.id,reference:active.reference,status:active.status,filedBy:active.filed_by});
         const [row] = await q`

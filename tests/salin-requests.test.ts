@@ -87,4 +87,14 @@ describe('a barangay request shared by its Paravets (from Salin)',()=>{
   expect(moved.status).toBe(404);
   expect((await detail(created.campaignId)).people.find((p:{id:number})=>p.id===host.personId)).toMatchObject({owner_name:`${tag} Host owner`,residence_barangay_id:area.id});
  });
+ it('lets a barangay start its next request once its program is Completed, not while the program runs',async()=>{
+  const request=good(await post({action:'create-demand',targetPeople:1,processes:['Microchipping']},p1));campaigns.push(request.campaignId);
+  const [record]=await sql()`insert into ekapon.dashboard_records(dataset,record_id,record_data) values('programs',${`${tag}-done`},${sql().json({id:`${tag}-done`,title:`${tag} Done`,date:today,status:'In progress',location:'Covered court'})}) returning id`;programs.push(record.id);
+  await sql()`update ekapon.program_interest_campaigns set status='scheduled',program_record_id=${record.id} where id=${request.campaignId}`;
+  expect((await post({action:'create-demand',targetPeople:1,processes:['Microchipping']},p2)).json.error.code).toBe('ACTIVE_DEMAND_EXISTS');
+  await sql()`update ekapon.dashboard_records set record_data=record_data||${sql().json({status:'Completed'})} where id=${record.id}`;
+  expect((await detail(request.campaignId)).campaign.programStatus).toBe('Completed');
+  const next=good(await post({action:'create-demand',targetPeople:1,processes:['Microchipping']},p2));campaigns.push(next.campaignId);
+  expect((await detail(request.campaignId)).campaign.status).toBe('closed');
+ });
 });

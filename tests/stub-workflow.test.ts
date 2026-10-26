@@ -47,6 +47,8 @@ async function requestBatch(quantity = 3, programId = campaignId) {
 async function handedBatch(quantity = 3, programId = campaignId) {
   const batchId = await requestBatch(quantity, programId);
   success(await post({ action: 'review-batch', batchId, decision: 'approve', quantity }));
+  // Stubs print only for a barangay with requested (or encoded) owners.
+  await sql()`insert into ekapon.program_interest_people (campaign_id, owner_name, residence_barangay_id, pets, created_by) values (${programId}, ${`${tag} Requested ${++sequence}`}, ${barangayId}, '[]'::jsonb, ${paravetId})`;
   success(await post({ action: 'confirm-print', batchId }));
   success(await post({ action: 'handover', batchId }));
   const details = success(await call('GET', `/api/v1/stub-workflow?mode=batch&batchId=${batchId}`, { cookie: paravet }));
@@ -176,6 +178,7 @@ describe('staff QR inventory and paper handover', () => {
     expect((await post({ action: 'issue', stubId: stubs[1].id, owner: owner(undefined, otherBarangayId), pets: [pet()] }, paravet)).status).toBe(403);
     const otherBatch = success(await post({ action: 'request-batch', campaignId, recipientId: otherParavetId, quantity: 1 }));
     success(await post({ action: 'review-batch', batchId: otherBatch.batchId, decision: 'approve' }));
+    await sql()`insert into ekapon.program_interest_people (campaign_id, owner_name, residence_barangay_id, pets, created_by) values (${campaignId}, ${`${tag} Other requested`}, ${otherBarangayId}, '[]'::jsonb, ${otherParavetId})`;
     success(await post({ action: 'confirm-print', batchId: otherBatch.batchId }));
     success(await post({ action: 'handover', batchId: otherBatch.batchId }));
     const otherInventory = success(await call('GET', `/api/v1/stub-workflow?mode=batch&batchId=${otherBatch.batchId}`, { cookie: otherParavet }));
@@ -190,6 +193,21 @@ describe('staff QR inventory and paper handover', () => {
     success(await post({ action: 'cancel-stub', stubId: stubs[1].id, reason: 'Paper was damaged before assessment.' }, admin));
     expect((await lookup(stubs[1].code)).json.stub.status).toBe('Cancelled');
     expect((await post({ action: 'issue', stubId: stubs[1].id, owner: owner(), pets: [pet()] }, paravet)).status).toBe(409);
+  });
+
+  it('prints only for a barangay with requested or encoded owners, and counts encoded stubs not yet scanned', async () => {
+    const programId = await createProgram(dateOffset(5));
+    const batchId = await requestBatch(2, programId);
+    success(await post({ action: 'review-batch', batchId, decision: 'approve', quantity: 2 }));
+    expect(success(await call('GET', `/api/v1/stub-workflow?mode=print&batchId=${batchId}`, { cookie: paravet })).requestedOwners).toBe(0);
+    expect((await post({ action: 'confirm-print', batchId })).json.error.code).toBe('NO_OWNERS');
+    const { stubs } = success(await call('GET', `/api/v1/stub-workflow?mode=batch&batchId=${batchId}`, { cookie: paravet }));
+    success(await post({ action: 'issue', stubId: stubs[0].id, owner: owner(), pets: [pet()] }, paravet));
+    success(await post({ action: 'confirm-print', batchId }));
+    const pack = success(await call('GET', `/api/v1/stub-workflow?mode=day-pack&campaignId=${programId}`, { cookie: paravet }));
+    expect(pack.stubs.find((stub: { id: number }) => stub.id === stubs[0].id)).toMatchObject({ batchId, status: 'Issued' });
+    const attendance = success(await call('GET', `/api/v1/stub-workflow?mode=attendance&campaignId=${programId}`, { cookie: paravet }));
+    expect(attendance.summary.notScanned).toBe(1);
   });
 });
 

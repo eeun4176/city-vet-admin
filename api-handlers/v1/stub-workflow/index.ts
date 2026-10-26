@@ -69,6 +69,12 @@ async function ticket(q:any,session:Session,stubId:number|null,code:string|null=
   }
   return row;
 }
+// Owners on the barangay's program request (its own or one merged into it): stubs print only for a batch with requested or encoded owners.
+async function requestedOwners(q:any,campaignId:number,barangayId:number):Promise<number> {
+  const [row]=await q`select count(*)::int as n from ekapon.program_interest_people p join ekapon.program_interest_campaigns c on c.id=p.campaign_id
+    where p.status='interested' and p.residence_barangay_id=${barangayId} and (c.id=${campaignId} or c.merged_into_id=${campaignId})`;
+  return row.n;
+}
 async function recipient(q:any,program:StubProgram,recipientId:number,session:Session) {
   if(session.type==='Paravet' && recipientId!==session.id) throw forbidden('Request batches for yourself only.');
   const [person]=await q`select id,full_name,barangay_id from ekapon.accounts where id=${recipientId}
@@ -105,21 +111,22 @@ export default route({
     if(c.query.mode==='batch' || c.query.mode==='print' || c.query.mode==='pdf') {
       const b=await batch(sql(),session,parseId(c.query.batchId));
       const {program,row}=await getProgram(sql(),b.campaign_id,session);
+      const owners=await requestedOwners(sql(),b.campaign_id,b.barangay_id);
       if(c.query.mode==='pdf'){if(!b.external_pdf && !b.external_pdf_file_id)throw notFound('No uploaded PDF is available. Use Print / save PDF.');const file=b.external_pdf_file_id?await readPrivateFile(b.external_pdf_file_id):null;return ok({filename:b.external_pdf_name,data:file?.data ?? Buffer.from(b.external_pdf).toString('base64')});}
     if(c.query.mode==='print') {
         ensureIssuable(program,row);
         if(!['Approved','Printed','Handed over'].includes(b.status)) throw conflict('BATCH_NOT_APPROVED','Approve this batch before printing.');
-        // The slip shows the requested services, never pet names; the owner writes their name on it.
+        // The slip shows the requested services, never pet names; the owner writes their name on it. (e-Vet Field reads encoded owners from the day pack.)
         const stubs=await sql()`select id,code,owner_snapshot->>'name' as "ownerName",status,owner_confirmed_at as "ownerConfirmedAt",
           coalesce((select jsonb_agg(distinct process) from jsonb_array_elements(coalesce(pets_snapshot,'[]'::jsonb)) pet cross join lateral jsonb_array_elements_text(pet->'processes') process),'[]'::jsonb) as services
           from ekapon.stub_tickets where batch_id=${b.id} and status in ('Available','Issued') order by id`;
-        return ok({batch:{...outputBatch(b),note:null,reviewNote:null},program,stubs});
+        return ok({batch:{...outputBatch(b),note:null,reviewNote:null},program,stubs,requestedOwners:owners});
       }
       const [stubs,[count]]=await Promise.all([
         sql()`select t.*,${b.campaign_id}::bigint as campaign_id,${b.barangay_id}::int as batch_barangay_id from ekapon.stub_tickets t where batch_id=${b.id} order by id limit ${f.pageSize} offset ${offset}`,
         sql()`select count(*)::int as total from ekapon.stub_tickets where batch_id=${b.id}`,
       ]);
-      return ok({batch:outputBatch(b),program,stubs:stubs.map(outputTicket),page:f.page,pageSize:f.pageSize,total:count.total});
+      return ok({batch:outputBatch(b),program,stubs:stubs.map(outputTicket),page:f.page,pageSize:f.pageSize,total:count.total,requestedOwners:owners});
     }
     if(c.query.mode==='lookup') {
       const code=parse(z.string().regex(/^CVS1\.[A-Za-z0-9_-]{22}$/),c.query.code);
@@ -130,12 +137,12 @@ export default route({
     if(c.query.mode==='day-pack') {
       // Every stub of the program the user may scan, so program day works with no signal.
       const campaignId=parseId(c.query.campaignId),{program}=await getProgram(sql(),campaignId,session);
-      const rows=await sql()`select t.id,t.code,t.status,t.owner_snapshot,t.pets_snapshot,t.redeemed_at,b.barangay_id as batch_barangay_id
+      const rows=await sql()`select t.id,t.batch_id,t.code,t.status,t.owner_snapshot,t.pets_snapshot,t.redeemed_at,b.barangay_id as batch_barangay_id
         from ekapon.stub_tickets t join ekapon.stub_batches b on b.id=t.batch_id
         where b.campaign_id=${campaignId} and b.status in ('Approved','Printed','Handed over') and t.status in ('Available','Issued','Redeemed')
           and (${session.type!=='Paravet'} or t.owner_barangay_id=${session.barangayId ?? -1} or (t.owner_barangay_id is null and b.barangay_id=${session.barangayId ?? -1}))
         order by t.id`;
-      return ok({program,generatedAt:new Date().toISOString(),stubs:rows.map((r)=>({id:r.id,code:r.code,status:r.status,owner:r.owner_snapshot,pets:r.pets_snapshot,redeemedAt:r.redeemed_at,barangayId:r.batch_barangay_id}))});
+      return ok({program,generatedAt:new Date().toISOString(),stubs:rows.map((r)=>({id:r.id,batchId:r.batch_id,code:r.code,status:r.status,owner:r.owner_snapshot,pets:r.pets_snapshot,redeemedAt:r.redeemed_at,barangayId:r.batch_barangay_id}))});
     }
     if(c.query.mode==='issued') {
       const campaignId=parseId(c.query.campaignId),{program}=await getProgram(sql(),campaignId,session);
@@ -153,7 +160,9 @@ export default route({
         sql()`select count(*)::int as owners,coalesce(sum(jsonb_array_length(pets_snapshot)),0)::int as pets,
           coalesce(sum((select count(*) from jsonb_array_elements(pets_snapshot) p
             cross join lateral jsonb_array_elements_text(p->'processes') process(value)
-            where coalesce(p->'processOutcomes'->>process.value,p->>'outcome')='Completed')),0)::int as "completedServices"
+            where coalesce(p->'processOutcomes'->>process.value,p->>'outcome')='Completed')),0)::int as "completedServices",
+          (select count(*)::int from ekapon.stub_tickets t join ekapon.stub_batches sb on sb.id=t.batch_id where sb.campaign_id=${campaignId} and t.status='Issued'
+            and (${session.type!=='Paravet'} or t.owner_barangay_id=${session.barangayId ?? -1})) as "notScanned"
           from ekapon.program_attendance where campaign_id=${campaignId} and status='Submitted' and (${session.type!=='Paravet'} or (owner_barangay_id=${session.barangayId ?? -1} or encoded_by=${session.id}))`,
       ]);
       return ok({program,data:rows.map(outputAttendance),page:f.page,pageSize:f.pageSize,total:count.total,summary});
@@ -252,6 +261,7 @@ export default route({
           }
         } else if(input.action==='confirm-print') {
           if(!['Approved','Printed','Handed over'].includes(b.status)) throw conflict('BATCH_NOT_APPROVED','Approve this batch before confirming printing.');
+          if(!b.issued_count && !await requestedOwners(q,b.campaign_id,b.barangay_id)) throw conflict('NO_OWNERS','This barangay has no requested or encoded owners yet, so its stubs cannot be printed.');
           if(b.status==='Approved') await q`update ekapon.stub_batches set status='Printed',printed_by=${session.id},printed_at=now() where id=${b.id} and status='Approved'`;
           await audit(q,session,program.id,b.status==='Approved'?'batch-printed':'batch-reprinted',b.id);
         } else {

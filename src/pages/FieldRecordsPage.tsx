@@ -53,26 +53,47 @@ export function FieldRecordsPage({kind}:{kind:FieldKind}){
  </div>;
 }
 
+// Each field lists the keys it may be stored under (records come from census, attendance, standalone visits and imports); the first one present wins.
+const FIELD_GROUPS:{title:string;fields:[string,string[]][]}[]=[
+ {title:'Owner',fields:[['Name',['owner_name','owner','clientName','name','respondent']],['Mobile',['mobile','contact','phone']],['Address',['address']],['Barangay',['barangay']]]},
+ {title:'Pet',fields:[['Pet name',['petName','pet_name']],['Species',['species']],['Sex',['sex']],['Age',['ageMonths','age_months','age']],['Breed',['breed']],['Color',['color']]]},
+ {title:'Visit',fields:[['Program',['program']],['Program date',['programDate']],['Date of service',['date','servedOn','attendedOn']],['Location',['location']],['Provider',['provider','paravet']],['Encoded by',['encodedBy','encoded_by']],['Source',['source']],['Entry status',['entryStatus']]]},
+];
+const HIDDEN=new Set(['workflow','id','ownerId','submissionId','campaignId','programId','attendanceId','visitId','pet_id','owner_id','paravet_id','barangayId','processes','process','procedureType','service','processOutcomes','status','outcome','procedures']);
+const ageText=(key:string,value:unknown)=>key!=='age'&&typeof value==='number'?`${value} month${value===1?'':'s'}`:text(value);
+const fieldLabel=(key:string)=>key.replace(/([a-z])([A-Z])/g,'$1 $2').replaceAll('_',' ').replace(/^./,(c)=>c.toUpperCase());
+function FieldValue({value}:{value:unknown}){return value===null||value===undefined||value===''?<span className="font-normal text-slate-400">Not recorded</span>:<>{text(value)}</>;}
+/** A record grouped into Owner, Pet and Visit; anything else that has a value goes under Other details. */
 function ReadFields({data}:{data:Record<string,unknown>}){
- const hidden=new Set(['workflow','id','ownerId','submissionId','campaignId','programId','attendanceId','visitId','pet_id','owner_id','paravet_id','barangayId','clientName','owner_name','owner']);
- if(data.petName!==undefined)hidden.add('pet_name');
- if(data.provider!==undefined)hidden.add('paravet');
- if(data.service!==undefined){hidden.add('process');hidden.add('procedureType');}
- if(data.ageMonths!==undefined&&data.ageMonths!==null)hidden.add('age');
- if(data.status===data.outcome)hidden.add('outcome');
- return <dl className="grid gap-3 text-sm sm:grid-cols-2">{Object.entries(data).filter(([key,value])=>!key.startsWith('_')&&!hidden.has(key)&&(value===null||['string','number','boolean'].includes(typeof value))).map(([key,value])=><div key={key}><dt className="text-xs capitalize text-slate-500">{key.replace(/([a-z])([A-Z])/g,'$1 $2').replaceAll('_',' ')}</dt><dd className="mt-1 break-words">{text(value)}</dd></div>)}</dl>;
+ const used=new Set<string>();
+ const groups=FIELD_GROUPS.map(({title,fields})=>({title,rows:fields.flatMap(([label,keys])=>{const present=keys.filter((key)=>key in data);if(!present.length)return [];present.forEach((key)=>used.add(key));const key=present.find((k)=>data[k]!==null&&data[k]!=='')??present[0];return [[label,key] as const];})})).filter((group)=>group.rows.length);
+ const other=Object.entries(data).filter(([key,value])=>!key.startsWith('_')&&!used.has(key)&&!HIDDEN.has(key)&&value!==null&&value!==''&&['string','number','boolean'].includes(typeof value));
+ const all=[...groups,...(other.length?[{title:'Other details',rows:other.map(([key])=>[fieldLabel(key),key] as const)}]:[])];
+ return <div className="grid gap-3 sm:grid-cols-2">{all.map((group)=><section key={group.title} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{group.title}</h3><dl className="mt-3 space-y-2.5">{group.rows.map(([label,key])=><div key={label} className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 text-sm"><dt className="text-slate-500">{label}</dt><dd className="break-words font-medium text-slate-900 dark:text-white">{key.startsWith('age')?(data[key]===null||data[key]===''||data[key]===undefined?<FieldValue value={null}/>:ageText(key,data[key])):<FieldValue value={data[key]}/>}</dd></div>)}</dl></section>)}</div>;
+}
+/** Each service with its result: from processOutcomes, else the record's own outcome. */
+function ServiceResults({data}:{data:Record<string,unknown>}){
+ const listed=Array.isArray(data.processes)?data.processes.map(String):typeof data.process==='string'&&data.process?data.process.split(/,\s*/):typeof data.service==='string'?[data.service]:[];
+ if(!listed.length)return null;
+ const outcomes=(data.processOutcomes&&typeof data.processOutcomes==='object'?data.processOutcomes:{}) as Record<string,string>;
+ const result=(process:string)=>outcomes[process]??String(data.outcome??data.status??'Not recorded');
+ return <section><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Services</h3><ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-700">{listed.map((process)=><li key={process} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"><span className="font-medium">{process}</span><OutcomePill value={result(process)}/></li>)}</ul></section>;
+}
+function OutcomePill({value}:{value:string}){
+ const tone=value==='Completed'||value==='Submitted'?'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':value==='Voided'||value==='Not eligible'?'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':value==='Deferred'||/partially|mixed/i.test(value)?'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200':'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+ return <span className={`inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-medium ${tone}`}>{value}</span>;
 }
 function FieldDetail({kind,view,id,onClose,onChanged}:{kind:FieldKind;view:FieldView;id:string;onClose:()=>void;onChanged:()=>void}){
  const detail=useApi<{data?:FieldRow[];record?:FieldRow;owner?:Record<string,unknown>;pets?:Record<string,unknown>[];history?:{action:string;actor:string;at:string;reason?:string}[];duplicateReason?:string}>(`/field-records?kind=${kind}&view=${view}&id=${encodeURIComponent(id)}&includeVoided=true`);
  const row=detail.data?.record??detail.data?.data?.[0];const [voiding,setVoiding]=useState(false),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const voidVisit=async()=>{setBusy(true);setError('');try{await api('POST','/field-records',{action:'void',id,reason});setVoiding(false);detail.reload();onChanged();}catch(e){setError(e instanceof Error?e.message:'Could not void the visit.');}finally{setBusy(false);}};
- return <Modal title="Field record details" wide onClose={onClose} dismissible={!busy}><div className="space-y-5">{detail.loading?<Loading label="Loading source details and history…"/>:detail.error?<Notice kind="error">{detail.error.message}</Notice>:row?<>
-  <SourceLinks row={row}/><ReadFields data={row}/>
-  {detail.data?.owner&&<section><h2 className="mb-3 font-semibold">Owner at the Time of Recording</h2><ReadFields data={detail.data.owner}/></section>}
-  {detail.data?.pets?.map((pet,i)=><section key={i} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><h3 className="mb-2 font-semibold">{text(pet.petName??pet.pet_name??pet.name)}</h3><ReadFields data={pet}/>{Array.isArray(pet.procedures)&&<ul className="mt-3 space-y-1 text-sm">{(pet.procedures as {process:string;outcome:string}[]).map(p=><li key={p.process}>{p.process} · <strong>{p.outcome}</strong></li>)}</ul>}</section>)}
-  {row.processOutcomes&&typeof row.processOutcomes==='object'&&<section><h2 className="mb-2 font-semibold">Procedure Outcomes</h2><ReadFields data={row.processOutcomes as Record<string,unknown>}/></section>}
+ return <Modal title={kind==='respondents'?'Census response details':'Field record details'} wide onClose={onClose} dismissible={!busy}><div className="space-y-5">{detail.loading?<Loading label="Loading source details and history…"/>:detail.error?<Notice kind="error">{detail.error.message}</Notice>:row?<>
+  <header className="flex flex-wrap items-start justify-between gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50"><div className="min-w-0"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{kind==='respondents'?'Census response':kind==='services'?'Service':'Participant'}</p><h3 className="mt-0.5 truncate text-xl font-semibold tracking-tight">{text(row.petName??row.pet_name??row.name)}</h3><p className="truncate text-sm text-slate-600 dark:text-slate-300">{[row.petName||row.pet_name?row.name??row.owner_name:null,row.barangay,row.date].filter(Boolean).map(String).join(' · ')}</p><div className="mt-2"><SourceLinks row={row}/></div></div><div className="flex flex-wrap gap-2">{row.source&&<span className="inline-flex h-6 items-center rounded-full bg-white px-2.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">{String(row.source)}</span>}{(row.entryStatus==='Voided'||row.status)&&<OutcomePill value={row.entryStatus==='Voided'?'Voided':String(row.status)}/>}</div></header>
+  <ReadFields data={row}/><ServiceResults data={row}/>
+  {detail.data?.owner&&<section><h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Owner at the time of recording</h3><ReadFields data={detail.data.owner}/></section>}
+  {detail.data?.pets?.map((pet,i)=><section key={i} className="space-y-2"><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{text(pet.petName??pet.pet_name??pet.name)}</h3><ReadFields data={pet}/>{Array.isArray(pet.procedures)&&<ServiceResults data={{processes:(pet.procedures as {process:string}[]).map(p=>p.process),processOutcomes:Object.fromEntries((pet.procedures as {process:string;outcome:string}[]).map(p=>[p.process,p.outcome]))}}/>}</section>)}
   {detail.data?.duplicateReason&&<Notice>Repeat-entry explanation: {detail.data.duplicateReason}</Notice>}
-  {detail.data?.history&&<section><h2 className="mb-3 font-semibold">History</h2><ol className="space-y-3 text-sm">{detail.data.history.map((h,i)=><li key={i} className="border-l-2 border-slate-200 pl-3"><strong>{h.action}</strong><p>{h.actor} · {when(h.at)}</p>{h.reason&&<p className="mt-1 text-slate-500">{h.reason}</p>}</li>)}</ol></section>}
+  {detail.data?.history&&<details className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><summary className="cursor-pointer text-sm font-semibold">History ({detail.data.history.length})</summary><ol className="mt-3 space-y-3 text-sm">{detail.data.history.map((h,i)=><li key={i} className="border-l-2 border-brand-300 pl-3"><strong>{h.action}</strong><p className="text-slate-500">{h.actor} · {when(h.at)}</p>{h.reason&&<p className="mt-1 text-slate-500">{h.reason}</p>}</li>)}</ol></details>}
   {view==='standalone'&&row.status==='Submitted'&&!voiding&&<button className={btnDanger} onClick={()=>setVoiding(true)}>Void incorrect visit</button>}
   {voiding&&<div className="space-y-3 rounded-xl border border-red-200 p-4"><p className="text-sm">Voiding removes completed procedures from active service totals. The original visit and reason remain available in history. Record a new reviewed visit for corrected information.</p><Field label="Reason for voiding"><textarea className={inputCls} minLength={3} maxLength={1000} value={reason} onChange={e=>setReason(e.target.value)} disabled={busy}/></Field><div className="flex gap-2"><button className={btnGhost} disabled={busy} onClick={()=>setVoiding(false)}>Cancel</button><button className={btnDanger} disabled={busy||reason.trim().length<3} onClick={()=>void voidVisit()}>{busy?<Spinner label="Voiding…"/>:'Confirm void'}</button></div></div>}
  </>:<Notice>This record is no longer available in this source.</Notice>}{error&&<Notice kind="error">{error}</Notice>}<div className="flex justify-end"><button className={btnGhost} disabled={busy} onClick={onClose}>Close</button></div></div></Modal>;

@@ -1,4 +1,4 @@
-import { ArrowLeft, Bell, ChevronUp, CircleAlert, CircleCheck, Database, Menu, X } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronUp, CircleAlert, CircleCheck, Database, Menu, RefreshCw, X } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import Lenis from 'lenis';
@@ -19,8 +19,8 @@ import { PageErrorBoundary } from './PageErrorBoundary';
 
 const COLLAPSE_KEY = 'cv.nav.collapsed';
 
-type Toast = { message: string; kind: 'success' | 'error'; undoToken?: string;undoLabel?:string };
-const toastMs = (toast: Toast) => toast.undoToken ? 5 * 60_000 : 6000;
+type Toast = { message: string; kind: 'success' | 'error'; undoToken?: string;undoLabel?:string;refresh?:boolean };
+const toastMs = (toast: Toast) => toast.undoToken ? 5 * 60_000 : toast.refresh ? 20_000 : 6000;
 
 export function useVisibleNav(): NavNode[] {
   const { can, featureEnabled } = useAuth();
@@ -62,6 +62,18 @@ export function AppShell() {
   const unread=navUpdates.badges.inbox?.pending??0;
   const [toast, setToast] = useState<Toast | null>(null);
   const toastKey = useMemo(() => Math.random(), [toast]);
+  // Every page's reads, fetched again: the header button, and the toast when other staff add records.
+  const refreshAll = () => { readQueries.invalidate('write'); navUpdates.reload(); };
+  // Changes right after this user saved are their own, not news.
+  const lastWrite = useRef(0);
+  const seenBadges = useRef<Record<string, { pending: number; updated: boolean }> | null>(null);
+  useEffect(() => {
+    const badges = navUpdates.badges;
+    if (!Object.keys(badges).length) return;
+    const previous = seenBadges.current; seenBadges.current = badges;
+    // The 60-second badge poll shows a section with new or more pending records than before (the inbox has its own bell).
+    if (previous && Date.now() - lastWrite.current > 15_000 && Object.entries(badges).some(([node, badge]) => node !== 'inbox' && ((badge.updated && !previous[node]?.updated) || badge.pending > (previous[node]?.pending ?? 0)))) setToast({ message: 'New records were added by other staff.', kind: 'success', refresh: true });
+  }, [navUpdates.badges]);
   const [pendingWrites, setPendingWrites] = useState(0);
   const [showReturnTop, setShowReturnTop] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -91,7 +103,7 @@ export function AppShell() {
     };
     const onSuccess = (event: Event) => { const detail = (event as CustomEvent<{ message?: string; undoToken?: string;undoLabel?:string }>).detail; setToast({ message: detail?.message ?? 'Action completed successfully.', kind: 'success', undoToken: detail?.undoToken,undoLabel:detail?.undoLabel }); };
     const onRequestStart = () => setPendingWrites((count) => count + 1);
-    const onRequestEnd = () => setPendingWrites((count) => Math.max(0, count - 1));
+    const onRequestEnd = () => { lastWrite.current = Date.now(); setPendingWrites((count) => Math.max(0, count - 1)); };
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     window.addEventListener('cv:api-error', onError);
@@ -192,10 +204,12 @@ export function AppShell() {
           <p className="hidden truncate text-sm font-semibold sm:block">{t('app.name')}</p>
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
           <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : t(`db.${db}`)} className="relative grid h-9 w-9 shrink-0 place-items-center text-slate-500 dark:text-slate-300"><Database aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px]" /><span className="absolute right-1.5 top-1.5 flex rounded-full ring-2 ring-canvas dark:ring-canvas-dark">{dbDot}</span></span>
+          <button type="button" onClick={refreshAll} aria-label="Refresh data" title="Refresh data" className="shrink-0 rounded-xl p-2.5 text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300"><RefreshCw aria-hidden className="h-5 w-5" /></button>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative shrink-0 rounded-xl p-2.5 text-slate-600 dark:text-slate-300"><Bell aria-hidden className="h-5 w-5"/>{unread>0&&<span className="absolute right-0 top-0 rounded-full bg-red-600 px-1 text-[10px] text-white">{unread}</span>}</Link>
         </header>
         <header className="hidden h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-8 dark:border-slate-800 md:flex print:hidden">
           <UniversalSearch value={search} onChange={changeSearch} results={searchResults} loading={searchLoading} error={searchError} includeHistory={includeHistory} onHistory={changeHistory} hasMore={searchHasMore} onRetry={()=>setSearchRevision(v=>v+1)} />
+          <button type="button" onClick={refreshAll} aria-label="Refresh data" title="Refresh data" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-300 dark:hover:bg-slate-800"><RefreshCw aria-hidden className="h-5 w-5" /></button>
           <Link to="/inbox" aria-label={`Notifications, ${unread} unread`} className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"><Bell aria-hidden className="h-5 w-5" />{unread > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-red-600 px-1 text-center text-[10px] text-white">{unread}</span>}</Link>
           <span role="status" aria-label={t(`db.${db}`)} title={errorLog ? t('db.lastError', { message: errorLog }) : `${t('db.title')}: ${t(`db.${db}`)}`} className="relative grid h-9 w-9 place-items-center rounded-lg text-slate-500 dark:text-slate-300"><Database aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px]" /><span className="absolute right-1.5 top-1.5 flex rounded-full ring-2 ring-white dark:ring-surface-dark">{dbDot}</span></span>
         </header>
@@ -211,6 +225,7 @@ export function AppShell() {
       {toast && <div key={toastKey} role={toast.kind === 'error' ? 'alert' : 'status'} aria-live={toast.kind === 'error' ? 'assertive' : 'polite'} style={{ '--toast-ms': `${toastMs(toast)}ms` } as CSSProperties} className="ui-toast fixed inset-x-0 bottom-6 z-[61] mx-auto flex w-[calc(100vw-2rem)] max-w-md items-center gap-3 overflow-hidden rounded-xl bg-[#1d1f1e] px-4 py-3 text-sm text-white shadow-lg ring-1 ring-white/10 dark:bg-[#2e2e2e] print:hidden">
         {toast.kind === 'error' ? <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" /> : <CircleCheck aria-hidden className="h-4 w-4 shrink-0 text-[#5BE3A0]" />}
         <div className="min-w-0 flex-1 break-words">{toast.message}</div>
+        {toast.refresh && <button type="button" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-[#5BE3A0] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5BE3A0]" onClick={() => { setToast(null); refreshAll(); }}>Refresh</button>}
         {toast.undoToken && <button type="button" title="Available for 5 minutes" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-[#5BE3A0] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5BE3A0]" onClick={() => { const token = toast.undoToken!; setToast(null); void api<{undoToken:string;undoLabel:string}>('POST', `/undo/${token}`, {direction:toast.undoLabel==='Redo'?'redo':'undo'}).then(result => setToast({message:toast.undoLabel==='Redo'?'Change restored.':'Change undone.',kind:'success',undoToken:result.undoToken,undoLabel:result.undoLabel})); }}>{toast.undoLabel??'Undo'}</button>}
         <button type="button" aria-label={t('common.close')} onClick={() => setToast(null)} className="shrink-0 rounded-md p-0.5 text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"><X aria-hidden className="h-4 w-4" /></button>
         <span aria-hidden className={`toast-timer absolute inset-x-0 bottom-0 h-[3px] ${toast.kind === 'error' ? 'bg-red-400' : 'bg-[#5BE3A0]'}`} />
