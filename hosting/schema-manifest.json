@@ -1,6 +1,6 @@
 {
   "format": "ekapon-empty-hosting-schema-v1",
-  "schemaSha256": "788f48c6a7639d1d4cf47d93fbc42389f8434b021fd6964f95b6768d547f82ea",
+  "schemaSha256": "ffca5bd45630e450e4f9b28d4f32337a943f73bc604b588cb0573f8a54751e3a",
   "sources": [
     {
       "file": "000_ekapon_schema.sql",
@@ -109,6 +109,10 @@
     {
       "file": "031_email_codes_no_rls.sql",
       "sha256": "a5abcb775dfa21942ed44599bb625e01099def0ce191899665142cc46fae100a"
+    },
+    {
+      "file": "032_staff_change_username.sql",
+      "sha256": "1643a8434c70f657bd954e6a295a4c62a4d30b12e010f5aecf75e12057d81982"
     }
   ],
   "accounts": 0,

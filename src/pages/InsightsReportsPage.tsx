@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../lib/useApi';
 import { DataFreshness } from '../components/DataFreshness';
-import { Loading,Notice,Pagination,inputCls,btnGhost,tabItem,tabList, Select, districtOptions } from '../components/ui';
+import { InfoTip, Loading,Notice,Pagination,inputCls,btnGhost,tabItem,tabList, Select, districtOptions } from '../components/ui';
 import { EvidenceRecordSearch,ReportBuilder,ReportsPage as RegistryReports,WorkbookTools } from './InsightsPages';
 
 type Outcomes={totals:{ownerVisits:number;petVisits:number;completedProcedures:number;stubVisits:number;walkInVisits:number;programsWithAttendance:number};
@@ -42,7 +42,7 @@ function ReportTask({task}:{task:'evidence'|'builder'}){
 
 export function ReportsPage(){
   const [section,setSection]=useState<(typeof sections)[number][0]>('outcomes');
-  return <div className="w-full space-y-6"><header><h1 className="text-2xl font-semibold">Reports</h1><p className="mt-1 text-sm text-slate-500">Review program results, find evidence, or prepare a report.</p></header>
+  return <div className="w-full space-y-6"><header><h1 className="text-2xl font-semibold">Reports<InfoTip>Review program results, find evidence, or prepare a report.</InfoTip></h1></header>
     <div role="tablist" aria-label="Reporting tasks" className={`${tabList} w-full`}>{sections.map(([id,label],index)=><button key={id} id={`report-tab-${id}`} role="tab" tabIndex={section===id?0:-1} aria-selected={section===id} aria-controls="report-content" onClick={()=>setSection(id)} onKeyDown={e=>{
       if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();
       const next=e.key==='Home'?0:e.key==='End'?sections.length-1:(index+(e.key==='ArrowRight'?1:-1)+sections.length)%sections.length;

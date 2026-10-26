@@ -1,10 +1,11 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { ClipboardCheck, Copy } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi, useDebouncedValue } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
-import { btnGhost, btnPrimary, Check, ConfirmDialog, DateInput, Loading, Modal, Notice, Pagination, Select } from '../components/ui';
+import { InfoTip, btnGhost, btnPrimary, Check, ConfirmDialog, DateInput, Loading, Modal, Notice, Pagination, Select } from '../components/ui';
 import { ReferenceInput, type ReferenceSuggestion } from '../components/ReferenceInput';
 import { AccountDetails, type AccountRow } from './AccountsPage';
 import { normalizeProgramStatus, programProcessesFrom, PROGRAM_PROCESSES, PROGRAM_STATUSES } from '../../shared/programs';
@@ -22,6 +23,14 @@ function newRecord(dataset: RecordDataset): RecordRow {
   if (dataset === 'participants') return { id, name: '', program: '', date: '', barangay: '', status: 'Planned' };
   if (dataset === 'programs') return { id, title: '', date: '', startTime: '', endTime: '', location: '', slots: null, barangay: '', status: 'Planned', processes: [] };
   return { id, name: '', date: '', barangay: '', status: 'Planned', program: '' };
+}
+
+/** A Paravet's account key; clicking copies it to share with the Paravet. */
+function CopyKey({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return <button type="button" title="Copy account key" aria-label={`Copy account key ${value}`} onClick={() => void navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => window.prompt('Copy the account key:', value))} className="inline-flex items-center gap-1 rounded font-mono text-slate-700 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-200 dark:hover:text-brand-300">
+    {value}{copied ? <ClipboardCheck aria-hidden className="h-3.5 w-3.5 text-brand-600" /> : <Copy aria-hidden className="h-3.5 w-3.5" />}<span role="status" className="sr-only">{copied ? 'Copied' : ''}</span>
+  </button>;
 }
 
 type RecordDataset = 'owners' | 'pets' | 'paravets' | 'respondents' | 'households' | 'animals' | 'stubs' | 'services' | 'programs' | 'participants';
@@ -64,7 +73,7 @@ export function RecordsPage({ dataset, title, writeCap = 'registry.write', readO
     const duration = row.durationMinutes !== null && row.durationMinutes !== undefined && Number.isFinite(Number(row.durationMinutes)) ? Number(row.durationMinutes) : null;
     const durationText = duration == null ? '' : `${Math.floor(duration / 60) ? `${Math.floor(duration / 60)} hr ` : ''}${duration % 60 ? `${duration % 60} min` : ''}`.trim();
     const account = dataset === 'paravets' ? accountOf(row) : undefined;
-    const detail = dataset === 'paravets' ? (account ? [account.accountKey, account.mobile, account.archived ? 'Deactivated' : account.status, account.lastLoginAt ? `Last sign-in ${new Date(account.lastLoginAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium' })}` : 'Not signed in yet'].filter(Boolean).join(' · ') : [String(row.mobile ?? ''), 'No sign-in account'].filter(Boolean).join(' · '))
+    const detail = dataset === 'paravets' ? (account ? <>{account.accountKey && <><CopyKey value={account.accountKey} />{' · '}</>}{[account.mobile, account.archived ? 'Deactivated' : account.status, account.lastLoginAt ? `Last sign-in ${new Date(account.lastLoginAt).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium' })}` : 'Not signed in yet'].filter(Boolean).join(' · ')}</> : [String(row.mobile ?? ''), 'No sign-in account'].filter(Boolean).join(' · '))
       : dataset === 'owners' ? String(row.address ?? row.contact ?? '')
       : dataset === 'pets' ? `${String(row.species ?? '')} · ${String(row.owner ?? row.owner_name ?? row.owner_id ?? '')}`
         : dataset === 'programs' ? [String(row.date ?? ''), String(row.status ?? ''), programProcesses.join(', '), usedSlots == null ? '' : `Slots used ${usedSlots}${Number.isFinite(slots) ? ` / ${slots}` : ''}`, durationText ? `Duration ${durationText}` : 'Duration not set'].filter(Boolean).join(' · ')
@@ -118,7 +127,7 @@ export function RecordsPage({ dataset, title, writeCap = 'registry.write', readO
     setPage(1);
     setParams((current) => { current.delete('q'); return current; }, { replace: true });
   };
-  return <div className="w-full"><div className="flex flex-wrap items-end gap-3"><div className="mr-auto"><h1 className="text-2xl font-semibold">{title}</h1><p className="mt-1 text-sm text-slate-500">Select a record to view its details{editable ? ' and edit it' : ''}.</p></div><input aria-label={`Search ${title}`} placeholder={`Search ${title.toLowerCase()}…`} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /><button type="button" onClick={() => { setArchived(!archived); setPage(1); }} className={btnGhost}>{archived ? 'Show active' : 'Show archived'}</button>{editable && <button type="button" onClick={() => { setCreating(true); setConfirm(newRecord(dataset)); }} className={btnPrimary}>{dataset === 'paravets' ? 'Add Paravet' : dataset === 'programs' ? 'Add a program' : 'Add record'}</button>}</div>
+  return <div className="w-full"><div className="flex flex-wrap items-end gap-3"><div className="mr-auto"><h1 className="text-2xl font-semibold">{title}<InfoTip>{dataset === 'paravets' ? "Edit a Paravet to correct their details or assign them to another barangay; both barangays' Paravets are notified. Deactivate stops sign-in to e-Vet Field, and Restore turns it back on. Click an account key to copy it." : `Select a record to view its details${editable ? ' and edit it' : ''}.`}</InfoTip></h1></div><input aria-label={`Search ${title}`} placeholder={`Search ${title.toLowerCase()}…`} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /><button type="button" onClick={() => { setArchived(!archived); setPage(1); }} className={btnGhost}>{archived ? 'Show active' : 'Show archived'}</button>{editable && <button type="button" onClick={() => { setCreating(true); setConfirm(newRecord(dataset)); }} className={btnPrimary}>{dataset === 'paravets' ? 'Add Paravet' : dataset === 'programs' ? 'Add a program' : 'Add record'}</button>}</div>
     {(dataset === 'owners' || dataset === 'pets') && rows.some((row) => row._relationshipIssue) && <Notice kind="error">Some existing records have unmatched owner–pet links. They remain available for review; correct the owner or pet links before relying on these records.</Notice>}
     <div className="mt-3 flex flex-wrap items-end gap-3">
       <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><option value="updatedAt">Last updated</option><option value="name">Name</option><option value="barangay">Barangay</option><option value="date">Date</option><option value="status">Status</option><option value="id">ID</option></Select></label>
@@ -133,7 +142,7 @@ export function RecordsPage({ dataset, title, writeCap = 'registry.write', readO
       <section><h2 className="font-semibold">Recent and Previous Programs</h2>{renderTable(recentPrograms)}</section>
     </div> : renderTable(rows)}
     {data && <Pagination page={page} pageSize={PAGE_SIZE} total={data.total} onPage={setPage} />}
-    {dataset==='paravets'&&<p className="my-3 text-sm text-slate-500">Edit a Paravet to correct their details or assign them to another barangay; both barangays' Paravets are notified. Deactivate stops sign-in to e-Vet Field, and Restore turns it back on. Historical submissions retain their original Paravet and barangay.</p>}{confirm && <RecordEditor record={confirm} dataset={dataset} editable={editable && !(dataset==='paravets'&&confirm.accountId&&!creating) && confirm.workflow !== 'qr-stubs-v1'} creating={creating} onClose={() => { setConfirm(null); setCreating(false); setActionError(''); }} onSave={(record) => setConfirm(record)} onSubmit={() => void save()} />}
+    {confirm && <RecordEditor record={confirm} dataset={dataset} editable={editable && !(dataset==='paravets'&&confirm.accountId&&!creating) && confirm.workflow !== 'qr-stubs-v1'} creating={creating} onClose={() => { setConfirm(null); setCreating(false); setActionError(''); }} onSave={(record) => setConfirm(record)} onSubmit={() => void save()} />}
     {editingAccount && <AccountDetails account={editingAccount} onClose={() => setEditingAccount(null)} onSaved={(token) => { setUndoToken(token || null); setEditingAccount(null); setTick((n) => n + 1); }} />}
     {pendingDeactivate && <ConfirmDialog title={pendingDeactivate.archived ? 'Restore Paravet access?' : 'Deactivate this Paravet?'} message={pendingDeactivate.archived ? `${pendingDeactivate.fullName} can sign in to e-Vet Field again.` : `${pendingDeactivate.fullName} can no longer sign in to e-Vet Field and stops counting as an active Paravet of their barangay. Submissions and history stay.`} confirmLabel={pendingDeactivate.archived ? 'Restore access' : 'Deactivate account'} danger={!pendingDeactivate.archived} onClose={() => setPendingDeactivate(null)} onConfirm={() => { const target = pendingDeactivate; setPendingDeactivate(null); setActionError(''); void api('POST', '/accounts/archive', { ids: [target.id], restore: target.archived }).then(() => setTick((n) => n + 1)).catch((e) => setActionError(e instanceof Error ? e.message : 'Could not change Paravet access.')); }} />}
     {createdCredentials && <Modal title="Paravet account created" onClose={() => setCreatedCredentials(null)}>

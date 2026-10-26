@@ -1,5 +1,5 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
-import { ConfirmDialog, Select } from '../components/ui';
+import { InfoTip, ConfirmDialog, Select } from '../components/ui';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Field, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary } from '../components/ui';
@@ -94,7 +94,7 @@ export function AccountsPage() {
 
   return <div className="w-full">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold">Accounts</h1><p className="mt-1 text-sm text-slate-500">Select an account to view or edit its profile details.</p></div>
+      <div><h1 className="text-2xl font-semibold">Accounts<InfoTip>Select an account to view or edit its profile details.</InfoTip></h1></div>
       <input aria-label="Search accounts" placeholder="Search name, account key, or mobile…" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} className={`${inputCls} max-w-sm`} />
     </div>
     <div className="mt-3 flex flex-wrap items-end gap-3">

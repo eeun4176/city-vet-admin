@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { shrinkImage } from '../lib/image';
-import { Notice, btnGhost } from '../components/ui';
+import { InfoTip, Field, Notice, btnGhost, btnPrimary, inputCls } from '../components/ui';
 import { roleLabel } from '../../shared/permissions';
 
-/** The signed-in person's account: details are shown locked (an Admin changes them in Accounts); only the profile photo can be changed here. */
+/** The signed-in person's account: profile details are locked (an Admin changes them in Accounts); the photo, username and password can be changed here. */
 export function AccountPage() {
   const { account, refresh } = useAuth();
   const [error, setError] = useState('');
@@ -32,10 +32,10 @@ export function AccountPage() {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not remove your photo.'); }
   };
   const initials = account.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase();
-  const details: [string, string | null][] = [['Full name', account.name], ['Role', roleLabel(account.type)], ['Username', account.username], ['Account key', account.accountKey], ['Barangay', account.barangay]];
+  const details: [string, string | null][] = [['Full name', account.name], ['Role', roleLabel(account.type)], ['Account key', account.accountKey], ['Barangay', account.barangay]];
 
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold tracking-tight">Account</h1><p className="mt-1 text-sm text-slate-500">How you appear to other staff. Ask an Admin to change your name, role or barangay.</p></div>
+    <div><h1 className="text-2xl font-semibold tracking-tight">Account<InfoTip>How you appear to other staff. Change your photo, username and password here; an Admin changes your name, role or barangay.</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
     <section aria-label="Your account" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-slate-800">
       <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 pb-5 dark:border-slate-800">
@@ -63,5 +63,40 @@ export function AccountPage() {
       </dl>
       <p className="mt-4 text-xs text-slate-500">Photos are resized on your device before upload and are visible to signed-in staff.</p>
     </section>
+    {account.username && <SignInDetails username={account.username} onSaved={refresh} />}
   </div>;
+}
+
+/** Change your own username and/or password; the current password confirms it is you. */
+function SignInDetails({ username, onSaved }: { username: string; onSaved: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const nextUsername = String(data.get('username')).trim();
+    const newPassword = String(data.get('newPassword'));
+    const body = { currentPassword: String(data.get('currentPassword')), ...(nextUsername !== username ? { username: nextUsername } : {}), ...(newPassword ? { newPassword, confirmPassword: String(data.get('confirmPassword')) } : {}) };
+    if (!('username' in body) && !newPassword) { setMessage({ kind: 'error', text: 'Enter a new username or a new password.' }); return; }
+    setBusy(true); setMessage(null);
+    try {
+      await api('PATCH', '/auth/credentials', body);
+      form.reset();
+      setMessage({ kind: 'success', text: newPassword ? 'Saved. Other devices signed in to this account were signed out.' : 'Username saved. Use it the next time you sign in.' });
+      await onSaved();
+    } catch (failure) { setMessage({ kind: 'error', text: failure instanceof Error ? failure.message : 'Could not save your sign-in details.' }); }
+    finally { setBusy(false); }
+  };
+  return <form onSubmit={(event) => void submit(event)} aria-label="Sign-in details" className="rounded-2xl p-5 shadow-panel ring-1 ring-slate-200 sm:p-6 dark:ring-slate-800">
+    <h2 className="font-semibold">Username and password</h2>
+    {message && <div className="mt-3"><Notice kind={message.kind}>{message.text}</Notice></div>}
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Field label="Username"><input name="username" defaultValue={username} key={username} required minLength={3} maxLength={64} pattern="[A-Za-z0-9._\-]+" autoComplete="username" className={inputCls} /></Field>
+      <Field label="Current password" hint="Required to save any change."><input name="currentPassword" type="password" required autoComplete="current-password" className={inputCls} /></Field>
+      <Field label="New password" hint="Leave blank to keep it. At least 8 characters with a letter and a number."><input name="newPassword" type="password" minLength={8} maxLength={200} autoComplete="new-password" className={inputCls} /></Field>
+      <Field label="Confirm new password"><input name="confirmPassword" type="password" maxLength={200} autoComplete="new-password" className={inputCls} /></Field>
+    </div>
+    <div className="mt-4 flex justify-end"><button type="submit" disabled={busy} className={btnPrimary}>{busy ? 'Saving…' : 'Save changes'}</button></div>
+  </form>;
 }

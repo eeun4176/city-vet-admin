@@ -1,13 +1,13 @@
 import { useRecordSelection,SelectionBar,exportSelectedCsv } from '../lib/useRecordSelection';
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, CalendarDays, Clock3, MapPin, Pencil, Play, Plus, RefreshCw, Square, Users } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock3, MapPin, Pencil, Play, RefreshCw, Square, Users } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PROGRAM_PROCESSES, PROGRAM_STATUSES, type ProgramProcess } from '../../shared/programs';
 import { timingSummary, type ProgramGroup, type WorkspaceDetail, type WorkspaceList, type WorkspaceProgram } from '../../shared/programWorkspace';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { Check, Field, Loading, Modal, Notice, Pagination, Spinner, btnGhost, btnPrimary, formatDate, inputCls, tabItem, tabList, Select, districtOptions } from '../components/ui';
+import { InfoTip, Check, Field, Loading, Modal, Notice, Pagination, Spinner, btnGhost, btnPrimary, formatDate, inputCls, tabItem, tabList, Select, districtOptions } from '../components/ui';
 import { DataFreshness } from '../components/DataFreshness';
 import './program-workspace.css';
 
@@ -36,7 +36,6 @@ export function ProgramWorkspacePage() {
   const page = Math.max(1, Number(params.get('page')) || 1);
   const [search, setSearch] = useState('');
   const debounced = useDebouncedValue(search);
-  const [create, setCreate] = useState(false);
   const [notice, setNotice] = useState('');
   const { data, loading, error, reload } = useApi<WorkspaceList>(rawId || legacyRecordId ? null : `/program-workspace?group=${group}&page=${page}&q=${encodeURIComponent(debounced)}`);
   const bulk=useRecordSelection(`${group}:${debounced}`);
@@ -50,7 +49,7 @@ export function ProgramWorkspacePage() {
   if (!rawId && legacyRecordId) return <ProgramLink recordId={legacyRecordId} onBack={() => changeParams({ recordId: null })} />;
   if (rawId) return programId ? <ProgramDetail key={programId} programId={programId} isAdmin={isAdmin} onBack={() => changeParams({ program: null, tab: null })} /> : <div className="space-y-3"><Notice kind="error">Choose a valid program.</Notice><button className={btnGhost} onClick={() => changeParams({ program: null, tab: null })}>Back to programs</button></div>;
   return <div className="w-full space-y-6">
-    <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Field operations</p><h1 className="text-2xl font-semibold">Programs</h1><p className="mt-1 text-sm text-slate-500">Plan the day, follow participation, and keep paper encoding connected.</p></div><div className="flex flex-wrap gap-2"><Link to="/program-interest" className={btnGhost}>Demand lists and requests</Link>{isAdmin && <button className={btnPrimary} onClick={() => setCreate(true)}><Plus className="h-4 w-4" />Add a program</button>}</div></header>
+    <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">Field operations</p><h1 className="text-2xl font-semibold">Programs<InfoTip>Plan the day, follow participation, and keep paper encoding connected. New programs are scheduled from approved requests in Program interest.</InfoTip></h1></div><div className="flex flex-wrap gap-2"><Link to="/program-interest" className={btnGhost}>Demand lists and requests</Link></div></header>
     {notice && <Notice kind="success">{notice}</Notice>}
     <section className={`${card} space-y-4`}>
       <div className="flex flex-wrap items-center justify-between gap-3"><div className={tabList} role="tablist" aria-label="Program periods">{groups.map((item) => <button key={item.id} role="tab" aria-selected={group === item.id} className={tabItem(group === item.id)} onClick={() => changeParams({ group: item.id, page: null })}>{item.label}<span className="rounded-full bg-slate-500/10 px-2 text-xs tabular-nums">{data?.counts[item.id] ?? '—'}</span></button>)}</div><button className={btnGhost} disabled={loading} onClick={reload} aria-label="Refresh programs">{loading ? <Spinner label="Refreshing…" /> : <RefreshCw className="h-4 w-4" />}</button></div>
@@ -58,14 +57,13 @@ export function ProgramWorkspacePage() {
       <SelectionBar selection={bulk} total={data?.total??0} rows={data?.data??[]}><button className={btnGhost} disabled={!bulk.count(data?.total??0)} onClick={()=>void bulk.resolve<WorkspaceProgram>(bulkPath).then(rows=>exportSelectedCsv(rows.map(p=>({...p})),'programs-selected')).catch(e=>setNotice(e.message))}>Export selected</button></SelectionBar>
       {error && <Notice kind="error">{error.message}</Notice>}
       {loading ? <Loading label="Loading programs and slot usage…" /> : <div role="tabpanel" className="program-view-enter">
-        {!data?.data.length ? <div className="rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center dark:border-slate-700"><CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-400" /><h2 className="font-semibold">{search ? 'No matching programs' : group === 'current' ? 'No current program' : group === 'upcoming' ? 'No upcoming programs' : 'No previous programs'}</h2><p className="mt-2 text-sm text-slate-500">{search ? 'Try another title or barangay.' : 'Choose another period to see scheduled or previous programs.'}</p>{isAdmin && !search && group !== 'recent' && <button className={`${btnPrimary} mt-4`} onClick={() => setCreate(true)}>Add a program</button>}</div> : <div className="grid gap-4 md:grid-cols-2">{data.data.map((program) => <article key={program.id} className="min-w-0"><label className="mb-2 inline-flex items-center gap-2 text-sm"><input type="checkbox" aria-label={`Select ${program.title}`} checked={bulk.has(program.id)} onChange={()=>bulk.toggle(program.id)}/>Select program</label><button className="program-card w-full flex flex-col gap-4 rounded-xl border border-slate-200 p-4 text-left transition-colors hover:border-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700" onClick={() => openProgram(program.id)}>
+        {!data?.data.length ? <div className="rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center dark:border-slate-700"><CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-400" /><h2 className="font-semibold">{search ? 'No matching programs' : group === 'current' ? 'No current program' : group === 'upcoming' ? 'No upcoming programs' : 'No previous programs'}</h2><p className="mt-2 text-sm text-slate-500">{search ? 'Try another title or barangay.' : 'New programs are scheduled from approved requests in Program interest.'}</p></div> : <div className="grid gap-4 md:grid-cols-2">{data.data.map((program) => <article key={program.id} className="min-w-0"><label className="mb-2 inline-flex items-center gap-2 text-sm"><input type="checkbox" aria-label={`Select ${program.title}`} checked={bulk.has(program.id)} onChange={()=>bulk.toggle(program.id)}/>Select program</label><button className="program-card w-full flex flex-col gap-4 rounded-xl border border-slate-200 p-4 text-left transition-colors hover:border-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-slate-700" onClick={() => openProgram(program.id)}>
           <div className="flex w-full items-start justify-between gap-3"><h2 className="font-semibold">{program.title}</h2><Status status={program.status} /></div><div className="space-y-2 text-sm text-slate-500"><p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 shrink-0" />{formatDate(program.date)}{program.startTime ? ` · ${program.startTime}–${program.endTime}` : ''}</p><p className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0" />{program.hostBarangay}{program.location ? ` · ${program.location}` : ''}</p></div>
           <div className="mt-auto w-full border-t border-slate-100 pt-3 text-sm dark:border-slate-800"><div className="flex justify-between gap-2"><span><strong>{program.slotsUsed}</strong>{program.slots === null ? ' pets attended' : ` / ${program.slots} pet slots`}</span><span className="font-medium text-brand-700 dark:text-brand-300">Open program →</span></div>{program.slots !== null && program.slotsUsed >= program.slots && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{program.slotsUsed > program.slots ? 'Above planned capacity' : 'Planned capacity reached'} · attendance remains available</p>}</div>
         </button></article>)}</div>}
         <Pagination page={data?.page ?? page} pageSize={data?.pageSize ?? 12} total={data?.total ?? 0} onPage={(value) => changeParams({ page: String(value) })} />
       </div>}
     </section>
-    {create && <ScheduleModal onClose={() => setCreate(false)} onSaved={(id) => { setCreate(false); setNotice('Program created. Its interest list is ready.'); openProgram(id); }} />}
   </div>;
 }
 
@@ -136,11 +134,12 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
 }
 
 type ScheduleDraft = { title: string; date: string; location: string; hostBarangayId: string; startTime: string; endTime: string; slots: string; processes: ProgramProcess[]; status: string };
-function ScheduleModal({ existing, onClose, onSaved }: { existing?: WorkspaceDetail; onClose: () => void; onSaved: (id: number) => void }) {
+/** Edits a program, or (with `request`) schedules an approved program request: new programs come only from requests. */
+export function ScheduleModal({ existing, request, onClose, onSaved }: { existing?: WorkspaceDetail; request?: { id: number; reference: string; hostBarangayId: number; hostBarangay: string; processes: ProgramProcess[] }; onClose: () => void; onSaved: (id: number) => void }) {
   const p = existing?.program;
-  const [draft, setDraft] = useState<ScheduleDraft>({ title: p?.title ?? '', date: p?.date ?? '', location: p?.location ?? '', hostBarangayId: p?.hostBarangayId ? String(p.hostBarangayId) : '', startTime: p?.startTime ?? '08:00', endTime: p?.endTime ?? '16:00', slots: p?.slots == null ? '' : String(p.slots), processes: p?.processes ?? [...PROGRAM_PROCESSES], status: p?.status ?? 'Planned' });
-  const { data: options, loading, error: loadError } = useApi<{ barangays: { id: number; name: string }[]; approvedRequests: { id: number; reference: string; hostBarangayId: number; barangay: string; processes: ProgramProcess[] }[] }>('/program-workspace?mode=options');
-  const [requestId, setRequestId] = useState('');
+  const [draft, setDraft] = useState<ScheduleDraft>({ title: p?.title ?? '', date: p?.date ?? '', location: p?.location ?? '', hostBarangayId: p?.hostBarangayId ? String(p.hostBarangayId) : request ? String(request.hostBarangayId) : '', startTime: p?.startTime ?? '08:00', endTime: p?.endTime ?? '16:00', slots: p?.slots == null ? '' : String(p.slots), processes: p?.processes ?? (request ? [...request.processes] : [...PROGRAM_PROCESSES]), status: p?.status ?? 'Planned' });
+  const { data: options, loading, error: loadError } = useApi<{ barangays: { id: number; name: string }[] }>('/program-workspace?mode=options');
+  const requestId = request ? String(request.id) : '';
   const [reason, setReason] = useState('');
   const [review, setReview] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -156,11 +155,11 @@ function ScheduleModal({ existing, onClose, onSaved }: { existing?: WorkspaceDet
       onSaved(result.programId);
     } catch (failure) { setError(errorText(failure)); } finally { setSaving(false); }
   };
-  return <Modal title={p ? 'Edit program' : 'Add a program'} wide onClose={() => { if (!saving) onClose(); }}><div className="program-view-enter space-y-4">
+  return <Modal title={p ? 'Edit program' : 'Schedule program'} wide onClose={() => { if (!saving) onClose(); }}><div className="program-view-enter space-y-4">
     {error && <Notice kind="error">{error}</Notice>}{loadError && <Notice kind="error">{loadError.message}</Notice>}
     {loading ? <Loading label="Loading barangay options…" /> : !review ? <form className="space-y-4" onSubmit={reviewSave}>
       {locked && <Notice>Schedule details are protected because stubs were approved, attendance exists, or the program has started. Capacity can still be adjusted.</Notice>}
-      {!p && <Field label="Approved program request (optional)" hint="Keep the gathered interests and approved barangays connected to their new schedule."><Select className={inputCls} value={requestId} onChange={(e) => { setRequestId(e.target.value); const request = options?.approvedRequests.find((item) => String(item.id) === e.target.value); if (request) setDraft((current) => ({ ...current, hostBarangayId: String(request.hostBarangayId), processes: [...request.processes] })); }}><option value="">Independent program · create a new interest list</option>{options?.approvedRequests.map((request) => <option key={request.id} value={request.id}>{request.barangay} · {request.reference}</option>)}</Select></Field>}
+      {request && <Notice>Scheduling approved request {request.reference} · {request.hostBarangay}. Its gathered interests and eligible barangays carry over.</Notice>}
       <fieldset disabled={saving} className="grid gap-4 sm:grid-cols-2">
         <Field label="Program title"><input required maxLength={160} disabled={locked} className={inputCls} value={draft.title} onChange={(e) => set('title', e.target.value)} /></Field>
         <Field label="Host barangay"><Select required disabled={locked || Boolean(requestId)} className={inputCls} value={draft.hostBarangayId} onChange={(e) => set('hostBarangayId', e.target.value)}><option value="">Choose a barangay</option>{districtOptions(options?.barangays)}</Select></Field>

@@ -56,6 +56,7 @@ const routeEntries: Array<{ path: string; load: () => Promise<{ default: RouteHa
   { path: '/api/v1/auth/profile', load: () => import('../api-handlers/v1/auth/profile') },
   { path: '/api/v1/auth/renew', load: () => import('../api-handlers/v1/auth/renew') },
   { path: '/api/v1/auth/set-password', load: () => import('../api-handlers/v1/auth/set-password') },
+  { path: '/api/v1/auth/credentials', load: () => import('../api-handlers/v1/auth/credentials') },
   { path: '/api/v1/auth/email', load: () => import('../api-handlers/v1/auth/email') },
   { path: '/api/v1/auth/forgot-password', load: () => import('../api-handlers/v1/auth/forgot-password') },
   { path: '/api/v1/barangays', load: () => import('../api-handlers/v1/barangays/index') },

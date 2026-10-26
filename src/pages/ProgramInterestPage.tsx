@@ -1,11 +1,15 @@
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
-import { ConfirmDialog, Select, districtOptions } from '../components/ui';
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { InfoTip, ConfirmDialog, Select } from '../components/ui';
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
 import { Check, Field, inputCls, Loading, Modal, Notice, btnGhost, btnPrimary, btnDanger } from '../components/ui';
-import { Link,useSearchParams } from 'react-router-dom';
+import { Link,useNavigate,useSearchParams } from 'react-router-dom';
+
+import { Plus, Trash2 } from 'lucide-react';
+import { Sheet, sheetAdd, sheetCell } from '../components/PetSheet';
+const ScheduleModal = lazy(() => import('./ProgramWorkspacePage').then(module => ({ default: module.ScheduleModal })));
 
 const PROCESS_OPTIONS = ['Microchipping', 'Anti-Rabies Vaccine', 'Neuter/Spay'] as const;
 type Process = typeof PROCESS_OPTIONS[number];
@@ -48,16 +52,12 @@ export function ProgramInterestPage() {
   const { account } = useAuth();
   const isParavet = account?.type === 'Paravet';
   const [reload, setReload] = useState(0);
-  const [createMode, setCreateMode] = useState<'demand' | 'program-day' | null>(null);
+  const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   useEffect(()=>{const id=Number(params.get('campaignId'));setSelectedId(Number.isSafeInteger(id)&&id>0?id:null);},[params]);
   const openCampaign=(id:number)=>setParams(p=>{p.set('campaignId',String(id));return p;});
   const closeCampaign=()=>{setSelectedId(null);setParams(p=>{p.delete('campaignId');return p;},{replace:true});};
-  const [hostBarangayId, setHostBarangayId] = useState('');
-  const [targetPeople, setTargetPeople] = useState('100');
-  const [selectedProcesses, setSelectedProcesses] = useState<Process[]>([...PROCESS_OPTIONS]);
   const [programRecordId, setProgramRecordId] = useState('');
-  const [requestNote, setRequestNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -71,25 +71,13 @@ export function ProgramInterestPage() {
   const barangayOptions = data?.barangays ?? [];
   const selectedProgram = programsForInterest.find((program) => String(program.programRecordId) === programRecordId);
 
-  const toggleProcess = (process: Process) => setSelectedProcesses((current) => current.includes(process)
-    ? current.filter((item) => item !== process) : [...current, process]);
-  const toggleAllProcesses = (checked: boolean) => setSelectedProcesses(checked ? [...PROCESS_OPTIONS] : []);
-
+  // Demand lists start in e-Vet Field (Paravets' program requests); staff only attach interest lists to scheduled programs here.
   const createCampaign = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true); setError(''); setNotice('');
     try {
-      let result: { campaignId: number; reference: string; existing?: boolean };
-      if (createMode === 'demand') {
-        result = await api<{ campaignId: number; reference: string; existing?: boolean }>('POST', '/program-interest', {
-          action: 'create-demand',
-          ...(isParavet ? {} : { hostBarangayId: Number(hostBarangayId) }),
-          targetPeople: Number(targetPeople), processes: selectedProcesses, note: requestNote.trim() || undefined,
-        });
-      } else {
-        result = await api<{ campaignId: number; reference: string; existing?: boolean }>('POST', '/program-interest', { action: 'create-program-day', programRecordId: Number(programRecordId) });
-      }
-      setCreateMode(null); setProgramRecordId(''); setRequestNote(''); setReload((value) => value + 1);
+      const result = await api<{ campaignId: number; reference: string; existing?: boolean }>('POST', '/program-interest', { action: 'create-program-day', programRecordId: Number(programRecordId) });
+      setCreating(false); setProgramRecordId(''); setReload((value) => value + 1);
       setNotice(result.existing ? 'An interest list already exists for that program day.' : `Interest list ${result.reference} is ready.`);
       setSelectedId(result.campaignId);
     } catch (failure) {
@@ -97,21 +85,14 @@ export function ProgramInterestPage() {
     } finally { setSaving(false); }
   };
 
-  const startCreate = (mode: 'demand' | 'program-day') => {
-    setError(''); setSelectedProcesses([...PROCESS_OPTIONS]); setHostBarangayId(String(data?.assignedBarangayId ?? ''));
-    setTargetPeople('100'); setCreateMode(mode);
-  };
-
   if (loading && !data) return <Loading label="Loading program interest lists…" />;
   if (loadError) return <div className="w-full"><Notice kind="error">{loadError.message}</Notice></div>;
 
   return <div className="w-full space-y-5">
     <header className="flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold">Program Interest</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">Record people interested in a scheduled program or gather barangay demand for a new request. An interest entry is not a confirmed appointment and does not issue or reserve a physical stub.</p></div>
+      <div><h1 className="text-2xl font-semibold">Program Interest<InfoTip>Program requests from e-Vet Field and interest lists for scheduled programs. An interest entry is not a confirmed appointment and does not issue or reserve a physical stub.</InfoTip></h1></div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => startCreate('demand')} className={btnGhost}>Gather demand</button>
-        <button type="button" onClick={() => startCreate('program-day')} className={btnPrimary}>Use a scheduled program</button>
+        <button type="button" onClick={() => { setError(''); setCreating(true); }} className={btnPrimary}>Use a scheduled program</button>
         {!isParavet && <button type="button" onClick={() => setMerging(true)} className={btnGhost}>Merge requests</button>}
       </div>
     </header>
@@ -124,7 +105,7 @@ export function ProgramInterestPage() {
 
     <section className={`${card} p-0`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 p-4 dark:border-slate-700">
-        <div><h2 className="font-semibold">Interest Lists and Requests</h2><p className="mt-1 text-xs text-slate-500">Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</p></div>
+        <h2 className="font-semibold">Interest Lists and Requests<InfoTip>Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</InfoTip></h2>
         <button type="button" onClick={() => { reloadData(); setReload((value) => value + 1); }} className={btnGhost}>Refresh</button>
       </div>
       {loading && <Loading label="Refreshing lists…" />}
@@ -140,25 +121,17 @@ export function ProgramInterestPage() {
         </tr>)}</tbody></table></div>}
     </section>
 
-    {createMode && <Modal title={createMode === 'demand' ? 'Gather demand for a program' : 'Use an existing program day'} wide onClose={() => { if (!saving) { setCreateMode(null); setError(''); } }}>
+    {creating && <Modal title="Use an existing program day" wide onClose={() => { if (!saving) { setCreating(false); setError(''); } }}>
       {error && <div className="mb-3"><Notice kind="error">{error}</Notice></div>}
       <form onSubmit={(event) => void createCampaign(event)} className="space-y-4">
-        <p className="text-sm text-slate-500">{createMode === 'demand' ? 'Create a provisional interest list. When it reaches the target, the Paravet can submit it for Admin review.' : 'Select a future program day that is already scheduled. Interested owners will be recorded separately from stub issuance and attendance.'}</p>
-        {createMode === 'demand' && !isParavet && <Field label="Host barangay"><Select required className={inputCls} value={hostBarangayId} onChange={(event) => setHostBarangayId(event.target.value)}><option value="">Choose a barangay</option>{districtOptions(barangayOptions)}</Select></Field>}
-        {createMode === 'demand' && <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Owner target"><input className={inputCls} type="number" min={1} max={100000} required value={targetPeople} onChange={(event) => setTargetPeople(event.target.value)} /><span className="mt-1 block text-xs text-slate-500">Default 100; adjust for this request. Count owners, not pets.</span></Field>
-          <Field label="Request note (optional)"><textarea className={inputCls} maxLength={1000} rows={3} value={requestNote} onChange={(event) => setRequestNote(event.target.value)} placeholder="Add context for the reviewer" /></Field>
-        </div>}
-        {createMode === 'program-day' && <>
+        <p className="text-sm text-slate-500">Select a future program day that is already scheduled. Interested owners will be recorded separately from stub issuance and attendance.</p>
           <Field label="Scheduled program"><Select required className={inputCls} value={programRecordId} onChange={(event) => setProgramRecordId(event.target.value)}><option value="">Choose a program day</option>{programsForInterest.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)} · {program.barangay}</option>)}</Select>{programsForInterest.length === 0 && <span className="mt-1 block text-xs text-slate-500">No available future program days in your scope.</span>}</Field>
           {selectedProgram && <div className="grid gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-700 sm:grid-cols-3">
             <p><span className="block text-xs text-slate-500">Slots used</span><strong>{selectedProgram.slotsUsed == null ? 'Not recorded' : selectedProgram.slotsUsed}{selectedProgram.slots == null ? '' : ` / ${selectedProgram.slots}`}</strong></p>
             <p><span className="block text-xs text-slate-500">Planned duration</span><strong>{durationLabel(selectedProgram.durationMinutes)}</strong></p>
             <p className="text-xs text-slate-500">Processes: {selectedProgram.processes.length ? selectedProgram.processes.join(', ') : 'Select processes in the program record first.'}<br />Interest entries do not reserve slots. Plan 90-minute service blocks, a 15-minute changeover buffer, and extend in 15-minute increments as needed.</p>
           </div>}
-        </>}
-        {createMode === 'demand' && <fieldset><legend className="text-sm font-medium">Processes included</legend><div className="mt-2 flex flex-wrap gap-x-5 gap-y-2"><Check checked={selectedProcesses.length === PROCESS_OPTIONS.length} onChange={toggleAllProcesses}>All of the Above</Check>{PROCESS_OPTIONS.map((process) => <Check key={process} checked={selectedProcesses.includes(process)} onChange={() => toggleProcess(process)}>{process}</Check>)}</div></fieldset>}
-        <div className="flex justify-end gap-2"><button type="button" className={btnGhost} onClick={() => setCreateMode(null)}>Cancel</button><button type="submit" disabled={saving || !selectedProcesses.length} className={btnPrimary}>{saving ? 'Saving…' : createMode === 'demand' ? 'Start demand list' : 'Create interest list'}</button></div>
+        <div className="flex justify-end gap-2"><button type="button" className={btnGhost} onClick={() => setCreating(false)}>Cancel</button><button type="submit" disabled={saving} className={btnPrimary}>{saving ? 'Saving…' : 'Create interest list'}</button></div>
       </form>
     </Modal>}
 
@@ -200,6 +173,14 @@ function MergeRequests({ campaigns, onClose, onMerged }: { campaigns: Campaign[]
   </Modal>;
 }
 
+function BarangayChecklist({ options, selected, onChange }: { options: Barangay[]; selected: number[]; onChange: (ids: number[]) => void }) {
+  const all = options.length > 0 && options.every((barangay) => selected.includes(barangay.id));
+  return <div className="mt-2 space-y-2">
+    <div className="border-b border-slate-200 pb-2 dark:border-slate-700"><Check checked={all} onChange={(checked) => onChange(checked ? options.map((barangay) => barangay.id) : [])}><span className="font-medium">Select all ({selected.length} of {options.length} selected)</span></Check></div>
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{options.map((barangay) => <Check key={barangay.id} checked={selected.includes(barangay.id)} onChange={(checked) => onChange(checked ? [...selected, barangay.id] : selected.filter((id) => id !== barangay.id))}>{barangay.name}</Check>)}</div>
+  </div>;
+}
+
 function CampaignPanel({ embedded, title, onClose, children }: { embedded: boolean; title: string; onClose: () => void; children: ReactNode }) {
   return embedded ? <section className={`${card} space-y-4`}>{children}</section> : <Modal title={title} wide onClose={onClose}>{children}</Modal>;
 }
@@ -229,6 +210,8 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
   const [accessIds, setAccessIds] = useState<number[]>([]);
   const [reviewNote, setReviewNote] = useState('');
   const [scheduleId, setScheduleId] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const navigate = useNavigate();
 
   const scopedPrograms = useMemo(() => programs.filter((item) => item.barangayId === campaign?.hostBarangayId && !item.campaignId), [campaign?.hostBarangayId, programs]);
   useEffect(() => {
@@ -250,7 +233,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
 
   const submitPerson = async (event: { preventDefault: () => void }, confirmDistinct = false) => {
     event.preventDefault(); setSaving(true); setErrorText('');
-    const normalizedPets = pets.map((pet) => ({ ...pet, sex: pet.sex || undefined, ageMonths: pet.ageMonths === '' ? undefined : Number(pet.ageMonths) }));
+    const normalizedPets = pets.filter((pet) => pet.name.trim()).map((pet) => ({ ...pet, sex: pet.sex || undefined, ageMonths: pet.ageMonths === '' ? undefined : Number(pet.ageMonths) }));
     try {
       await api('POST', '/program-interest', editing === null
         ? { action: 'add-interest', campaignId,registryOwnerId, ownerName, mobile, residenceBarangayId: Number(residenceBarangayId), pets: normalizedPets, confirmDistinct }
@@ -331,54 +314,66 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
       {campaign.mergedInto && <Notice>Merged into {campaign.mergedInto.reference} ({campaign.mergedInto.hostBarangay}). Its owners now continue on that request, and this barangay can start a new request when it finishes.</Notice>}
       {!!data?.activity.length && <details className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"><summary className="cursor-pointer text-sm font-medium">Activity history ({data.activity.length})</summary><ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">{data.activity.map((item) => <li key={item.id}>{new Date(item.createdAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' })} · <strong>{item.actorName}</strong> · {item.action.replaceAll('-', ' ')}</li>)}</ul></details>}
       {campaign.programRecordId && <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-        <div><h3 className="font-semibold">Paravets assigned in participating barangays</h3><p className="mt-1 text-xs text-slate-500">This roster follows current active Paravet assignments in the allowed barangays.</p></div>
+        <h3 className="font-semibold">Paravets assigned in participating barangays<InfoTip>This roster follows current active Paravet assignments in the allowed barangays.</InfoTip></h3>
         {campaign.assignedParavets.length ? <ul className="mt-3 grid gap-2 sm:grid-cols-2">{campaign.assignedParavets.map((paravet) => <li key={paravet.id} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900"><strong>{paravet.name}</strong><p className="text-xs text-slate-500">{paravet.accountKey} · {paravet.barangay}</p></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No active Paravets are assigned to the current participating barangays.</p>}
       </section>}
 
-      {campaign.kind==='program_request'&&['gathering','requested'].includes(campaign.status)&&<section className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700"><p className="text-sm text-slate-500">Assigned Paravets collaborate on this request. Editing returns it to gathering for resubmission. Changes stop after acceptance.</p><div className="flex flex-wrap gap-2"><button className={btnGhost} disabled={saving} onClick={()=>{setDemandTarget(String(campaign.requestedTargetPeople));setDemandNote(campaign.requestNote??'');setDemandProcesses(campaign.processes);setDemandEdit(true);}}>Edit request</button><button className={btnDanger} disabled={saving} onClick={()=>setCancelDemand(true)}>Cancel request</button></div>{demandEdit&&<form className="space-y-3" onSubmit={async e=>{e.preventDefault();setSaving(true);try{await api('POST','/program-interest',{action:'edit-demand',campaignId,expectedRevision:campaign.revision,targetPeople:Number(demandTarget),processes:demandProcesses,note:demandNote});setDemandEdit(false);reload();onChanged();}catch(e){setErrorText(e instanceof Error?e.message:'Unable to edit request.');}finally{setSaving(false);}}}><Field label="Owner target"><input type="number" min={1} max={100000} required className={inputCls} value={demandTarget} onChange={e=>setDemandTarget(e.target.value)}/></Field><Field label="Note"><textarea maxLength={1000} className={inputCls} value={demandNote} onChange={e=>setDemandNote(e.target.value)}/></Field><div className="flex flex-wrap gap-3">{PROCESS_OPTIONS.map(p=><Check key={p} checked={demandProcesses.includes(p)} onChange={v=>setDemandProcesses(a=>v?[...a,p]:a.filter(x=>x!==p))}>{p}</Check>)}</div><button disabled={saving||!demandProcesses.length} className={btnPrimary}>Save request changes</button><button type="button" className={btnGhost} onClick={()=>setDemandEdit(false)}>Cancel edit</button></form>}</section>}
+      {campaign.kind==='program_request'&&['gathering','requested'].includes(campaign.status)&&<section className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700"><p className="text-sm font-medium">Request<InfoTip>Assigned Paravets collaborate on this request. Editing returns it to gathering for resubmission. Changes stop after acceptance.</InfoTip></p><div className="flex flex-wrap gap-2"><button className={btnGhost} disabled={saving} onClick={()=>{setDemandTarget(String(campaign.requestedTargetPeople));setDemandNote(campaign.requestNote??'');setDemandProcesses(campaign.processes);setDemandEdit(true);}}>Edit request</button><button className={btnDanger} disabled={saving} onClick={()=>setCancelDemand(true)}>Cancel request</button></div>{demandEdit&&<form className="space-y-3" onSubmit={async e=>{e.preventDefault();setSaving(true);try{await api('POST','/program-interest',{action:'edit-demand',campaignId,expectedRevision:campaign.revision,targetPeople:Number(demandTarget),processes:demandProcesses,note:demandNote});setDemandEdit(false);reload();onChanged();}catch(e){setErrorText(e instanceof Error?e.message:'Unable to edit request.');}finally{setSaving(false);}}}><Field label="Owner target"><input type="number" min={1} max={100000} required className={inputCls} value={demandTarget} onChange={e=>setDemandTarget(e.target.value)}/></Field><Field label="Note"><textarea maxLength={1000} className={inputCls} value={demandNote} onChange={e=>setDemandNote(e.target.value)}/></Field><div className="flex flex-wrap gap-3">{PROCESS_OPTIONS.map(p=><Check key={p} checked={demandProcesses.includes(p)} onChange={v=>setDemandProcesses(a=>v?[...a,p]:a.filter(x=>x!==p))}>{p}</Check>)}</div><button disabled={saving||!demandProcesses.length} className={btnPrimary}>Save request changes</button><button type="button" className={btnGhost} onClick={()=>setDemandEdit(false)}>Cancel edit</button></form>}</section>}
       {cancelDemand&&<ConfirmDialog title="Cancel this demand request?" message="Its interests and activity history will remain. Your barangay can create a new request afterward." confirmLabel="Cancel request" danger busy={saving} onClose={()=>setCancelDemand(false)} onConfirm={()=>{setSaving(true);void api('POST','/program-interest',{action:'cancel-demand',campaignId,expectedRevision:campaign.revision,reason:'Cancelled by assigned staff after review.'}).then(()=>{setCancelDemand(false);reload();onChanged();}).catch(e=>setErrorText(e.message)).finally(()=>setSaving(false));}}/>}
       {campaign.kind === 'program_request' && campaign.status === 'gathering' && isParavet && <button type="button" disabled={saving || campaign.ownerCount < campaign.targetPeople} onClick={() => void submitRequest()} className={btnPrimary}>Submit request to Admin</button>}
       {campaign.kind === 'program_request' && campaign.status === 'gathering' && campaign.ownerCount < campaign.targetPeople && <p className="text-xs text-slate-500">{campaign.targetPeople - campaign.ownerCount} more owner interests are needed before this request can be submitted.</p>}
 
       {campaign.status === 'requested' && !isParavet && <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900 dark:bg-amber-950/20">
-        <div><h3 className="font-semibold">Review program request</h3><p className="text-xs text-slate-500">Set the approved owner target and any additional eligible barangays.</p></div>
+        <h3 className="font-semibold">Review program request<InfoTip>Set the approved owner target and any additional eligible barangays.</InfoTip></h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Approved owner target"><input className={inputCls} type="number" min={1} max={100000} value={reviewTarget || campaign.requestedTargetPeople} onChange={(event) => setReviewTarget(event.target.value)} /></Field>
           <Field label="Review note"><input className={inputCls} maxLength={1000} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Required when rejecting" /></Field>
         </div>
-        <fieldset><legend className="text-sm font-medium">Additional eligible barangays</legend><div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{barangays.filter((barangay) => barangay.id !== campaign.hostBarangayId).map((barangay) => <Check key={barangay.id} checked={eligibleIds.includes(barangay.id)} onChange={(checked) => setEligibleIds((current) => checked ? [...current, barangay.id] : current.filter((id) => id !== barangay.id))}>{barangay.name}</Check>)}</div></fieldset>
+        <fieldset><legend className="text-sm font-medium">Additional eligible barangays</legend><BarangayChecklist options={barangays.filter((barangay) => barangay.id !== campaign.hostBarangayId)} selected={eligibleIds} onChange={setEligibleIds} /></fieldset>
         <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={saving} className={btnDanger} onClick={() => void review('reject')}>Reject request</button><button type="button" disabled={saving} className={btnPrimary} onClick={() => void review('approve')}>Approve request</button></div>
       </section>}
 
       {campaign.status === 'approved' && !isParavet && <section className="flex flex-wrap items-end gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+        <div className="w-full"><button type="button" disabled={saving} onClick={() => setScheduling(true)} className={btnPrimary}>Schedule program</button><p className="mt-2 text-xs text-slate-500">Or link a program day that is already scheduled:</p></div>
+        {scheduling && <Suspense fallback={null}><ScheduleModal request={{ id: campaign.id, reference: campaign.reference, hostBarangayId: campaign.hostBarangayId, hostBarangay: campaign.hostBarangay, processes: campaign.processes }} onClose={() => setScheduling(false)} onSaved={(programId) => { setScheduling(false); onChanged(); navigate(`/programs?program=${programId}`); }} /></Suspense>}
         <div className="min-w-64 flex-1"><Field label="Link to a scheduled program in the host barangay"><Select className={inputCls} value={scheduleId} onChange={(event) => setScheduleId(event.target.value)}><option value="">Choose a program day</option>{scopedPrograms.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)}</option>)}</Select></Field></div>
         <button type="button" disabled={saving || !scheduleId} onClick={() => void schedule()} className={btnPrimary}>Link program day</button>
       </section>}
       {campaign.status === 'scheduled' && isAdmin && <section className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-        <div><h3 className="font-semibold">Participating barangays</h3><p className="mt-1 text-xs text-slate-500">The host barangay is always included. Add other barangays only when they are approved to participate.</p></div>
+        <h3 className="font-semibold">Participating barangays<InfoTip>The host barangay is always included. Add other barangays only when they are approved to participate.</InfoTip></h3>
         <details className="rounded-lg bg-slate-50 p-3 dark:bg-slate-900"><summary className="cursor-pointer text-sm font-medium">Manage participating barangays ({accessIds.length + 1} selected)</summary>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{barangays.filter((barangay) => barangay.id !== campaign.hostBarangayId).map((barangay) => <Check key={barangay.id} checked={accessIds.includes(barangay.id)} onChange={(checked) => setAccessIds((current) => checked ? [...current, barangay.id] : current.filter((id) => id !== barangay.id))}>{barangay.name}</Check>)}</div>
+        <BarangayChecklist options={barangays.filter((barangay) => barangay.id !== campaign.hostBarangayId)} selected={accessIds} onChange={setAccessIds} />
         <button type="button" disabled={saving} onClick={() => void saveProgramAccess()} className={`${btnPrimary} mt-3`}>Save participating barangays</button></details><div className="flex justify-end"><button type="button" disabled={saving} onClick={() => void closeCampaign()} className={btnGhost}>Close interest list</button></div>
       </section>}
       {campaign.status === 'closed' && isAdmin && <div className="flex justify-end"><button type="button" disabled={saving} onClick={() => void reopenCampaign()} className={btnGhost}>Reopen program interest list</button></div>}
 
       {editable && <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-        <h3 className="font-semibold">{editing === null ? 'Add an interested owner' : 'Update interest details'}</h3>
-        <p className="mt-1 text-xs text-slate-500">Save only the details needed for planning. The owner may join future programs again. Stub issuance and service attendance are recorded separately.</p>
+        <h3 className="font-semibold">{editing === null ? 'Add an interested owner' : 'Update interest details'}<InfoTip>Save only the details needed for planning. The owner may join future programs again. Stub issuance and service attendance are recorded separately.</InfoTip></h3>
         <form onSubmit={(event) => void submitPerson(event)} className="mt-3 space-y-3">
           {residenceBarangayId&&<ParticipantRegistryPicker key={residenceBarangayId} mode="interest" campaignId={campaignId} barangayId={Number(residenceBarangayId)} onOwner={o=>{setRegistryOwnerId(o.registryOwnerId);setOwnerName(o.name);setMobile(o.mobile);}} onPet={p=>setPets(current=>current.some(v=>v.name===p.name&&v.species===p.species)?current:[...current,{...p,sex:p.sex??'',ageMonths:p.ageMonths==null?'':String(p.ageMonths),processes:[...campaign.processes]}])}/>}
           {registryOwnerId&&<p className="text-xs text-brand-700">Linked owner: {registryOwnerId}. Saving logs this event in owner history.</p>}
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Owner name"><input required className={inputCls} maxLength={120} value={ownerName} onChange={(event) => {setOwnerName(event.target.value);setRegistryOwnerId(undefined);}} /></Field>
-            <Field label="Mobile number (optional)"><input className={inputCls} inputMode="tel" placeholder="09XX-XXX-XXXX" value={mobile} onChange={(event) => setMobile(event.target.value)} /></Field>
-            <Field label="Residence barangay"><Select required className={inputCls} value={residenceBarangayId} onChange={(event) => {setResidenceBarangayId(event.target.value);setRegistryOwnerId(undefined);}}><option value="">Choose a barangay</option>{editableResidents.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</Select></Field>
-          </div>
-          <div className="space-y-2"><div className="flex items-center justify-between"><h4 className="text-sm font-medium">Pets (optional while gathering interest)</h4><button type="button" disabled={pets.length >= 10} className={btnGhost} onClick={() => setPets((current) => [...current, emptyPet(campaign.processes)])}>Add pet</button></div>
-            {pets.map((pet, index) => <div key={index} className="grid gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700 sm:grid-cols-2">
-              <div className="grid grid-cols-2 gap-2"><Field label={`Pet ${index + 1} name`}><input className={inputCls} maxLength={80} value={pet.name} onChange={(event) => setPetField(index, 'name', event.target.value)} /></Field><Field label="Species"><Select className={inputCls} value={pet.species} onChange={(event) => setPetField(index, 'species', event.target.value)}><option>Dog</option><option>Cat</option></Select></Field><Field label="Sex"><Select className={inputCls} value={pet.sex} onChange={(event) => setPetField(index, 'sex', event.target.value)}><option value="">Not recorded</option><option>Female</option><option>Male</option></Select></Field><Field label="Age in months"><input className={inputCls} type="number" min={0} max={600} value={pet.ageMonths} onChange={(event) => setPetField(index, 'ageMonths', event.target.value)} /></Field></div>
-              <div><p className="text-xs font-medium text-slate-600 dark:text-slate-300">Requested processes</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">{campaign.processes.map((process) => <Check key={process} checked={pet.processes.includes(process)} onChange={(checked) => setPetField(index, 'processes', checked ? [...pet.processes, process] : pet.processes.filter((item) => item !== process))}>{process}</Check>)}</div><button type="button" className="mt-3 text-xs text-red-700 underline dark:text-red-300" onClick={() => setPets((current) => current.filter((_, i) => i !== index))}>Remove pet</button></div>
-            </div>)}
-          </div>
+          {/* One row per pet, as in the Owners sheet: the owner is typed on the first row; pets are optional while gathering interest. */}
+          <Sheet minWidth={`${70 + campaign.processes.length * 9}rem`} heads={[['#', 'w-10 text-center'], ['Owner', 'w-52'], ['Mobile (optional)', 'w-40'], ['Residence barangay', 'w-48'], ['Pet (optional)', 'w-40'], ['Species', 'w-24'], ['Sex', 'w-32'], ['Age (mo)', 'w-24'], ...campaign.processes.map((process): [string, string] => [process, 'w-36 text-center']), ['', 'w-11']]}>
+            {Array.from({ length: Math.max(1, pets.length) }, (_, index) => {
+              const pet = pets[index] ?? emptyPet(campaign.processes), n = index + 1, td = '!h-10 !p-0';
+              const setPet = (key: keyof DraftPet, value: unknown) => pets.length ? setPetField(index, key, value) : setPets([{ ...emptyPet(campaign.processes), [key]: value } as DraftPet]);
+              return <tr key={index}>
+                <td className={`${td} text-center text-xs tabular-nums text-slate-400`}>{n}</td>
+                {index === 0 ? <>
+                  <td className={td}><input required aria-label="Owner name" placeholder="Owner name" className={sheetCell} maxLength={120} value={ownerName} onChange={(event) => {setOwnerName(event.target.value);setRegistryOwnerId(undefined);}} /></td>
+                  <td className={td}><input aria-label="Mobile number" className={sheetCell} inputMode="tel" placeholder="09XX-XXX-XXXX" value={mobile} onChange={(event) => setMobile(event.target.value)} /></td>
+                  <td className={td}><Select required aria-label="Residence barangay" className={sheetCell} value={residenceBarangayId} onChange={(event) => {setResidenceBarangayId(event.target.value);setRegistryOwnerId(undefined);}}><option value="">Choose</option>{editableResidents.map((barangay) => <option key={barangay.id} value={barangay.id}>{barangay.name}</option>)}</Select></td>
+                </> : <td colSpan={3} className="h-10 px-2.5 text-xs text-slate-400">Same owner as above</td>}
+                <td className={td}><input aria-label={`Row ${n} pet name`} placeholder="Pet name" className={sheetCell} maxLength={80} value={pet.name} onChange={(event) => setPet('name', event.target.value)} /></td>
+                <td className={td}><Select aria-label={`Row ${n} species`} className={sheetCell} value={pet.species} onChange={(event) => setPet('species', event.target.value)}><option>Dog</option><option>Cat</option></Select></td>
+                <td className={td}><Select aria-label={`Row ${n} sex`} className={sheetCell} value={pet.sex} onChange={(event) => setPet('sex', event.target.value)}><option value="">Not recorded</option><option>Female</option><option>Male</option></Select></td>
+                <td className={td}><input aria-label={`Row ${n} age in months`} className={sheetCell} type="number" min={0} max={600} value={pet.ageMonths} onChange={(event) => setPet('ageMonths', event.target.value)} /></td>
+                {campaign.processes.map((process) => <td key={process} className={td}><label className="flex h-10 cursor-pointer items-center justify-center"><input type="checkbox" aria-label={`Row ${n} ${process}`} checked={pet.processes.includes(process)} onChange={(event) => setPet('processes', event.target.checked ? [...pet.processes, process] : pet.processes.filter((item) => item !== process))} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" /></label></td>)}
+                <td className={td}><button type="button" aria-label={`Remove row ${n}`} disabled={!pets.length} onClick={() => setPets((current) => current.filter((_, i) => i !== index))} className="grid h-10 w-11 place-items-center text-slate-400 hover:text-slate-700 disabled:opacity-30 dark:hover:text-white"><Trash2 aria-hidden className="h-4 w-4" /></button></td>
+              </tr>;
+            })}
+          </Sheet>
+          <button type="button" disabled={pets.length >= 10} className={sheetAdd} onClick={() => setPets((current) => [...(current.length ? current : [emptyPet(campaign.processes)]), emptyPet(campaign.processes)])}><Plus aria-hidden className="h-4 w-4" />Add pet row</button>
           {duplicateCandidates.length > 0 && <section className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"><p className="font-semibold">Possible matching interest already exists</p><ul className="mt-1 list-inside list-disc">{duplicateCandidates.map((candidate) => <li key={candidate.id}>{candidate.ownerName} · {candidate.barangay}</li>)}</ul><p className="mt-2 text-xs">Review before continuing. Adding as separate records will not merge either entry.</p><button type="button" disabled={saving} className={`${btnGhost} mt-2`} onClick={(event) => void submitPerson(event, true)}>Confirm this is a different owner</button></section>}
           <div className="flex justify-end gap-2">{editing !== null && <button type="button" className={btnGhost} onClick={clearOwnerForm}>Cancel edit</button>}<button type="submit" disabled={saving || !editable} className={btnPrimary}>{saving ? 'Saving…' : editing === null ? 'Add interest' : 'Save changes'}</button></div>
         </form>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CensusSheetEditor, type SheetValues } from '../../components/CensusSheetEditor';
-import { Loading, Notice, btnGhost } from '../../components/ui';
+import { InfoTip, Loading, Notice, btnGhost } from '../../components/ui';
 import { useT } from '../../i18n';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -33,8 +33,7 @@ export function CensusFormPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-semibold tracking-tight">{t(id ? 'census.edit.title' : 'census.new.title')}</h1>
-      {!id && <p className="mt-1 text-sm text-slate-500">{t('census.new.intro')}</p>}
+      <h1 className="text-2xl font-semibold tracking-tight">{t(id ? 'census.edit.title' : 'census.new.title')}{!id && <InfoTip>{t('census.new.intro')}</InfoTip>}</h1>
       <div className="mt-6">
         <CensusSheetEditor initial={initial} barangay={account?.barangay} submitLabel={t(id ? 'census.save' : 'census.submit')} onSubmit={submit} />
       </div>

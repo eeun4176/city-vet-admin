@@ -4,7 +4,7 @@ import { useApi,useDebouncedValue } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { DataFreshness } from '../components/DataFreshness';
-import { Loading,Modal,Notice,Pagination,Spinner,inputCls,btnGhost,btnPrimary, Select } from '../components/ui';
+import { InfoTip, Loading,Modal,Notice,Pagination,Spinner,inputCls,btnGhost,btnPrimary, Select } from '../components/ui';
 
 type Issue='duplicate-owners'|'duplicate-pets'|'missing-contact'|'missing-age'|'unlinked-pets';
 const issues:[Issue,string,string][]=[['duplicate-owners','Owner matches','duplicateOwners'],['duplicate-pets','Pet matches','duplicatePets'],['missing-contact','Missing contact','missingContact'],['missing-age','Missing pet age','missingAge'],['unlinked-pets','Unverified owner links','unlinkedPets']];
@@ -44,7 +44,7 @@ export function DataQualityPage(){
   const {account}=useAuth();const [params]=useSearchParams();const [issue,setIssue]=useState<Issue>(()=>issues.find(([id])=>id===params.get('issue'))?.[0]??'duplicate-owners'),[status,setStatus]=useState('Needs review'),[search,setSearch]=useState(''),[page,setPage]=useState(1),[pair,setPair]=useState<[number,number]|null>(null),[message,setMessage]=useState('');
   const query=useDebouncedValue(search.trim()),duplicate=issue.startsWith('duplicate');
   const {data,error,loading,updatedAt,reload}=useApi<Results>(`/data-quality?issue=${issue}&status=${encodeURIComponent(status)}&q=${encodeURIComponent(query)}&page=${page}&pageSize=12`);
-  return <div className="w-full space-y-5"><header><h1 className="text-2xl font-semibold">Data Quality</h1><p className="mt-1 text-sm text-slate-500">Review possible matches and missing details across all accessible active owners and pets. {account?.type==='Paravet'?`Your area: ${account.barangay??'No barangay assigned'}. Flag matches for Admin review.`:'Admin records review decisions.'}</p></header>
+  return <div className="w-full space-y-5"><header><h1 className="text-2xl font-semibold">Data Quality<InfoTip>Review possible matches and missing details across all accessible active owners and pets. {account?.type==='Paravet'?`Your area: ${account.barangay??'No barangay assigned'}. Flag matches for Admin review.`:'Admin records review decisions.'}</InfoTip></h1></header>
     <DataFreshness updatedAt={updatedAt} loading={loading} onRefresh={reload}/>{message&&<Notice kind="success">{message}</Notice>}{error&&<Notice kind="error">{error.message}</Notice>}
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{issues.map(([id,label,key])=><button key={id} onClick={()=>{setIssue(id);setPage(1);}} aria-pressed={issue===id} className={`rounded-xl border p-4 text-left ${issue===id?'border-brand-400 bg-brand-50 dark:bg-brand-950':'border-slate-200 dark:border-slate-700'}`}><span className="block text-sm">{label}</span><strong className="mt-2 block text-2xl">{data?.counts[key]??'—'}</strong></button>)}</div>
     <p className="text-xs text-slate-500">{data?.counts.checkedRecords??'—'} active records checked. Match counts are pairs needing review, not confirmed duplicate people. Missing contact or age is a review cue, not a reason to refuse service.</p>

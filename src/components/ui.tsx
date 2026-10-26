@@ -1,4 +1,4 @@
-import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Search, X, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Info, Search, X, LoaderCircle } from 'lucide-react';
 import { Children, Fragment, isValidElement, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../i18n';
@@ -13,6 +13,17 @@ export const btnDanger = 'inline-flex items-center justify-center gap-2 rounded-
 // Segmented tab switcher, as in e-Vet Field: a tinted track with the selected tab raised on a white pill that slides between tabs (seg-track, see lib/segmented.ts).
 export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800';
 export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white text-slate-900 shadow-sm dark:bg-surface-bar dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`;
+
+/** A page's explanation kept out of the layout: an (i) beside the title shows it on hover, focus or tap. */
+export function InfoTip({ children, label = 'More details' }: { children: ReactNode; label?: string }) {
+  const id = useId();
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const show = (target: HTMLElement) => { const box = target.getBoundingClientRect(); setPos({ top: box.bottom + 6, left: Math.max(16, Math.min(box.left, window.innerWidth - 16 - 288)) }); };
+  return <span className="ml-1.5 inline-flex align-middle" onMouseEnter={(event) => show(event.currentTarget)} onMouseLeave={() => setPos(null)}>
+    <button type="button" aria-label={label} aria-describedby={pos ? id : undefined} onFocus={(event) => show(event.currentTarget)} onBlur={() => setPos(null)} onKeyDown={(event) => { if (event.key === 'Escape') setPos(null); }} className="grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"><Info aria-hidden className="h-4 w-4" /></button>
+    {pos && createPortal(<span role="tooltip" id={id} style={{ top: pos.top, left: pos.left }} className="pointer-events-none fixed z-[70] w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed tracking-normal text-white shadow-lg dark:bg-slate-700">{children}</span>, document.body)}
+  </span>;
+}
 
 export function Field({ label, hint, children, className = '' }: { label: ReactNode; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (

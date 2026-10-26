@@ -2617,6 +2617,15 @@ ALTER TABLE ekapon.email_codes DISABLE ROW LEVEL SECURITY;
 
 -- Rollback: ALTER TABLE ekapon.email_codes ENABLE ROW LEVEL SECURITY; (password reset by email stops working)
 
+-- SOURCE: db/032_staff_change_username.sql
+-- 032: An Admin changes their own username from the Account page (PATCH /auth/credentials).
+-- The API checks the current password first; usernames stay unique through accounts_username_uq.
+-- Idempotent: safe to run twice. Apply after 031.
+
+GRANT UPDATE (username) ON ekapon.accounts TO ekapon_admin;
+
+-- Rollback: REVOKE UPDATE (username) ON ekapon.accounts FROM ekapon_admin; (changing usernames stops working)
+
 -- No database password is embedded. Enable the API login separately in the SQL Editor.
 CREATE ROLE ekapon_api NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 GRANT ekapon_admin TO ekapon_api;
@@ -2664,5 +2673,6 @@ INSERT INTO ekapon.schema_migrations(file,sha256) VALUES
 ('028_superadmin_only.sql','9effbbf8818a09070023787b9302a180d217a6e89a8cd495bf6ba2d48b254fc8'),
 ('029_census_request_id.sql','52696ab24862d703c2412c5477b162892c6291a6c8b71b5954fa70bdb6e45caf'),
 ('030_password_reset_email.sql','a5ffcb89e04681c5679286b659b34bf39130f02136782f29bc2c9ab398b5cef8'),
-('031_email_codes_no_rls.sql','a5abcb775dfa21942ed44599bb625e01099def0ce191899665142cc46fae100a');
+('031_email_codes_no_rls.sql','a5abcb775dfa21942ed44599bb625e01099def0ce191899665142cc46fae100a'),
+('032_staff_change_username.sql','1643a8434c70f657bd954e6a295a4c62a4d30b12e010f5aecf75e12057d81982');
 COMMIT;

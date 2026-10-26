@@ -1,5 +1,5 @@
 import { useApi } from '../lib/useApi';
-import { Loading, Notice } from '../components/ui';
+import { InfoTip, Loading, Notice } from '../components/ui';
 
 type Barangay = { id: number; acronym: string; name: string; district: string; zip: string };
 
@@ -9,8 +9,7 @@ export function BarangaysPage() {
   if (loading) return <Loading />;
   if (error) return <Notice kind="error">{error.message}</Notice>;
   return <div className="w-full">
-    <h1 className="text-2xl font-semibold">Barangays</h1>
-    <p className="mt-1 text-sm text-slate-500">Official reference list used for records, census submissions, and program interest lists.</p>
+    <h1 className="text-2xl font-semibold">Barangays<InfoTip>Official reference list used for records, census submissions, and program interest lists.</InfoTip></h1>
     {/* Split by district, as in e-Vet Field. */}
     {[1, 2].map((district) => { const rows = data?.data.filter((barangay) => parseInt(String(barangay.district), 10) === district) ?? []; return <section key={district} aria-labelledby={`district-${district}`} className="mt-6">
     <h2 id={`district-${district}`} className="flex items-center gap-2 text-sm font-semibold text-brand-700 after:h-px after:flex-1 after:bg-slate-200 dark:text-brand-300 dark:after:bg-slate-800">District {district === 1 ? 'I' : 'II'}<span className="font-normal text-slate-500">{rows.length}</span></h2>

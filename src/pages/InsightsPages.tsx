@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { ComparisonBars, SaveChartImage, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
+import { InfoTip, ComparisonBars, SaveChartImage, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
 import { Letterhead } from '../components/PrintSheet';
 import { useAuth } from '../lib/auth';
 import { useT } from '../i18n';
@@ -428,9 +428,6 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div><h3 className="text-sm font-semibold">Dashboard records by dataset</h3>
           {profile.dashboardRecords.length ? <ul className="mt-2 grid grid-cols-2 gap-2 text-sm">{profile.dashboardRecords.map((row) => <li key={row.dataset} className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900"><span className="capitalize">{row.dataset}</span><strong className="float-right">{row.count}</strong></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No dashboard records for this source.</p>}
-        </div>
-        <div><h3 className="text-sm font-semibold">Archived ID verification decisions</h3>
-          {profile.source === 'sample' ? <p className="mt-2 text-sm text-slate-500">Live-only; not included in sample reports.</p> : profile.idVerifications.length ? <ul className="mt-2 space-y-1 text-sm">{profile.idVerifications.map((row) => <li key={row.status} className="flex justify-between capitalize"><span>{row.status}</span><strong>{row.count}</strong></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No ID verification records.</p>}
         </div>
       </div>
     </>}
@@ -958,7 +955,7 @@ export function AuditPage() {
   if (month) params.set('month', month);
   const { data,error,loading } = useApi<Activity>(`/activity?${params}`);
   const rows = data?.data ?? [];
-  return <div className="w-full"><h1 className="text-2xl font-semibold">Activity Log</h1><p className="mt-1 text-sm text-slate-500">Recent recorded administrative actions.</p>
+  return <div className="w-full"><h1 className="text-2xl font-semibold">Activity Log<InfoTip>Recent recorded administrative actions.</InfoTip></h1>
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="text-xs text-slate-500">Search<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="User, action, details" className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
       <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></Select></label>

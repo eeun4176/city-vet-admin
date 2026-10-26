@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions } from '../components/ui';
+import { InfoTip, Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions } from '../components/ui';
 import { api } from '../lib/api';
 import { GRANT_PERMISSIONS_BY_ROLE, type GrantPermission } from '../../shared/permissions';
 import { useAuth } from '../lib/auth';
@@ -78,7 +78,7 @@ export function AccessGrantsPage() {
   };
 
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold">Temporary Access Grants</h1><p className="mt-1 text-sm text-slate-500">Grant a supported permission to an active Admin or Paravet for up to 30 days.</p></div>
+    <div><h1 className="text-2xl font-semibold">Temporary Access Grants<InfoTip>Grant a supported permission to an active Admin or Paravet for up to 30 days.</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
     <form onSubmit={(event) => void grant(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
       <Field label="Account"><Select required className={inputCls} value={granteeId} onChange={(event) => chooseTarget(event.target.value)}><option value="">Choose an active staff account</option>{targets.map((target) => <option key={target.id} value={target.id}>{target.name} · {target.type}</option>)}</Select></Field>
@@ -155,7 +155,7 @@ export function AccessRequestsPage() {
     setDrafts((current) => ({ ...current, [id]: { ...draftFor(id), ...value } }));
 
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold">Permission Requests</h1><p className="mt-1 text-sm text-slate-500">{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</p></div>
+    <div><h1 className="text-2xl font-semibold">Permission Requests<InfoTip>{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
     {!isSuperAdmin && <form onSubmit={(event) => void submit(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
       <Field label="Permission"><Select className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{permissions.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
@@ -216,7 +216,7 @@ export function IssuesPage() {
     finally { setBusy(null); }
   };
   return <div className="w-full">
-    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue Reports</h1><p className="mt-1 text-sm text-slate-500">Track reports submitted by Admins and Paravets.</p></div>
+    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue Reports<InfoTip>Track reports submitted by Admins and Paravets.</InfoTip></h1></div>
       <div className="flex items-end gap-2"><Field label="Status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All</option></Select></Field><button type="button" className={btnGhost} onClick={() => { setStatus('open'); setPage(1); }}>Clear filters</button></div></div>
     {error && <div className="mt-4"><Notice kind="error">{error}</Notice></div>}
     {loading ? <Loading /> : <div className="mt-4 space-y-3">
@@ -256,8 +256,7 @@ export function NewIssuePage() {
     finally { setBusy(false); }
   };
   return <div className="max-w-3xl">
-    <h1 className="text-2xl font-semibold">Report an Issue</h1>
-    <p className="mt-1 text-sm text-slate-500">Provide enough detail for the system administrator to investigate.</p>
+    <h1 className="text-2xl font-semibold">Report an Issue<InfoTip>Provide enough detail for the system administrator to investigate.</InfoTip></h1>
     <form onSubmit={(event) => void submit(event)} className={`${card} mt-4 space-y-4`}>
       {error && <Notice kind="error">{error}</Notice>}{message && <Notice kind="success">{message}</Notice>}
       <Field label="Short title"><input required minLength={3} maxLength={120} className={inputCls} value={title} onChange={(event) => setTitle(event.target.value)} /></Field>

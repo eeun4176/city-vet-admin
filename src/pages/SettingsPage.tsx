@@ -4,7 +4,7 @@ import { useT, type Locale } from '../i18n';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
 import { api } from '../lib/api';
-import { Notice, Spinner, btnGhost, tabItem, tabList } from '../components/ui';
+import { InfoTip, Notice, Spinner, btnGhost, tabItem, tabList } from '../components/ui';
 
 // Settings sections as e-Vet Field cards: an icon tile, the heading, then the controls. Choices are segmented switchers with the chosen one in green.
 function SectionCard({ icon: Icon, title, id, children }: { icon: LucideIcon; title: string; id: string; children: ReactNode }) {
@@ -40,7 +40,7 @@ export function SettingsPage() {
     finally { setExportBusy(false); }
   };
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold tracking-tight">{t('settings.title')}</h1><p className="mt-1 text-sm text-slate-500">Language, appearance and data exports. Your name and photo are in Account.</p></div>
+    <div><h1 className="text-2xl font-semibold tracking-tight">{t('settings.title')}<InfoTip>Language, appearance and data exports. Your name and photo are in Account.</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
 
     <SectionCard icon={Palette} title={t('settings.appearance')} id="look">

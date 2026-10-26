@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/useApi';
-import { Notice, Select, Spinner, btnPrimary, districtOptions } from '../components/ui';
+import { InfoTip, Notice, Select, Spinner, btnPrimary, districtOptions } from '../components/ui';
 import { emptyRegistryPet, type RegistryDraft, type RegistryPreview } from '../../shared/registry';
 import { groupOwnerRows, type OwnerRow } from './ownerSheetRows';
+import { sheetCell as cell, sheetHead as head } from '../components/PetSheet';
 
 const blank = (): OwnerRow => ({ owner: '', barangayId: '', address: '', contact: '', pet: '', species: 'Dog', sex: '', ageMonths: '', color: '' });
-const cell = 'h-10 w-full min-w-0 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-brand-50/60 focus:ring-2 focus:ring-inset focus:ring-brand-500 dark:text-white dark:focus:bg-brand-900/20';
-const head = 'h-9 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-slate-800 dark:bg-surface-bar';
 
 /**
  * Owners and pets typed straight into a sheet, as in e-Vet Field: one row per pet, the owner cell left blank for more pets of the owner above.
@@ -49,7 +48,7 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
   };
 
   return <section aria-labelledby="owner-sheet-title" className="space-y-3">
-    <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 id="owner-sheet-title" className="font-semibold">Add Owners and Pets</h2><p className="mt-0.5 text-sm text-slate-500">One row per pet. Leave the owner blank for another pet of the owner above.</p></div><p aria-live="polite" className="text-sm tabular-nums text-slate-500">{grouped.owners.length} owner{grouped.owners.length === 1 ? '' : 's'} · {pets} pet{pets === 1 ? '' : 's'}</p></div>
+    <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 id="owner-sheet-title" className="font-semibold">Add Owners and Pets<InfoTip>One row per pet. Leave the owner blank for another pet of the owner above.</InfoTip></h2></div><p aria-live="polite" className="text-sm tabular-nums text-slate-500">{grouped.owners.length} owner{grouped.owners.length === 1 ? '' : 's'} · {pets} pet{pets === 1 ? '' : 's'}</p></div>
     <div className="data-table overflow-x-auto">
       <table className="w-full min-w-[78rem] table-fixed text-sm">
         <thead><tr>
