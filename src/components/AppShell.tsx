@@ -80,7 +80,7 @@ export function AppShell() {
   const lenisRef = useRef<Lenis | null>(null);
   const db = databaseStatus(online, dbState);
   const showBack = !['/dashboard', '/programs', '/program-day'].includes(location.pathname);
-  const dbDot = <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${db === 'active' ? 'bg-emerald-500' : db === 'loading' ? 'bg-amber-500 motion-safe:animate-pulse' : db === 'error' ? 'bg-red-600' : 'bg-slate-400'}`} />;
+  const dbDot = <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${db === 'active' ? 'bg-brand-500' : db === 'loading' ? 'bg-amber-500 motion-safe:animate-pulse' : db === 'error' ? 'bg-red-600' : 'bg-slate-400'}`} />;
 
   useEffect(() => {
     let live = true;
@@ -223,12 +223,12 @@ export function AppShell() {
 
       {/* Bottom-centre toast as in e-Vet Field: a dark pill whose timer line shrinks until it closes. */}
       {toast && <div key={toastKey} role={toast.kind === 'error' ? 'alert' : 'status'} aria-live={toast.kind === 'error' ? 'assertive' : 'polite'} style={{ '--toast-ms': `${toastMs(toast)}ms` } as CSSProperties} className="ui-toast fixed inset-x-0 bottom-6 z-[61] mx-auto flex w-[calc(100vw-2rem)] max-w-md items-center gap-3 overflow-hidden rounded-xl bg-[#1d1f1e] px-4 py-3 text-sm text-white shadow-lg ring-1 ring-white/10 dark:bg-[#2e2e2e] print:hidden">
-        {toast.kind === 'error' ? <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" /> : <CircleCheck aria-hidden className="h-4 w-4 shrink-0 text-[#5BE3A0]" />}
+        {toast.kind === 'error' ? <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" /> : <CircleCheck aria-hidden className="h-4 w-4 shrink-0 text-brand-300" />}
         <div className="min-w-0 flex-1 break-words">{toast.message}</div>
-        {toast.refresh && <button type="button" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-[#5BE3A0] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5BE3A0]" onClick={() => { setToast(null); refreshAll(); }}>Refresh</button>}
-        {toast.undoToken && <button type="button" title="Available for 5 minutes" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-[#5BE3A0] hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5BE3A0]" onClick={() => { const token = toast.undoToken!; setToast(null); void api<{undoToken:string;undoLabel:string}>('POST', `/undo/${token}`, {direction:toast.undoLabel==='Redo'?'redo':'undo'}).then(result => setToast({message:toast.undoLabel==='Redo'?'Change restored.':'Change undone.',kind:'success',undoToken:result.undoToken,undoLabel:result.undoLabel})); }}>{toast.undoLabel??'Undo'}</button>}
+        {toast.refresh && <button type="button" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-brand-300 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300" onClick={() => { setToast(null); refreshAll(); }}>Refresh</button>}
+        {toast.undoToken && <button type="button" title="Available for 5 minutes" className="shrink-0 rounded-md px-1.5 py-0.5 font-semibold text-brand-300 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300" onClick={() => { const token = toast.undoToken!; setToast(null); void api<{undoToken:string;undoLabel:string}>('POST', `/undo/${token}`, {direction:toast.undoLabel==='Redo'?'redo':'undo'}).then(result => setToast({message:toast.undoLabel==='Redo'?'Change restored.':'Change undone.',kind:'success',undoToken:result.undoToken,undoLabel:result.undoLabel})); }}>{toast.undoLabel??'Undo'}</button>}
         <button type="button" aria-label={t('common.close')} onClick={() => setToast(null)} className="shrink-0 rounded-md p-0.5 text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"><X aria-hidden className="h-4 w-4" /></button>
-        <span aria-hidden className={`toast-timer absolute inset-x-0 bottom-0 h-[3px] ${toast.kind === 'error' ? 'bg-red-400' : 'bg-[#5BE3A0]'}`} />
+        <span aria-hidden className={`toast-timer absolute inset-x-0 bottom-0 h-[3px] ${toast.kind === 'error' ? 'bg-red-400' : 'bg-brand-300'}`} />
       </div>}
       {showReturnTop && <button type="button" onClick={() => lenisRef.current ? lenisRef.current.scrollTo(0) : document.getElementById('main')?.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Return to top" title="Return to top" className="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-panel hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-surface-bar dark:text-slate-200 dark:hover:bg-slate-800 print:hidden"><ChevronUp aria-hidden strokeWidth={2.2} className="h-5 w-5" /></button>}
 

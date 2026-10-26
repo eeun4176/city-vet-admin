@@ -114,7 +114,7 @@ export function AccountsPage() {
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts.map((account) => <tr key={account.id}><td className="p-3"><input type="checkbox" aria-label={`Select ${account.fullName}`} checked={bulk.has(account.id)} onChange={()=>bulk.toggle(account.id)}/></td>
             <td className="p-3 font-medium"><button type="button" onClick={() => setSelected(account)} className="text-left hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:text-brand-300">{account.fullName}</button></td>
-            <td className="p-3">{roleLabel(account.accountType)}{account.accountKey || account.username ? ` · ${account.accountKey ?? account.username}` : ''}</td>
+            <td className="p-3">{roleLabel(account.accountType)}{(account.accountKey || account.username) && <p className="font-mono text-xs text-slate-500">{account.accountKey ?? account.username}</p>}</td>
             <td className="p-3">{account.barangay?.name ?? '—'}</td>
             <td className="p-3">{account.mobile ?? '—'}</td>
             <td className="p-3">{account.status}</td>

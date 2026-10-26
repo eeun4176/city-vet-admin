@@ -80,7 +80,7 @@ function ServiceResults({data}:{data:Record<string,unknown>}){
  return <section><h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Services</h3><ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-700">{listed.map((process)=><li key={process} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"><span className="font-medium">{process}</span><OutcomePill value={result(process)}/></li>)}</ul></section>;
 }
 function OutcomePill({value}:{value:string}){
- const tone=value==='Completed'||value==='Submitted'?'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':value==='Voided'||value==='Not eligible'?'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':value==='Deferred'||/partially|mixed/i.test(value)?'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200':'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+ const tone=value==='Completed'||value==='Submitted'?'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200':value==='Voided'||value==='Not eligible'?'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200':value==='Deferred'||/partially|mixed/i.test(value)?'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200':'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
  return <span className={`inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-medium ${tone}`}>{value}</span>;
 }
 function FieldDetail({kind,view,id,onClose,onChanged}:{kind:FieldKind;view:FieldView;id:string;onClose:()=>void;onChanged:()=>void}){

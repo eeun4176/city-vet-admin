@@ -12,7 +12,7 @@ export const btnGhost = 'inline-flex items-center justify-center gap-2 rounded-l
 export const btnDanger = 'inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-red-500/10 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-500/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-red-500/30 disabled:pointer-events-none disabled:opacity-50 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30';
 // Segmented tab switcher, as in e-Vet Field: a tinted track with the selected tab raised on a white pill that slides between tabs (seg-track, see lib/segmented.ts).
 export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800';
-export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white text-slate-900 shadow-sm dark:bg-surface-bar dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`;
+export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white font-semibold text-brand-700 shadow-sm dark:bg-surface-bar dark:text-brand-300' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`;
 
 /** Mobile number inputs everywhere: digits only, at most 11, starting with 09 (the API stores the same 11 digits). No maxLength: a pasted 0917-123-4567 would be cut before its dashes are dropped. */
 export const mobileInput = { type: 'tel', inputMode: 'numeric', pattern: '09[0-9]{9}', placeholder: '09XXXXXXXXX', title: '11 digits starting with 09, like 09171234567' } as const;
@@ -170,8 +170,11 @@ const STATUS_STYLE: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   const { t } = useT();
-  return <span className={`inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold ${STATUS_STYLE[status] ?? STATUS_STYLE.withdrawn}`}><i aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />{t(`census.status.${status}` as MessageKey)}</span>;
+  return <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold ${STATUS_STYLE[status] ?? STATUS_STYLE.withdrawn}`}>{t(`census.status.${status}` as MessageKey)}</span>;
 }
+
+// Statuses stored in lower case or with underscores ("in_progress") read as "In progress".
+export const statusLabel = (status: string | null | undefined) => status ? status[0].toUpperCase() + status.slice(1).replaceAll('_', ' ') : '';
 
 export function Notice({ kind = 'info', children }: { kind?: 'info' | 'error' | 'success'; children: ReactNode }) {
   const style = kind === 'error' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200'
@@ -194,10 +197,30 @@ export function ComparisonBars({ title, rows, className = '' }: { title?: string
     {title && <div className="flex items-center justify-between gap-2"><p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-slate-500">{title}</p><SaveChartImage name={title} /></div>}
     <ul aria-label={title} className="grid gap-3">{rows.map((row, index) => <li key={index} aria-label={`${row.label}: ${row.value}`} className={`grid grid-cols-[minmax(3rem,8rem)_1fr_auto] items-center gap-2.5 text-xs ${index === top ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-500 dark:text-slate-400'}`}>
       <span aria-hidden className="truncate capitalize">{row.label}</span>
-      <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-slate-800"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-slate-300 dark:bg-slate-600'}`} /></span>
+      <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-slate-800"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></span>
       <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>{row.value}</span>
     </li>)}</ul>
   </div>;
+}
+
+/** Column (bar) chart, as in the motion-library bar card: columns grow up from the axis one after another, the highest is solid green and the rest light green.
+ *  Each column carries its number on top, so the chart never relies on colour alone; `second` draws a paired, darker column (e.g. completed next to attended). */
+export function ColumnChart({ bars, unit = '', legend }: { bars: { label: string; value: number | null; second?: number; note?: string }[]; unit?: string; legend?: [string, string] }) {
+  const max = Math.max(1, ...bars.flatMap((bar) => [bar.value ?? 0, bar.second ?? 0]));
+  const top = Math.max(...bars.map((bar) => bar.value ?? 0));
+  const shown = (value: number | null | undefined) => value == null ? '—' : `${value.toLocaleString('en-PH')}${unit}`;
+  const height = (value: number | null | undefined) => (value ? `${(value / max) * 100}%` : '0');
+  const columns = { gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` };
+  // Many columns (a year of months) keep a readable width and scroll sideways inside the card on phones.
+  return <div className="overflow-x-auto"><div role="img" style={{ minWidth: `${bars.length * (legend ? 4.5 : 3)}rem` }} aria-label={bars.map((bar) => `${bar.label}: ${shown(bar.value)}${bar.second !== undefined && legend ? `, ${legend[1]} ${shown(bar.second)}` : ''}`).join('; ')}>
+    {/* pt-5 leaves room for the number above the tallest column. */}
+    <div aria-hidden className="grid h-40 gap-2 border-b border-slate-200 pt-5 dark:border-slate-700" style={columns}>{bars.map((bar, index) => <div key={bar.label} className="flex min-w-0 items-end justify-center gap-1">
+      <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">{shown(bar.value)}</span><i style={{ height: height(bar.value), '--i': index } as CSSProperties} className={`col-grow block w-full rounded-b-[3px] rounded-t-[7px] print:border print:border-slate-700 ${bar.value === top && top > 0 && bar.second === undefined ? 'bg-gradient-to-t from-brand-600 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></div>
+      {bar.second !== undefined && <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-brand-700 dark:text-brand-300">{shown(bar.second)}</span><i style={{ height: height(bar.second), '--i': index } as CSSProperties} className="col-grow block w-full rounded-b-[3px] rounded-t-[7px] bg-gradient-to-t from-brand-600 to-brand-400 print:border print:border-slate-700" /></div>}
+    </div>)}</div>
+    <div aria-hidden className="mt-2 grid gap-2 text-center font-mono text-[10.5px] font-medium leading-tight text-slate-500" style={columns}>{bars.map((bar) => <span key={bar.label} className="min-w-0 break-words">{bar.label}{bar.note && <span className="mt-0.5 block font-sans text-[10px] text-slate-400">{bar.note}</span>}</span>)}</div>
+    {legend && <p aria-hidden className="mt-3 flex gap-4 text-xs text-slate-500"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-brand-200 dark:bg-brand-800" />{legend[0]}</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-brand-500" />{legend[1]}</span></p>}
+  </div></div>;
 }
 
 /** Saves the surrounding [data-chart] card (title, legend and chart) as a PNG to use in presentations. */

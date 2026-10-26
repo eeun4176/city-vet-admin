@@ -11,7 +11,7 @@ const STORAGE_KEY = 'cv.nav.open';
 const rowBase = 'flex h-10 w-full items-center gap-3 rounded-full px-[11px] text-left text-sm font-medium transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
 const childRow = 'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-[background-color,color] duration-300 ease-spring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
 const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
-const current = 'bg-brand-500/10 font-medium text-slate-900 dark:bg-brand-500/15 dark:text-white';
+const current = 'bg-brand-500/10 font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300';
 
 export function useOpenGroups(activeAncestors: string[]) {
   const [open, setOpen] = useState<Set<string>>(() => {

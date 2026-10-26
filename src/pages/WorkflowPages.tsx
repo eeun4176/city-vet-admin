@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { InfoTip, Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions } from '../components/ui';
+import { InfoTip, Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions, statusLabel } from '../components/ui';
 import { api } from '../lib/api';
 import { GRANT_PERMISSIONS_BY_ROLE, type GrantPermission } from '../../shared/permissions';
 import { useAuth } from '../lib/auth';
@@ -169,7 +169,7 @@ export function AccessRequestsPage() {
         const draft = draftFor(row.id);
         return <article key={row.id} className={card}>
           <h2 className="font-semibold">{row.permission} · {row.requesterName}</h2>
-          <p className="text-sm text-slate-500">{row.requesterType} · {row.barangay ?? 'All barangays'} · {row.status} · {date(row.createdAt)}</p>
+          <p className="text-sm text-slate-500">{row.requesterType} · {row.barangay ?? 'All barangays'} · {statusLabel(row.status)} · {date(row.createdAt)}</p>
           <p className="mt-2 text-sm">{row.reason}</p>
           {row.decisionReason && <p className="mt-2 text-sm">Decision: {row.decisionReason} · {row.remarks}</p>}
           {isSuperAdmin && row.status === 'pending' && <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -223,7 +223,7 @@ export function IssuesPage() {
       {rows.map((row) => {
         const draft = draftFor(row);
         return <article key={row.id} className={card}>
-          <div className="flex flex-wrap justify-between gap-2"><h2 className="font-semibold">{row.title}</h2><span className="text-xs uppercase text-slate-500">{row.severity} · {row.status}</span></div>
+          <div className="flex flex-wrap justify-between gap-2"><h2 className="font-semibold">{row.title}</h2><span className="text-xs text-slate-500">{statusLabel(row.severity)} · {statusLabel(row.status)}</span></div>
           <p className="mt-1 text-sm text-slate-500">From {row.reporterName} · {date(row.createdAt)}</p>
           <p className="mt-3 whitespace-pre-wrap text-sm">{row.description}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_2fr_auto] sm:items-end">

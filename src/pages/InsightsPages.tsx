@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useDebouncedValue } from '../lib/useApi';
-import { InfoTip, ComparisonBars, SaveChartImage, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions } from '../components/ui';
+import { InfoTip, ComparisonBars, SaveChartImage, inputCls, Loading, Modal, Notice, Pagination, btnGhost, btnPrimary, Select, districtOptions, statusLabel } from '../components/ui';
 import { Letterhead } from '../components/PrintSheet';
 import { useAuth } from '../lib/auth';
 import { useT } from '../i18n';
@@ -54,7 +54,7 @@ type Analytics = {
   };
 };
 
-const chartColors = { rabies: '#0f766e', kapon: '#d97706', microchip: '#4f46e5' };
+const chartColors = { rabies: '#01a85a', kapon: '#d97706', microchip: '#4f46e5' };
 type AnalyticsDataset = keyof Analytics['evidence']['countsByDataset'];
 type AnalyticsRecord = {
   dataset: AnalyticsDataset;
@@ -155,7 +155,7 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
               <td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td>
               <td className="p-2">{datasetLabels[record.dataset]}</td><td className="p-2">{record.date || '—'}</td>
               <td className="p-2">{record.barangay || '—'}</td><td className="p-2">{[record.status, record.detail].filter(Boolean).join(' · ') || '—'}</td>
-              <td className="p-2"><button type="button" onClick={() => openRecord(record)} className="font-medium text-teal-800 underline underline-offset-2 dark:text-teal-300">Open</button></td>
+              <td className="p-2"><button type="button" onClick={() => openRecord(record)} className="font-medium text-brand-800 underline underline-offset-2 dark:text-brand-300">Open</button></td>
             </tr>)}
             {!data.records.length && <tr><td colSpan={6} className="p-4 text-slate-500">No records match this source and date scope.</td></tr>}
           </tbody>
@@ -241,8 +241,8 @@ function PetRegistrationChart({ data, monthLabel, labels }: {
   return <div data-chart className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
     <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{labels.chart}</h3><SaveChartImage name={labels.chart} /></div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
-      <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-teal-700" />{labels.current}</span>
-      <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-indigo-500" />{labels.previous}</span>
+      <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-brand-700" />{labels.current}</span>
+      <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-slate-400" />{labels.previous}</span>
     </div>
     <div className="mt-2 overflow-x-auto">
       <svg role="img" aria-label={labels.chart} viewBox="0 0 720 220" className="h-auto min-w-[640px] w-full">
@@ -254,14 +254,14 @@ function PetRegistrationChart({ data, monthLabel, labels }: {
             <text x={plot.left - 8} y={lineY + 4} textAnchor="end" className="fill-slate-500 text-[10px]">{value}</text>
           </g>;
         })}
-        <path d={linePath('previous')} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-        <path d={linePath('current')} fill="none" stroke="#0f766e" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={linePath('previous')} fill="none" stroke="#858c88" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={linePath('current')} fill="none" stroke="#01a85a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         {data.map((row, index) => <g key={row.month}>
           {row.previousObserved
-            ? <circle cx={x(index)} cy={y(row.previous.petRegistrations)} r="3.5" fill="#6366f1"><title>{`${monthLabel(row.month)} · ${labels.previous}: ${row.previous.petRegistrations}`}</title></circle>
+            ? <circle cx={x(index)} cy={y(row.previous.petRegistrations)} r="3.5" fill="#858c88"><title>{`${monthLabel(row.month)} · ${labels.previous}: ${row.previous.petRegistrations}`}</title></circle>
             : <title>{`${monthLabel(row.month)} · ${labels.previous}: ${labels.notObserved}`}</title>}
           {row.currentObserved
-            ? <circle cx={x(index)} cy={y(row.current.petRegistrations)} r="3.5" fill="#0f766e"><title>{`${monthLabel(row.month)} · ${labels.current}: ${row.current.petRegistrations}`}</title></circle>
+            ? <circle cx={x(index)} cy={y(row.current.petRegistrations)} r="3.5" fill="#01a85a"><title>{`${monthLabel(row.month)} · ${labels.current}: ${row.current.petRegistrations}`}</title></circle>
             : <title>{`${monthLabel(row.month)} · ${labels.current}: ${labels.notObserved}`}</title>}
           <text x={x(index)} y="201" textAnchor="middle" className="fill-slate-500 text-[10px]">{monthLabel(row.month)}</text>
         </g>)}
@@ -281,10 +281,10 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
   const maximum = Math.max(0, ...data.map((row) => row.antiRabies + row.kapon));
   const cellClass = (value: number) => {
     if (!value) return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
-    if (value / maximum >= 0.75) return 'bg-teal-800 text-white dark:bg-teal-700';
-    if (value / maximum >= 0.5) return 'bg-teal-600 text-white dark:bg-teal-600';
-    if (value / maximum >= 0.25) return 'bg-teal-400 text-teal-950 dark:bg-teal-500 dark:text-white';
-    return 'bg-teal-200 text-teal-950 dark:bg-teal-900 dark:text-teal-100';
+    if (value / maximum >= 0.75) return 'bg-brand-800 text-white dark:bg-brand-700';
+    if (value / maximum >= 0.5) return 'bg-brand-600 text-white dark:bg-brand-600';
+    if (value / maximum >= 0.25) return 'bg-brand-400 text-brand-950 dark:bg-brand-500 dark:text-white';
+    return 'bg-brand-200 text-brand-950 dark:bg-brand-900 dark:text-brand-100';
   };
   return <section data-chart>
     <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">{labels.title}</h2>{barangays.length > 0 && <SaveChartImage name={labels.title} />}</div>
@@ -298,7 +298,7 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
           </tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{barangays.map((barangay) => <tr key={barangay}>
             <th scope="row" className="sticky left-0 bg-white p-3 text-left font-medium dark:bg-slate-950">
-              <button type="button" onClick={() => onSelectBarangay(barangay)} className="text-teal-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-teal-300">{barangay}</button>
+              <button type="button" onClick={() => onSelectBarangay(barangay)} className="text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-300">{barangay}</button>
             </th>
             {Array.from({ length: 12 }, (_, index) => {
               const month = index + 1;
@@ -317,7 +317,7 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
         <span>{labels.fewer}</span>
-        {['bg-slate-100 dark:bg-slate-800', 'bg-teal-200 dark:bg-teal-900', 'bg-teal-400 dark:bg-teal-500', 'bg-teal-600', 'bg-teal-800 dark:bg-teal-700'].map((color) => <span key={color} className={`h-4 w-5 rounded ${color}`} />)}
+        {['bg-slate-100 dark:bg-slate-800', 'bg-brand-200 dark:bg-brand-900', 'bg-brand-400 dark:bg-brand-500', 'bg-brand-600', 'bg-brand-800 dark:bg-brand-700'].map((color) => <span key={color} className={`h-4 w-5 rounded ${color}`} />)}
         <span>{labels.more}</span>
       </div>
     </>}
@@ -397,7 +397,7 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
   profile: BarangayProfile | null; loading: boolean; error: Error | null; onClose: () => void;
 }) {
   if (!profile && !loading && !error) return null;
-  return <section className="rounded-xl border border-teal-200 bg-teal-50/50 p-4 dark:border-teal-900 dark:bg-teal-950/20" aria-live="polite">
+  return <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-950/20" aria-live="polite">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div>
         {profile && <><h2 className="text-lg font-semibold">{profile.barangay.name} profile</h2>
@@ -422,7 +422,7 @@ function BarangayProfilePanel({ profile, loading, error, onClose }: {
           {profile.paravets.length ? <ul className="mt-2 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900">{profile.paravets.map((paravet) => <li key={paravet.id} className="flex justify-between gap-3 p-2 text-sm"><span>{paravet.name}</span><span className="text-slate-500">{paravet.code}</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No active Paravets assigned.</p>}
         </div>
         <div><h3 className="text-sm font-semibold">Census submissions</h3>
-          {profile.census.length ? <ul className="mt-2 space-y-1 text-sm">{profile.census.map((row) => <li key={row.status} className="flex justify-between gap-3"><span className="capitalize">{row.status}</span><span>{row.submissions} submissions · {row.households_visited} households · {row.census_owners} owners · {row.census_pets} pets</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No census submissions for this source.</p>}
+          {profile.census.length ? <ul className="mt-2 space-y-1 text-sm">{profile.census.map((row) => <li key={row.status} className="flex justify-between gap-3"><span>{statusLabel(row.status)}</span><span>{row.submissions} submissions · {row.households_visited} households · {row.census_owners} owners · {row.census_pets} pets</span></li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No census submissions for this source.</p>}
         </div>
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -608,7 +608,7 @@ export function ReportsPage() {
           <td className="p-3 font-medium"><button type="button" onClick={() => {
             const reference = referenceData.data?.barangays.find((item) => item.name.toLowerCase() === row.barangay.toLowerCase());
             if (reference) setSelectedBarangayId(reference.id);
-          }} className="text-left text-teal-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-teal-300">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags} ({percentOf(row.documented_vaccine_flags, row.pets)})</td><td className="p-3">{row.sterilized} ({percentOf(row.sterilized, row.pets)})</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
+          }} className="text-left text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-300">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags} ({percentOf(row.documented_vaccine_flags, row.pets)})</td><td className="p-3">{row.sterilized} ({percentOf(row.sterilized, row.pets)})</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
         </tr>)}
         {!data.barangays.length && <tr><td colSpan={6} className="p-5 text-slate-500">{t('reports.noPets')}</td></tr>}</tbody>
       </table></div>
@@ -619,7 +619,7 @@ export function ReportsPage() {
       <h2 className="text-lg font-semibold">{t('reports.censusSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.censusHelp')}</p>
       <p className="mt-2 text-sm font-medium">{t('reports.censusSummary', { covered: censusCovered, total: censusCoverage.length, year: data.year, pending: censusPending })}</p>
-      <details className="mt-2"><summary className="cursor-pointer text-sm text-teal-800 dark:text-teal-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
+      <details className="mt-2"><summary className="cursor-pointer text-sm text-brand-800 dark:text-brand-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
         <div className="mt-2 data-table overflow-x-auto"><table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{censusCoverage.map((row) => <tr key={row.barangay}>

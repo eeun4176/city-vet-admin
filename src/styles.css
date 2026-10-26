@@ -39,6 +39,9 @@
   /* ComparisonBars: each bar grows from the left, staggered by its row (--i). */
   .bar-grow { transform-origin: left center; animation: bar-grow 900ms cubic-bezier(.2,.7,.1,1) backwards; animation-delay: calc(var(--i, 0) * 90ms); }
   @keyframes bar-grow { from { transform: scaleX(0); } }
+  /* ColumnChart: each column grows up from the axis with a small overshoot, one after another (--i). */
+  .col-grow { transform-origin: bottom; animation: col-grow 760ms cubic-bezier(.34,1.56,.64,1) backwards; animation-delay: calc(var(--i, 0) * 80ms); }
+  @keyframes col-grow { from { transform: scaleY(0); } }
   /* Sign-in, as in e-Vet Field: a wrong entry shakes, the button shimmers while checking, and the welcome check draws itself (paths use pathLength="1"). */
   .login-shake { animation: login-shake 380ms ease-in-out; }
   @keyframes login-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
@@ -64,6 +67,9 @@
   .data-table tbody td { @apply h-[50px] border-b border-slate-200 px-4 py-2.5 dark:border-slate-800; }
   .data-table tbody tr:last-child td { @apply border-b-0; }
   .data-table tbody tr { @apply transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]; }
+  /* Rows whose cells stack several values (a name, then its details) start every cell on one top line, so a row reads straight across.
+     "record-table" marks the plain tables inside cards; spreadsheet-style sheets (table-fixed) keep their centred cells. */
+  :is(.data-table, .record-table) table:not(.table-fixed) tbody td { vertical-align: top; }
 }
 
 @layer base {

@@ -2,7 +2,7 @@ import { useId,useRef,useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search,X } from 'lucide-react';
 import { useT } from '../i18n';
-import { Spinner } from './ui';
+import { Spinner, statusLabel } from './ui';
 export interface SearchResult {key:string;kind:string;dataset:string;id:string;label:string;detail:string;to:string;source?:string;history?:boolean;status?:string}
 export function UniversalSearch({value,onChange,results,loading,error,includeHistory,onHistory,hasMore,onRetry}:{value:string;onChange:(value:string)=>void;results:SearchResult[];loading:boolean;error:string;includeHistory:boolean;onHistory:(value:boolean)=>void;hasMore:boolean;onRetry:()=>void}){
  const {t}=useT(),id=useId(),root=useRef<HTMLDivElement>(null);const [expanded,setExpanded]=useState(false);
@@ -15,7 +15,7 @@ export function UniversalSearch({value,onChange,results,loading,error,includeHis
    {loading?<div className="px-4 py-4 text-sm text-slate-500"><Spinner label={t('search.loading')}/></div>:error?<div className="space-y-2 px-4 py-3 text-sm"><p role="alert" className="text-red-700 dark:text-red-300">{error}</p><button className="text-brand-700 underline dark:text-brand-300" onClick={onRetry}>{t('search.retry')}</button></div>:<>
     {!results.length&&<p className="px-4 py-4 text-sm text-slate-500">{t('search.empty')}</p>}
     {results.map(item=><Link key={item.key} data-search-result to={item.to} onClick={()=>{onChange('');setExpanded(false);}} onKeyDown={e=>{if(!['ArrowDown','ArrowUp'].includes(e.key))return;const links=Array.from(root.current?.querySelectorAll<HTMLAnchorElement>('a[data-search-result]')??[]),index=links.indexOf(e.currentTarget);e.preventDefault();if(e.key==='ArrowUp'&&index===0)root.current?.querySelector('input')?.focus();else links[index+(e.key==='ArrowDown'?1:-1)]?.focus();}} className="block border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50 focus-visible:bg-brand-50 focus-visible:outline-none dark:border-slate-800 dark:hover:bg-slate-800 dark:focus-visible:bg-slate-800">
-     <span className="block break-words text-sm font-medium">{item.label}</span><span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs"><span className="text-brand-700 dark:text-brand-300">{item.kind==='page'?t('search.page'):item.source??item.dataset}</span>{item.history&&<span className="rounded bg-amber-50 px-1 text-amber-800 dark:bg-amber-950 dark:text-amber-200">{t('search.historyLabel')}</span>}{item.status&&<span className="text-slate-500">{item.status}</span>}</span><span className="mt-1 block break-words text-xs text-slate-500">{item.detail}</span>
+     <span className="block break-words text-sm font-medium">{item.label}</span><span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs"><span className="text-brand-700 dark:text-brand-300">{item.kind==='page'?t('search.page'):item.source??item.dataset}</span>{item.history&&<span className="rounded bg-amber-50 px-1 text-amber-800 dark:bg-amber-950 dark:text-amber-200">{t('search.historyLabel')}</span>}{item.status&&<span className="text-slate-500">{statusLabel(item.status)}</span>}</span><span className="mt-1 block break-words text-xs text-slate-500">{item.detail}</span>
     </Link>)}
     {hasMore&&<p className="px-4 py-3 text-xs text-slate-500">{t('search.refine')}</p>}
    </>}

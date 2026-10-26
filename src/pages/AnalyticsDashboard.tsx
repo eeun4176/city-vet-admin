@@ -3,7 +3,7 @@ import { CircleAlert, CircleCheck, Download, Printer } from 'lucide-react';
 import { useApi } from '../lib/useApi';
 import { downloadBlob } from '../lib/reportExport';
 import { printOnly } from '../lib/printOnly';
-import { ComparisonBars, InfoTip, Loading, Notice, SaveChartImage, Select, btnGhost, districtOptions, inputCls, tabItem, tabList } from '../components/ui';
+import { ColumnChart, ComparisonBars, InfoTip, Loading, Notice, SaveChartImage, Select, btnGhost, districtOptions, inputCls, tabItem, tabList } from '../components/ui';
 import { DataFreshness } from '../components/DataFreshness';
 import type { ProgramKpis } from '../../server/programKpis';
 
@@ -19,27 +19,18 @@ const rate = (value: number | null) => (value === null ? '—' : `${value}%`);
 function Kpi({ label, value, formula, note }: { label: string; value: string; formula: string; note?: string }) {
   return <article className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700"><p className="flex items-center text-sm text-slate-500">{label}<InfoTip>{formula}</InfoTip></p><p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">{value}</p>{note && <p className="mt-1 text-xs text-slate-500">{note}</p>}</article>;
 }
-function ChartCard({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
-  return <section data-chart className={`rounded-2xl border border-slate-200 p-4 dark:border-slate-700 ${className}`}><div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{title}</h3><SaveChartImage name={title} /></div>{children}</section>;
+/** A chart card; `chip` is the headline figure in a green pill next to the title, as on the motion-library bar card. */
+function ChartCard({ title, chip, children, className = '' }: { title: string; chip?: string; children: ReactNode; className?: string }) {
+  return <section data-chart className={`rounded-2xl border border-slate-200 p-4 dark:border-slate-700 ${className}`}><div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{title}</h3><div className="flex items-center gap-2">{chip && <b className="whitespace-nowrap rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">{chip}</b>}<SaveChartImage name={title} /></div></div>{children}</section>;
 }
 /** Progress bar for a utilization rate; over 100% is shown as full with the true figure in words. */
 function Progress({ label, value, detail }: { label: string; value: number | null; detail: string }) {
   return <div><div className="flex justify-between gap-2 text-sm"><span>{label}</span><span className="font-semibold tabular-nums">{rate(value)}</span></div><div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="progressbar" aria-label={label} aria-valuenow={value ?? 0} aria-valuemin={0} aria-valuemax={100}><div className={`h-full rounded-full ${value !== null && value > 100 ? 'bg-amber-500' : 'bg-brand-500'}`} style={{ width: `${Math.min(100, value ?? 0)}%` }} /></div><p className="mt-1 text-xs text-slate-500">{detail}</p></div>;
 }
-/** Participation funnel: each stage's bar is relative to the first, with the share kept from the stage before. */
-function Funnel({ stages }: { stages: [string, number][] }) {
-  const first = Math.max(1, stages[0]?.[1] ?? 0);
-  return <ol className="space-y-2.5">{stages.map(([label, value], i) => { const prev = i ? stages[i - 1][1] : null; return <li key={label}><div className="flex justify-between gap-2 text-sm"><span>{label}</span><span className="tabular-nums"><strong>{num(value)}</strong>{prev ? <span className="ml-2 text-xs text-slate-500">{Math.round((value / prev) * 100)}% of previous</span> : null}</span></div><div className="mt-1 h-3 rounded-md bg-slate-100 dark:bg-slate-800"><div className="h-3 rounded-md bg-brand-500" style={{ width: `${Math.min(100, (value / first) * 100)}%` }} /></div></li>; })}</ol>;
-}
 /** One bar split into parts, with a legend that names each part and its count (not colour alone). */
 function Stacked({ parts }: { parts: [string, number, string][] }) {
   const total = parts.reduce((sum, [, value]) => sum + value, 0);
   return <div><div className="flex h-4 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">{total > 0 && parts.map(([label, value, color]) => <div key={label} className={color} style={{ width: `${(value / total) * 100}%` }} title={`${label}: ${value}`} />)}</div><ul className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">{parts.map(([label, value, color]) => <li key={label} className="flex items-center gap-2"><span aria-hidden className={`h-2.5 w-2.5 rounded-full ${color}`} />{label}<span className="ml-auto tabular-nums font-medium">{num(value)}{total ? <span className="ml-1 text-xs text-slate-500">({Math.round((value / total) * 100)}%)</span> : null}</span></li>)}</ul></div>;
-}
-/** Monthly trend as paired columns: attended and completed pets. */
-function Trend({ months }: { months: ProgramKpis['monthly'] }) {
-  const max = Math.max(1, ...months.map((m) => m.attended));
-  return <div><div className="flex h-40 items-end gap-1.5" role="img" aria-label={`Attended and completed pets per month: ${months.map((m) => `${MONTHS[m.month - 1]} ${m.attended}/${m.completed}`).join(', ')}`}>{months.map((m) => <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1"><div className="flex w-full flex-1 items-end justify-center gap-0.5"><div className="w-1/2 rounded-t bg-brand-500" style={{ height: `${(m.attended / max) * 100}%` }} title={`Attended: ${m.attended}`} /><div className="w-1/2 rounded-t bg-sky-500" style={{ height: `${(m.completed / max) * 100}%` }} title={`Completed: ${m.completed}`} /></div><span className="text-[10px] text-slate-500">{MONTHS[m.month - 1]}</span></div>)}</div><p className="mt-2 flex gap-4 text-xs text-slate-500"><span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-brand-500" />Attended</span><span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-sky-500" />Completed</span></p></div>;
 }
 
 // Spreadsheet cells that start like a formula are written as text so Excel never runs them.
@@ -110,12 +101,12 @@ export function AnalyticsDashboard() {
           <Kpi label="Vaccination coverage" value={rate(o.vaccinationCoverage)} formula="Vaccinated recorded pets ÷ Recorded pets × 100 (as recorded, not an exact field count)." note={`${num(o.vaccinated)} recorded as vaccinated`} />
         </section>
         <div className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="Participation funnel"><Funnel stages={[['Interested', o.interested], ['Registered', o.registered], ['Attended', o.attended], ['Completed', o.completed]]} /></ChartCard>
-          <ChartCard title="Capacity use"><div className="space-y-4"><Progress label="Capacity utilization" value={o.capacityUtilization} detail={`${num(o.attended)} attended of ${num(o.capacity)} planned slots`} /><Progress label="Registration utilization" value={o.registrationUtilization} detail={`${num(o.registered)} registered of ${num(o.capacity)} planned slots`} /></div></ChartCard>
-          <ChartCard title="Attended pets by outcome"><Stacked parts={[['Completed', o.completed, 'bg-brand-500'], ['Deferred', o.deferred, 'bg-amber-500'], ['Incomplete', o.incomplete, 'bg-sky-500'], ['Not eligible', o.notEligible, 'bg-slate-400']]} /></ChartCard>
-          <ChartCard title="Recorded pets by species"><Stacked parts={[['Dogs', o.dogs, 'bg-brand-500'], ['Cats', o.cats, 'bg-sky-500']]} /></ChartCard>
-          <ChartCard title="Attended and completed pets per month" className="lg:col-span-2"><Trend months={data.monthly} /></ChartCard>
-          <ChartCard title="Completed services"><ComparisonBars rows={data.services.map((s) => ({ label: s.process, value: s.completed }))} /></ChartCard>
+          <ChartCard title="Participation funnel" chip={o.overallConversion === null ? undefined : `${o.overallConversion}% completed`}><ColumnChart bars={([['Interested', o.interested], ['Registered', o.registered], ['Attended', o.attended], ['Completed', o.completed]] as const).map(([label, value], i, all) => ({ label, value, note: i && all[i - 1][1] ? `${Math.round((value / all[i - 1][1]) * 100)}% of previous` : undefined }))} /></ChartCard>
+          <ChartCard title="Capacity use" chip={o.capacityUtilization === null ? undefined : `${o.capacityUtilization}% used`}><ColumnChart bars={[{ label: 'Planned slots', value: o.capacity }, { label: 'Registered', value: o.registered, note: o.registrationUtilization === null ? undefined : `${o.registrationUtilization}% of slots` }, { label: 'Attended', value: o.attended, note: o.capacityUtilization === null ? undefined : `${o.capacityUtilization}% of slots` }, { label: 'Unused', value: o.unusedCapacity }]} /></ChartCard>
+          <ChartCard title="Attended pets by outcome" chip={o.completionRate === null ? undefined : `${o.completionRate}% completed`}><ColumnChart bars={[{ label: 'Completed', value: o.completed }, { label: 'Deferred', value: o.deferred }, { label: 'Incomplete', value: o.incomplete }, { label: 'Not eligible', value: o.notEligible }]} /></ChartCard>
+          <ChartCard title="Recorded pets by species"><ColumnChart bars={[{ label: 'Dogs', value: o.dogs }, { label: 'Cats', value: o.cats }]} /></ChartCard>
+          <ChartCard title="Attended and completed pets per month" className="lg:col-span-2"><ColumnChart legend={['Attended', 'Completed']} bars={data.monthly.map((m) => ({ label: MONTHS[m.month - 1], value: m.attended, second: m.completed }))} /></ChartCard>
+          <ChartCard title="Completed services"><ColumnChart bars={data.services.map((s) => ({ label: s.process, value: s.completed }))} /></ChartCard>
           <section className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700"><h3 className="text-sm font-semibold">Insights</h3>{data.insights.length ? <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm">{data.insights.map((line) => <li key={line}>{line}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">No program activity for these filters yet.</p>}<p className="mt-3 text-xs text-slate-500">Calculated from the records with fixed formulas; decisions stay with City Vet staff.</p></section>
         </div>
         <Checks checks={data.checks} />

@@ -1,5 +1,5 @@
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
-import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits } from '../components/ui';
+import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits, statusLabel } from '../components/ui';
 import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -36,9 +36,9 @@ const card = 'rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate
 const statusStyle: Record<string, string> = {
   gathering: 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200',
   requested: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  approved: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
+  approved: 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200',
   rejected: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200',
-  scheduled: 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200',
+  scheduled: 'bg-brand-500 text-white dark:bg-brand-600',
   closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
   merged: 'bg-violet-50 text-violet-800 dark:bg-violet-950 dark:text-violet-200',
 };
@@ -110,13 +110,13 @@ export function ProgramInterestPage() {
       </div>
       {loading && <Loading label="Refreshing lists…" />}
       {!loading && campaigns.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No program interest lists yet. Start a demand list or attach one to a scheduled program.</p>}
-      {!!campaigns.length && <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['List','Host barangay','Program access','Interest','Status',''].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
+      {!!campaigns.length && <div className="record-table overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr>{['List','Host barangay','Program access','Interest','Status',''].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">{campaigns.map((campaign) => <tr key={campaign.id}>
-          <td className="min-w-56 p-3"><p className="font-medium">{campaign.kind === 'program_request' ? 'New program request' : campaign.programTitle || 'Scheduled program'}</p><p className="font-mono text-xs text-slate-500">{campaign.reference}{campaign.programDate ? ` · ${dateLabel(campaign.programDate)}` : ''}</p>{campaign.createdByName && <p className="text-xs text-slate-500">Filed by {campaign.createdByName}</p>}{campaign.mergedInto && <p className="text-xs text-violet-700 dark:text-violet-300">Merged into {campaign.mergedInto.reference}</p>}</td>
+          <td className="min-w-56 p-3"><p className="font-medium">{campaign.kind === 'program_request' ? 'New program request' : campaign.programTitle || 'Scheduled program'}</p><p className="font-mono text-xs text-slate-500">{campaign.reference}</p>{campaign.programDate && <p className="text-xs text-slate-500">{dateLabel(campaign.programDate)}</p>}{campaign.createdByName && <p className="text-xs text-slate-500">Filed by {campaign.createdByName}</p>}{campaign.mergedInto && <p className="text-xs text-violet-700 dark:text-violet-300">Merged into {campaign.mergedInto.reference}</p>}</td>
           <td className="whitespace-nowrap p-3">{campaign.hostBarangay}</td>
           <td className="max-w-56 p-3 text-slate-600 dark:text-slate-300">{campaign.allowedBarangays.map((item) => item.name).join(', ')}</td>
           <td className="whitespace-nowrap p-3"><strong>{campaign.ownerCount}</strong>{campaign.kind === 'program_request' ? ` / ${campaign.targetPeople} owners` : ' owners'}<p className="text-xs text-slate-500">{campaign.petCount} pets</p></td>
-          <td className="p-3"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[campaign.status] ?? statusStyle.closed}`}>{campaign.status.replaceAll('_', ' ')}</span></td>
+          <td className="p-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[campaign.status] ?? statusStyle.closed}`}>{statusLabel(campaign.status)}</span></td>
           <td className="whitespace-nowrap p-3"><button type="button" className="font-medium text-brand-700 underline dark:text-brand-300" onClick={() => openCampaign(campaign.id)}>Open</button></td>
         </tr>)}</tbody></table></div>}
     </section>
@@ -333,7 +333,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
         <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={saving} className={btnDanger} onClick={() => void review('reject')}>Reject request</button><button type="button" disabled={saving} className={btnPrimary} onClick={() => void review('approve')}>Approve request</button></div>
       </section>}
 
-      {campaign.status === 'approved' && !isParavet && <section className="flex flex-wrap items-end gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+      {campaign.status === 'approved' && !isParavet && <section className="flex flex-wrap items-end gap-3 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-brand-900 dark:bg-brand-950/20">
         <div className="w-full"><button type="button" disabled={saving} onClick={() => setScheduling(true)} className={btnPrimary}>Schedule program</button><p className="mt-2 text-xs text-slate-500">Or link a program day that is already scheduled:</p></div>
         {scheduling && <Suspense fallback={null}><ScheduleModal request={{ id: campaign.id, reference: campaign.reference, hostBarangayId: campaign.hostBarangayId, hostBarangay: campaign.hostBarangay, processes: campaign.processes }} onClose={() => setScheduling(false)} onSaved={(programId) => { setScheduling(false); onChanged(); navigate(`/programs?program=${programId}`); }} /></Suspense>}
         <div className="min-w-64 flex-1"><Field label="Link to a scheduled program in the host barangay"><Select className={inputCls} value={scheduleId} onChange={(event) => setScheduleId(event.target.value)}><option value="">Choose a program day</option>{scopedPrograms.map((program) => <option key={program.programRecordId} value={program.programRecordId}>{program.title} · {dateLabel(program.date)}</option>)}</Select></Field></div>

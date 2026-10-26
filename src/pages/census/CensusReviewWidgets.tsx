@@ -57,7 +57,7 @@ export function CensusOwnerReviewCard({ submissionId, owner, editable, choice, o
           <option value="">Select an owner explicitly</option>{owner.candidates.map((c) => <option key={c.registryOwnerId} value={c.registryOwnerId}>{c.ownerName} · {c.address} · {c.petCount} active pets · {c.registryOwnerId.slice(0,8)}</option>)}
         </Select></label>
         <button type="button" disabled={!choice.matchedOwnerId} className={btnGhost} onClick={() => setCompare(true)}>{choice.reviewed ? 'Review comparison again' : 'Compare owner and pets'}</button>
-        {choice.reviewed ? <p className="text-sm text-emerald-700 dark:text-emerald-300">Comparison confirmed · {choice.reason}</p> : <p className="text-sm text-amber-700 dark:text-amber-300">Compare the records and provide a reason before saving this decision.</p>}
+        {choice.reviewed ? <p className="text-sm text-brand-700 dark:text-brand-300">Comparison confirmed · {choice.reason}</p> : <p className="text-sm text-amber-700 dark:text-amber-300">Compare the records and provide a reason before saving this decision.</p>}
       </>}
       {!owner.candidates.length && <p className="text-xs text-slate-500">No suggested owner with this name in the census barangay. Suggestions are review cues only.</p>}
     </div> : <div className="space-y-2 text-sm"><p className="font-medium">{censusActionLabel[owner.decision]}</p>{owner.decisionReason && <p>Reason: {owner.decisionReason}</p>}

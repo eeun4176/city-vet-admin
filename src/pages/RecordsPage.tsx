@@ -5,7 +5,7 @@ import { Pencil, UserCheck, UserX } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi, useDebouncedValue } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
-import { InfoTip, btnGhost, btnPrimary, Check, ConfirmDialog, DateInput, Loading, Modal, Notice, Pagination, Select } from '../components/ui';
+import { InfoTip, btnGhost, btnPrimary, Check, ConfirmDialog, DateInput, Loading, Modal, Notice, Pagination, Select, mobileInput, mobileDigits } from '../components/ui';
 import { ReferenceInput, type ReferenceSuggestion } from '../components/ReferenceInput';
 import { AccountDetails, type AccountRow } from './AccountsPage';
 import { normalizeProgramStatus, programProcessesFrom, PROGRAM_PROCESSES, PROGRAM_STATUSES } from '../../shared/programs';
@@ -193,7 +193,6 @@ function RecordEditor({ record, dataset, editable, creating, onClose, onSave, on
           const label = dataset === 'programs' && field === 'slots' ? 'pet slot capacity (optional)' : field.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ');
           const setValue = (next: unknown) => onSave({ ...record, [field]: next });
           const mobile = /^(mobile|contact|phone|telephone)$/i.test(field);
-          const onMobileBlur = () => { if (mobile) { const digits = String(record[field] ?? '').replace(/\D/g, ''); if (/^09\d{9}$/.test(digits)) setValue(`${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`); } };
           return <label key={field} className="block text-sm capitalize">
             {label}
             {editable && field === 'barangay' ? (
@@ -215,7 +214,7 @@ function RecordEditor({ record, dataset, editable, creating, onClose, onSave, on
             ) : typeof value === 'boolean' ? (
               <Select disabled={!editable} value={String(value)} onChange={(event) => setValue(event.target.value === 'true')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:disabled:bg-slate-800"><option value="true">Yes</option><option value="false">No</option></Select>
             ) : (
-              <input required={editable && (/^(name|petName|title)$/i.test(field) || dataset === 'paravets' && creating && /^(firstName|lastName|mobile)$/i.test(field))} readOnly={!editable} type={typeof value === 'number' ? 'number' : 'text'} value={String(value ?? '')} onChange={(event) => setValue(typeof value === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)} onBlur={onMobileBlur} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 read-only:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:read-only:bg-slate-800" />
+              <input required={editable && (/^(name|petName|title)$/i.test(field) || dataset === 'paravets' && creating && /^(firstName|lastName|mobile)$/i.test(field))} readOnly={!editable} {...(mobile ? mobileInput : {})} type={mobile ? mobileInput.type : typeof value === 'number' ? 'number' : 'text'} value={mobile ? mobileDigits(String(value ?? '')) : String(value ?? '')} onChange={(event) => setValue(mobile ? mobileDigits(event.target.value) : typeof value === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 read-only:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:read-only:bg-slate-800" />
             )}
           </label>;
         })}
