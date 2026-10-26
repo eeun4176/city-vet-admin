@@ -29,6 +29,14 @@ DELETE FROM ekapon.dashboard_records WHERE dataset <> 'paravets';
 
 COMMIT;
 
+-- Optional part 2: keep only the Admin accounts. Run after part 1 (above), as its own request.
+-- Paravet accounts go too: their accepted terms, sign-in codes and preferences, then the Paravet directory rows.
+-- BEGIN;
+-- DELETE FROM ekapon.policy_acceptances WHERE account_id IN (SELECT id FROM ekapon.accounts WHERE account_type NOT IN ('Admin','SuperAdmin'));
+-- DELETE FROM ekapon.dashboard_records;
+-- DELETE FROM ekapon.accounts WHERE account_type NOT IN ('Admin','SuperAdmin');
+-- COMMIT;
+
 -- Optional: the audit log still holds the old values of deleted rows. To remove that trace too, run separately:
 --   TRUNCATE ekapon.audit_log;
 -- Afterwards, press Refresh in e-Vet Admin (or reload the page): browsers keep recent results for a short time.
