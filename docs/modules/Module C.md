@@ -1,5 +1,7 @@
 # Module C — census capture and review
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](../README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 ## Mission
 
 Maintain the end-to-end field census workflow: Paravet form/CSV/image intake, pending submissions, attachments, owner-level review decisions, approval/rejection, resubmission/withdrawal where supported, and census summary/front-page output. Preserve the invariant that field submissions do not become approved registry data until staff review. This module owns the normalized census workflow, not the JSONB dashboard-record CRUD contract.

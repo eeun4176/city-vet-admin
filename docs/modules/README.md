@@ -1,5 +1,7 @@
 # Parallel module development pack
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](../README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 These documents are the collaboration contract for contributors working on the React/Vite application in `Modules/local-test-copy`. They are written against that copy's source, tests, local database workflow, and current API dispatcher—not the legacy app at the repository root or the sibling `cityvet-phase0` / `cityvet-module-c` snapshots.
 
 ## Start here

@@ -1,5 +1,7 @@
 # Program workspace
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 The **Programs** and **Program day** entries now open the same workspace. Admin
 and Super Admin can create and update programs. Paravets can open programs in
 their assigned host or approved participating barangays and use the scoped

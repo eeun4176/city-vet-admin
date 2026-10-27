@@ -34,7 +34,10 @@ Add environment variables to **Production**. Preview deployments must use a sepa
 | `DATABASE_URL` | Supabase → Connect → **Transaction pooler** string (port 6543), with user `ekapon_api.<project-ref>` and your role password |
 | `JWT_SECRET` | A unique random secret; generate with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
 | `CRON_SECRET` | A different unique random secret, generated the same way; required by the maintenance endpoint |
-| `ALLOWED_ORIGINS` | Optional; set only when a separate trusted site must call the API |
+| `ALLOWED_ORIGINS` | The e-Vet Field site (`https://field-evetsjdm.vercel.app`), comma-separated if more than one; required for the phone app to call the API |
+| `SESSION_HOURS` | Optional; staff session length in hours (default 8) |
+| `SALIN_SESSION_DAYS` | Optional; e-Vet Field session length in days (default 14), so Paravets can work offline |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | The office Gmail address and its app password, for password-reset codes |
 | `FILE_STORAGE_DRIVER` | `supabase` in production |
 | `SUPABASE_URL` | Exact HTTPS project URL from Supabase |
 | `SUPABASE_SECRET_KEY` | Server-only Storage secret key; never a `VITE_*` variable |
@@ -79,13 +82,13 @@ Do not point the test suite at staging or production.
 - Staff sign-in, sessions, accounts and public barangay reference data use the existing `/api/v1` endpoints.
 - The current dashboard's owners, pets, paravets, respondents, households, census animals, stubs, services, programs and participants use authenticated `/api/v1/records/{dataset}` endpoints. Admin/SuperAdmin create/import/archive/restore operations persist in PostgreSQL. Paravet census forms/imports are kept in `ekapon.census_submissions` pending Admin/SuperAdmin review and are applied to approved records only after approval.
 - Verified `User` accounts can submit service pre-listings through `/api/v1/prelistings`; staff can review them through the dashboard. Submissions require an active account with an approved ID and are attributed to that account. Staff activity entries use the database audit log.
-- The dashboard has `SuperAdmin`, `Admin`, `Paravet`, and `User` roles. SuperAdmin controls maintenance mode, feature availability for Admin/Paravet, account administration, and a server-generated database backup. Admin handles city-wide operational encoding and reporting. Paravets can submit census forms for their assigned barangay; they cannot directly mutate approved records. Users can manage their profile, verify ID, and request veterinary services.
+- Roles (since migration 028): one staff role, shown as **Admin** and stored as `SuperAdmin`, which handles accounts, operations, reporting, maintenance mode, feature availability and the database backup; and **Paravet**. Paravets sign in only to e-Vet Field and work for their assigned barangay: program requests, stubs, program day and census submissions. They cannot directly change approved records. Resident (`User`) accounts are retired and cannot sign in.
 - The SuperAdmin database backup downloads application records, accounts without credential hashes, barangays, pre-listings, audit history with credential-hash keys removed, and role/system controls as JSON. It is an export, not a database restore tool.
 - The React dashboard at `/` uses the authenticated API for operational records and does not fall back to browser-local storage when the API is unavailable. Start it with `npm run dev:test` for isolated local work; do not use disconnected legacy static pages for clinic records.
 
 ## Security design (summary)
 - Passwords and temporary passwords exist only as bcrypt hashes in the database; plaintext is shown once to the admin.
-- Session = signed JWT in an `HttpOnly`, `SameSite=Strict`, `Secure` (production) cookie; the account is re-checked in the database on every request, so disabling, locking or archiving takes effect immediately.
+- Session = signed JWT in an `HttpOnly`, `SameSite=Strict`, `Secure` (production) cookie for staff, or a Bearer token for e-Vet Field (`SALIN_SESSION_DAYS`). The account is re-checked in the database on every request, so disabling, locking or archiving takes effect immediately; a password reset also ends sessions on other devices.
 - Temporary-password sign-in returns a restricted 10-minute cookie that can only be used to create the permanent password.
 - Writes require a matching `Origin` (cross-site request blocking). Sign-in is limited per account (DB lockout) and per IP (`LOGIN_IP_MAX_FAILURES`, default 20 per 15 minutes).
 - Every change is attributed in `audit_log` through `app.account_id` set per transaction.
@@ -99,6 +102,6 @@ Do not point the test suite at staging or production.
 ## Known limits (honest list)
 - Unknown-account sign-ins skip the password hash, so response timing could reveal whether an account exists. Add a dummy hash check before production hardening.
 - If pre-listing is ever broadened to unauthenticated public intake, configure Vercel WAF/rate limiting or CAPTCHA and establish personal-data retention/access practices before launch.
-- Temporary passwords are shown to the admin; delivery by SMS/email is not built.
+- Temporary passwords are shown to the Admin once; delivery by SMS is not built. Paravets with a confirmed email can reset their own password with an emailed 6-digit code (Gmail, about 500 emails a day).
 - Evolving dashboard operational rows use JSONB with an explicit dataset allowlist so the current UI can share durable data without pretending the unfinished Prisma model is active. Per-domain normalized models and row-level tenancy policies remain future work.
 - Notification preferences, report selections, display/theme settings, and the existing restore workflow are still browser-local utility state; the standalone legacy `app.js` remains a separate local version. The new SuperAdmin JSON export is a separate database snapshot.

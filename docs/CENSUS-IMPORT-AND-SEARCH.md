@@ -1,5 +1,7 @@
 # Census import, registry search, and QR images
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 Local development phase, 2026-10-18. The first three stages of the approved
 build order are implemented: QR image reading, census-to-registry integration,
 and traditional Excel/CSV import. As confirmed on 2026-10-19, paper-photo OCR/API

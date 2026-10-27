@@ -1,4 +1,6 @@
-# Staff QR stubs and attendance
+# QR stubs and attendance
+
+> **Updated 2026-10-27** for the blank-stub workflow with e-Vet Field. The printing and records sections below still apply.
 
 Programs and Program day now share the [Program workspace](./PROGRAM-WORKSPACE.md).
 Interest, program-scoped stub stock, and attendance are available inside each
@@ -7,26 +9,34 @@ program. The standalone Stubs entry remains available for batch management.
 The system supports the existing paper workflow. Owners do not need an account,
 phone, or computer. Recording interest does not allocate or issue a stub.
 
-## Staff flow
+## Flow
 
-1. Choose a scheduled program in **Program interest**. The host barangay is
-   eligible by default; Admin can approve additional participating barangays.
-2. The assigned Paravet requests a quantity of stubs. Admin can also request a
-   batch for an active Paravet in an eligible barangay.
-3. Admin approves a quantity, opens the private print preview, prints, then
-   explicitly confirms printing. Cancelling the browser print dialog does not
-   mark the batch as printed.
-4. Admin records the handover when the Paravet collects the physical sheets.
-5. After assessment, the Paravet gives the owner a paper stub. They may encode
-   its owner and 1–3 pets immediately, or continue the manual paper process.
-6. On program day, assigned staff scan the QR or find a previously encoded stub.
-   Scanning only opens the record. Final attendance submission consumes it once.
-   A handed-over stub distributed manually can have its issuance and attendance
-   recorded in the same submission. Walk-ins use a separate entry form.
+1. **Demand.** Paravets build their barangay's shared program request in e-Vet
+   Field: interested owners, each with at least one pet. The office approves,
+   merges and schedules it as a program day in **Program interest**.
+2. **Blank stubs.** In **Stubs → Generate stubs**, Admin creates a batch of
+   numbered blank stubs for a barangay and program (a Paravet can ask with
+   **Request stubs**). Each stub has its own QR code, which holds only a random
+   code.
+3. **Printing.** The batch can be printed (or saved as PDF) only once the barangay
+   has requested owners, or has already encoded some. It is printed at the office
+   or sent to the barangay to print in e-Vet Field. Recording the physical
+   hand-over (**Confirm received**) is optional.
+4. **Encoding.** After assessing an owner, the Paravet hands over a stub, then
+   encodes it in e-Vet Field: the stub number, the owner, and up to three pets
+   with their services. Admin can do the same here with **Issue after
+   assessment**. Stubs are listed as **Not encoded** or **Encoded**.
+5. **Program day.** Paravets download the day pack, then scan stub QR codes in
+   e-Vet Field, even offline. A scan counts only on the program's date, and each
+   stub only once. Each encoded stub shows as **present** once scanned, and as
+   **absent** if it is still unscanned when the day is over. Walk-ins have their
+   own form. Paper attendance can be encoded here in **Encode attendance**.
+6. **Results.** Attendance feeds the Analytics KPIs (attendance rate, no-shows,
+   walk-ins, completion).
 
-One owner can hold multiple stubs for different pets and can participate in
-later programs. A stub is always tied to one program and one allocation barangay.
-No QR contains owner or pet information.
+One owner can hold several stubs for different pets and can take part in later
+programs. A stub is always tied to one program and one barangay. No QR contains
+owner or pet information.
 
 ## Printing
 
@@ -37,7 +47,7 @@ the same codes; a used or cancelled code does not become valid again.
 
 ## Records and access
 
-Paravets have permanent access to the modules, scoped to their current assigned
+Paravets work in e-Vet Field (they cannot sign in here), scoped to their current assigned
 barangay and approved programs. Batch requests and issuance are limited to their
 own allocation. Attendance can be encoded by another assigned Paravet in the same
 barangay. Admin and Super Admin can manage approved allocations across barangays.

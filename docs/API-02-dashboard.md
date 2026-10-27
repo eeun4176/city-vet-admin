@@ -1,5 +1,7 @@
 # API v1 — Dashboard records and public pre-listing
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 > **Historical API snapshot.** The census and normalized registry workflow has evolved since this document was written. For current contracts, use [the Module B brief](./modules/Module%20B.md), [the Module C brief](./modules/Module%20C.md), and the [integration guide](./modules/Integration%20Guide.md), then verify source and tests. If this document conflicts with current code, the code and module guide take precedence.
 
 All paths use `/api/v1`. Responses are JSON with the existing request-ID/error envelope. Dashboard writes require a signed-in account and a same-origin `Origin` header. The server validates dataset names, record identifiers, batch sizes and record size; user-supplied SQL identifiers are never accepted.

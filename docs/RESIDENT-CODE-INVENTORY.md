@@ -1,5 +1,7 @@
 # Remaining resident-related code and history
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 Reviewed 2026-10-19. **Inventory and recommendations only. No listed code or
 historical records were removed.** “User” in this document means the retired
 resident account role, not a staff member or a generic programming variable.

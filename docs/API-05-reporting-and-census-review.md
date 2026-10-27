@@ -1,5 +1,7 @@
 # Reporting workflows and census review
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 This document describes the live planning gate, temporary report basket, Spay and Neuter workbook workflow, and reversible census review in `Modules/local-test-copy`. The API role checks remain authoritative; the workbook and status controls are available to `Admin` (including accounts migrated from the legacy Encoder role) and `SuperAdmin`.
 
 ## Paravet record and sign-in creation

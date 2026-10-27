@@ -1,5 +1,7 @@
 # API v1 — Modules 1–2
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 > **Historical API snapshot.** This document may not reflect the current handlers and role/capability map. For current Module A work, use [the Module A brief](./modules/Module%20A.md) and verify the live contract in source and tests. If this document conflicts with current code or the module integration guide, the code and module guide take precedence.
 
 Base path `/api/v1`. JSON in, JSON out. Errors: `{"error":{"code","message","details?","requestId"}}`.

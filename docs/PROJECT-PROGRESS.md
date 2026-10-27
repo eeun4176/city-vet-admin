@@ -1,7 +1,33 @@
 # Project progress and product discussion
 
-**Updated:** 2026-10-19
-**Scope:** Local staff workflows and reporting in `Modules/local-test-copy`.
+**Updated:** 2026-10-27 (the phases below 2026-10-24 are kept as written on 2026-10-19)
+**Scope:** Local staff workflows and reporting in `Modules/local-test-copy`; from 2026-10-23 this repository (`city-vet-admin`).
+
+## 2026-10-23 to 2026-10-27: e-Vet Field integration and analytics
+
+- **Imported** into its own repository (`city-vet-admin`), deployed on Vercel from `main`.
+- **Connected to e-Vet Field (Salin):**
+  - Bearer-token sessions for the phone app, and CORS (also on error replies).
+  - Paravets sign in only to e-Vet Field.
+  - Shared barangay program requests, with merging.
+  - Stubs printed in e-Vet Field, and census submissions with a `requestId`.
+  - Migrations 026–029.
+- **One staff role:** Admin, stored as SuperAdmin (migration 028).
+- **Password reset by email** for Paravets, through the office Gmail (migrations 030–031). Paravet reassignment notices. Admins can change their username (032).
+- **Renamed for users** to e-Vet Admin, with the City Vet seal. The code and database keep `e-Kapon` / `ekapon`.
+- **Blank stubs and attendance:**
+  - Numbered blank stubs per barangay, printable once the barangay has requested owners; Paravets encode them after hand-over.
+  - QR attendance with present and absent.
+  - The Paravet terms text is finalised.
+- **Analytics:** KPI dashboard with formulas (`server/programKpis.ts`, `/program-kpis`), column charts, reconciliation checks, and CSV/Excel/PDF exports.
+- **Data rules:** phone numbers are 11 digits starting with 09, stored as digits, in every form and endpoint. `hosting/08-clear-records.sql` empties test records.
+- **Hosting fixes:**
+  - The API reconnects to the database after an idle gap on Vercel and allows up to 5 connections per instance.
+  - Database time limits (`hosting/07-query-timeouts.sql`).
+  - Fixed a 403 error.
+- **Look:** e-Vet Field's colour palette in light and dark mode (`night-*` tokens), sentence-case status labels, readable multi-line table cells.
+
+Current documents: [`docs/README.md`](README.md). Shared design and integration documents: `salin/docs/`.
 
 ## Latest local phase: Local release-readiness checks
 

@@ -1,16 +1,23 @@
-# e-Kapon
+# e-Vet Admin (e-Kapon)
 
-City Veterinary Office dashboard and API. This repository is designed for a
+City Veterinary Office dashboard and API, shown to users as **e-Vet Admin**. It is the
+office side of e-Vet: Paravets use the offline phone app **e-Vet Field**
+(`salin` repository), which signs in here and sends its records to this API. How
+the two connect is in `salin/docs/ARCHITECTURE.md`; this repository's documents
+are listed in [docs/README.md](./docs/README.md).
+
+This repository is designed for a
 Vercel-hosted React/Vite frontend and serverless API backed by Supabase
 PostgreSQL.
 
 ## New deployment
 
-**Current preparation:** use [hosting/README.md](./hosting/README.md) for the
-existing `Reiiimr/congenial-parakeet` repository and Vercel project. It provides
-an empty operational database through migration 024, private Supabase Storage,
-one-time SuperAdmin setup, environment templates, and an allowlisted source
-package. No remote deployment or database change was performed.
+**Current deployment:** the app deploys to Vercel on every push to `main` of
+`eeun4176/city-vet-admin`. Use [hosting/README.md](./hosting/README.md) for a new
+Supabase project: an empty database through migration 032, private Supabase
+Storage, one-time Admin setup, environment templates, query time limits and a
+script to clear test records. For an existing database, apply only the numbered
+migrations in `db/` it lacks, after a backup.
 
 ```powershell
 npm run hosting:check

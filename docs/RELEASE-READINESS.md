@@ -1,5 +1,7 @@
 # Local release-readiness review
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 Date: 2026-10-19. Scope: the local staff application, disposable databases only.
 No push, deployment, live migration, or existing database change is included.
 User acceptance is still pending. This document does not declare production ready.

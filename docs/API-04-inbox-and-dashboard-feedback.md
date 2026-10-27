@@ -1,5 +1,7 @@
 # API v1 — inbox, dashboard counts, and feedback
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 This document describes notification state changes, dashboard count badges, and the matching interface behavior in `local-test-copy`. The API is available through the normal `/api/v1` dispatcher and uses the common authentication, origin-validation, and error-response rules.
 
 ## Notifications

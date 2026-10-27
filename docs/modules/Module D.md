@@ -1,5 +1,7 @@
 # Module D — insights, notifications, and integration
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](../README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 ## Mission
 
 Own cross-domain read experiences and integration quality: dashboard/analytics, reports, data quality, activity/audit presentation, notification inbox, calendar-facing behavior, and final app composition. Consume Module A–C contracts; do not duplicate their persistence, auth, or write rules. Make the merged app coherent without taking over every feature's domain logic.

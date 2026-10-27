@@ -1,5 +1,7 @@
 # API v1 — identity, temporary access, and issue workflows
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 This document describes the ID-verification, temporary access, permission-request, and issue-report contracts in the selected local app. The SQL functions in `db/007_operations.sql` are authoritative for state transitions and actor checks; every mutation is executed through `tx(session.id, ...)` so the database records the authenticated actor.
 
 All paths below are relative to `/api/v1`. Responses use the shared JSON error envelope and `X-Request-Id`. Non-GET requests require same-origin writes. Lists are bounded to 100 rows in the UI and use the common `page`/`pageSize` query rules. The endpoints are registered in `server/api-dispatch.ts`.

@@ -1,5 +1,7 @@
 # Insights redesign — local implementation
 
+> **Status (2026-10-27): historical record.** Written before e-Vet Field (Salin) was connected on 2026-10-24. Roles, names, stubs and sign-in have changed since; see [what changed](README.md#what-changed-since-the-phase-records-below). Where this differs from the code, the code is right.
+
 Updated: 2026-10-18. Applies to the React/Vite application in this directory.
 The user approved Insights next, program outcomes first, and barangay-scoped
 Paravet flags with Admin/Super Admin review. No push or deployment is included.
