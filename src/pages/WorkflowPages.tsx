@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { InfoTip, Field, inputCls, Loading, Notice, Pagination, btnGhost, btnPrimary, btnDanger, Select, districtOptions, statusLabel } from '../components/ui';
+import { RefreshCw } from 'lucide-react';
+import { InfoTip, Field, inputCls, Loading, Notice, Pagination, btnIcon, btnGhost, btnPrimary, btnDanger, Select, districtOptions, statusLabel } from '../components/ui';
 import { api } from '../lib/api';
 import { GRANT_PERMISSIONS_BY_ROLE, type GrantPermission } from '../../shared/permissions';
 import { useAuth } from '../lib/auth';
@@ -78,7 +79,7 @@ export function AccessGrantsPage() {
   };
 
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold">Temporary Access Grants<InfoTip>Grant a supported permission to an active Admin or Paravet for up to 30 days.</InfoTip></h1></div>
+    <div><h1 className="text-2xl font-semibold">Temporary access grants<InfoTip>Grant a supported permission to an active Admin or Paravet for up to 30 days.</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
     <form onSubmit={(event) => void grant(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
       <Field label="Account"><Select required className={inputCls} value={granteeId} onChange={(event) => chooseTarget(event.target.value)}><option value="">Choose an active staff account</option>{targets.map((target) => <option key={target.id} value={target.id}>{target.name} · {target.type}</option>)}</Select></Field>
@@ -155,7 +156,7 @@ export function AccessRequestsPage() {
     setDrafts((current) => ({ ...current, [id]: { ...draftFor(id), ...value } }));
 
   return <div className="w-full space-y-5">
-    <div><h1 className="text-2xl font-semibold">Permission Requests<InfoTip>{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</InfoTip></h1></div>
+    <div><h1 className="text-2xl font-semibold">Permission requests<InfoTip>{isSuperAdmin ? 'Review Admin requests. Approval creates a temporary access grant.' : 'Request temporary access to a supported staff permission.'}</InfoTip></h1></div>
     {error && <Notice kind="error">{error}</Notice>}
     {!isSuperAdmin && <form onSubmit={(event) => void submit(event)} className={`${card} grid gap-3 sm:grid-cols-2`}>
       <Field label="Permission"><Select className={inputCls} value={permission} onChange={(event) => setPermission(event.target.value as typeof permission)}>{permissions.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
@@ -163,7 +164,7 @@ export function AccessRequestsPage() {
       <Field label="Reason"><input className={inputCls} required minLength={3} maxLength={300} value={reason} onChange={(event) => setReason(event.target.value)} /></Field>
       <div className="flex items-end"><button className={btnPrimary} disabled={busy || reason.trim().length < 3}>Submit request</button></div>
     </form>}
-    <div className="flex items-end gap-3"><Field label="Request status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="all">All</option></Select></Field><button type="button" className={btnGhost} onClick={() => setReload((value) => value + 1)}>Refresh</button><button type="button" className={btnGhost} onClick={() => { setStatus('pending'); setPage(1); }}>Clear filters</button></div>
+    <div className="flex items-end gap-3"><Field label="Request status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="all">All</option></Select></Field><button type="button" className={`${btnIcon} mb-1`} title="Refresh" aria-label="Refresh requests" onClick={() => setReload((value) => value + 1)}><RefreshCw aria-hidden className="h-4 w-4" /></button><button type="button" className={btnGhost} onClick={() => { setStatus('pending'); setPage(1); }}>Clear filters</button></div>
     {loading ? <Loading /> : <div className="space-y-3">
       {rows.map((row) => {
         const draft = draftFor(row.id);
@@ -216,7 +217,7 @@ export function IssuesPage() {
     finally { setBusy(null); }
   };
   return <div className="w-full">
-    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue Reports<InfoTip>Track reports submitted by Admins and Paravets.</InfoTip></h1></div>
+    <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-semibold">Issue reports<InfoTip>Track reports submitted by Admins and Paravets.</InfoTip></h1></div>
       <div className="flex items-end gap-2"><Field label="Status"><Select className={inputCls} value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}><option value="open">Open</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="all">All</option></Select></Field><button type="button" className={btnGhost} onClick={() => { setStatus('open'); setPage(1); }}>Clear filters</button></div></div>
     {error && <div className="mt-4"><Notice kind="error">{error}</Notice></div>}
     {loading ? <Loading /> : <div className="mt-4 space-y-3">

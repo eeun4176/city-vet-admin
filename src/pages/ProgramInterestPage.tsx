@@ -1,13 +1,13 @@
 import { ParticipantRegistryPicker } from '../components/ParticipantRegistryPicker';
-import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits, statusLabel } from '../components/ui';
+import { InfoTip, ConfirmDialog, Select, mobileInput, mobileDigits, StatusPill } from '../components/ui';
 import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useApi } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
-import { Check, Field, inputCls, Loading, Modal, Notice, btnGhost, btnPrimary, btnDanger } from '../components/ui';
+import { Check, Field, inputCls, Loading, Modal, Notice, TONE, btnIcon, btnGhost, btnPrimary, btnDanger } from '../components/ui';
 import { Link,useNavigate,useSearchParams } from 'react-router-dom';
 
-import { Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Sheet, sheetAdd, sheetCell } from '../components/PetSheet';
 const ScheduleModal = lazy(() => import('./ProgramWorkspacePage').then(module => ({ default: module.ScheduleModal })));
 
@@ -33,15 +33,6 @@ type PageData = { campaigns: Campaign[]; barangays: Barangay[]; programs: Progra
 type DraftPet = { name: string; species: 'Dog' | 'Cat'; sex: 'Male' | 'Female' | ''; ageMonths: string; processes: Process[] };
 
 const card = 'rounded-2xl border border-slate-200 bg-white p-4 dark:border-night-border dark:bg-surface-dark';
-const statusStyle: Record<string, string> = {
-  gathering: 'bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200',
-  requested: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  approved: 'bg-brand-50 text-brand-800 dark:bg-brand-900 dark:text-brand-300',
-  rejected: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200',
-  scheduled: 'bg-brand-500 text-white dark:bg-brand-600',
-  closed: 'bg-slate-100 text-slate-600 dark:bg-night-tile dark:text-night-muted',
-  merged: 'bg-violet-50 text-violet-800 dark:bg-violet-950 dark:text-violet-200',
-};
 const whoLine = (campaign: Campaign) => [campaign.createdByName && `Filed by ${campaign.createdByName}`, campaign.submittedByName && `Sent by ${campaign.submittedByName}`, campaign.lastEditedBy && `Last edited by ${campaign.lastEditedBy}${campaign.lastEditedAt ? ` · ${new Date(campaign.lastEditedAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' })}` : ''}`].filter(Boolean).join(' · ');
 const emptyPet = (processes: Process[] = []): DraftPet => ({ name: '', species: 'Dog', sex: '', ageMonths: '', processes: [...processes] });
 const dateLabel = (value: string | null | undefined) => value ? new Date(`${value.slice(0, 10)}T12:00:00+08:00`).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Manila' }) : 'Date not set';
@@ -90,7 +81,7 @@ export function ProgramInterestPage() {
 
   return <div className="w-full space-y-5">
     <header className="flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold">Program Interest<InfoTip>Program requests from e-Vet Field and interest lists for scheduled programs. An interest entry is not a confirmed appointment and does not issue or reserve a physical stub.</InfoTip></h1></div>
+      <div><h1 className="text-2xl font-semibold">Program interest<InfoTip>Program requests from e-Vet Field and interest lists for scheduled programs. An interest entry is not a confirmed appointment and does not issue or reserve a physical stub.</InfoTip></h1></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => { setError(''); setCreating(true); }} className={btnPrimary}>Use a scheduled program</button>
         {!isParavet && <button type="button" onClick={() => setMerging(true)} className={btnGhost}>Merge requests</button>}
@@ -105,8 +96,8 @@ export function ProgramInterestPage() {
 
     <section className={`${card} p-0`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 p-4 dark:border-night-border">
-        <h2 className="font-semibold">Interest Lists and Requests<InfoTip>Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</InfoTip></h2>
-        <button type="button" onClick={() => { reloadData(); setReload((value) => value + 1); }} className={btnGhost}>Refresh</button>
+        <h2 className="font-semibold">Interest lists and requests<InfoTip>Demand targets can vary by request. Each owner is counted once per list; pets and requested processes are tracked separately.</InfoTip></h2>
+        <button type="button" title="Refresh" aria-label="Refresh lists and requests" onClick={() => { reloadData(); setReload((value) => value + 1); }} className={btnIcon}><RefreshCw aria-hidden className="h-4 w-4" /></button>
       </div>
       {loading && <Loading label="Refreshing lists…" />}
       {!loading && campaigns.length === 0 && <p className="p-8 text-center text-sm text-slate-500">No program interest lists yet. Start a demand list or attach one to a scheduled program.</p>}
@@ -116,8 +107,8 @@ export function ProgramInterestPage() {
           <td className="whitespace-nowrap p-3">{campaign.hostBarangay}</td>
           <td className="max-w-56 p-3 text-slate-600 dark:text-night-muted">{campaign.allowedBarangays.map((item) => item.name).join(', ')}</td>
           <td className="whitespace-nowrap p-3"><strong>{campaign.ownerCount}</strong>{campaign.kind === 'program_request' ? ` / ${campaign.targetPeople} owners` : ' owners'}<p className="text-xs text-slate-500">{campaign.petCount} pets</p></td>
-          <td className="p-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[campaign.status] ?? statusStyle.closed}`}>{statusLabel(campaign.status)}</span></td>
-          <td className="whitespace-nowrap p-3"><button type="button" className="font-medium text-brand-700 underline dark:text-brand-300" onClick={() => openCampaign(campaign.id)}>Open</button></td>
+          <td className="p-3"><StatusPill status={campaign.status} /></td>
+          <td className="whitespace-nowrap p-3"><button type="button" className={btnIcon} title="Open" aria-label={`Open ${campaign.programTitle || campaign.reference}`} onClick={() => openCampaign(campaign.id)}><ChevronRight aria-hidden className="h-4 w-4" /></button></td>
         </tr>)}</tbody></table></div>}
     </section>
 
@@ -351,7 +342,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
         <h3 className="font-semibold">{editing === null ? 'Add an interested owner' : 'Update interest details'}<InfoTip>Save only the details needed for planning. The owner may join future programs again. Stub issuance and service attendance are recorded separately.</InfoTip></h3>
         <form onSubmit={(event) => void submitPerson(event)} className="mt-3 space-y-3">
           {residenceBarangayId&&<ParticipantRegistryPicker key={residenceBarangayId} mode="interest" campaignId={campaignId} barangayId={Number(residenceBarangayId)} onOwner={o=>{setRegistryOwnerId(o.registryOwnerId);setOwnerName(o.name);setMobile(o.mobile);}} onPet={p=>setPets(current=>current.some(v=>v.name===p.name&&v.species===p.species)?current:[...current,{...p,sex:p.sex??'',ageMonths:p.ageMonths==null?'':String(p.ageMonths),processes:[...campaign.processes]}])}/>}
-          {registryOwnerId&&<p className="text-xs text-brand-700">Linked owner: {registryOwnerId}. Saving logs this event in owner history.</p>}
+          {registryOwnerId&&<p className="text-xs text-brand-700 dark:text-brand-500">Linked owner: {registryOwnerId}. Saving logs this event in owner history.</p>}
           {/* One row per pet, as in the Owners sheet: the owner is typed on the first row; pets are optional while gathering interest. */}
           <Sheet minWidth={`${70 + campaign.processes.length * 9}rem`} heads={[['#', 'w-10 text-center'], ['Owner', 'w-52'], ['Mobile (optional)', 'w-40'], ['Residence barangay', 'w-48'], ['Pet (optional)', 'w-40'], ['Species', 'w-24'], ['Sex', 'w-32'], ['Age (mo)', 'w-24'], ...campaign.processes.map((process): [string, string] => [process, 'w-36 text-center']), ['', 'w-11']]}>
             {Array.from({ length: Math.max(1, pets.length) }, (_, index) => {
@@ -382,7 +373,7 @@ export function CampaignDetails({ campaignId, role, barangays, programs, onClose
       <section>
         <div className="flex items-center justify-between"><h3 className="font-semibold">Interested owners ({campaign.ownerCount})</h3><span className="text-xs text-slate-500">{campaign.petCount} pets listed</span></div>
         {!data?.people.length ? <p className="py-5 text-center text-sm text-slate-500">No owner interests entered yet.</p> : <div className="mt-2 space-y-2">{data.people.map((person) => <article key={person.id} className="rounded-xl border border-slate-200 p-3 dark:border-night-border">
-          <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{person.owner_name}{person.duplicate_confirmed && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950 dark:text-amber-100">Marked distinct after review</span>}</p><p className="text-xs text-slate-500">{person.mobile || 'No mobile provided'} · {person.residence_barangay} · {person.pets.length} pets</p></div>{isAdmin&&<Link className="text-xs text-brand-700 underline" to={`/registry/owners?intakeSource=interest&intakeId=${person.id}`}>Verify / add to Owners</Link>}{editable && <div className="flex gap-3 text-xs"><button type="button" onClick={() => startEdit(person)} className="text-brand-700 underline dark:text-brand-300">Edit</button><button type="button" disabled={saving} onClick={() => void withdraw(person.id)} className="text-red-700 underline dark:text-red-300">Withdraw</button></div>}</div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{person.owner_name}{person.duplicate_confirmed && <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${TONE.waiting}`}>Marked distinct after review</span>}</p><p className="text-xs text-slate-500">{person.mobile || 'No mobile provided'} · {person.residence_barangay} · {person.pets.length} pets</p></div>{isAdmin&&<Link className="text-xs text-brand-700 underline" to={`/registry/owners?intakeSource=interest&intakeId=${person.id}`}>Verify / add to Owners</Link>}{editable && <div className="flex gap-3 text-xs"><button type="button" onClick={() => startEdit(person)} className="text-brand-700 underline dark:text-brand-500">Edit</button><button type="button" disabled={saving} onClick={() => void withdraw(person.id)} className="text-red-700 underline dark:text-red-300">Withdraw</button></div>}</div>
           {(person.added_by_name || person.updated_by_name) && <p className="mt-1 text-[11px] text-slate-500">{[person.added_by_name && `Added by ${person.added_by_name}`, person.updated_by_name && `edited by ${person.updated_by_name}`].filter(Boolean).join(' · ')}</p>}
           {person.pets.length > 0 && <ul className="mt-2 grid gap-1 text-xs text-slate-600 dark:text-night-muted sm:grid-cols-2">{person.pets.map((pet, index) => <li key={`${person.id}-${index}`}><strong>{pet.name}</strong> · {pet.species}{pet.sex ? ` · ${pet.sex}` : ''}{pet.ageMonths == null ? '' : ` · ${pet.ageMonths} mo`} · {pet.processes.join(', ')}</li>)}</ul>}
         </article>)}</div>}

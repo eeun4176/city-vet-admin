@@ -120,7 +120,7 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
 
   return <section className="rounded-xl border border-slate-200 p-4 dark:border-night-border">
     <div>
-      <h2 className="text-lg font-semibold">Search Evidence Records</h2>
+      <h2 className="text-lg font-semibold">Search evidence records</h2>
       <p className="mt-1 text-sm text-slate-500">Search records included in the selected source, date scope, and your existing access scope. Results are paginated; selecting a record opens its usual record page.</p>
     </div>
     <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -155,7 +155,7 @@ export function EvidenceRecordSearch({ source, year }: { source: 'live' | 'sampl
               <td className="p-2">{record.label}<span className="block text-xs text-slate-400">{record.id}</span></td>
               <td className="p-2">{datasetLabels[record.dataset]}</td><td className="p-2">{record.date || '—'}</td>
               <td className="p-2">{record.barangay || '—'}</td><td className="p-2">{[record.status, record.detail].filter(Boolean).join(' · ') || '—'}</td>
-              <td className="p-2"><button type="button" onClick={() => openRecord(record)} className="font-medium text-brand-800 underline underline-offset-2 dark:text-brand-300">Open</button></td>
+              <td className="p-2"><button type="button" onClick={() => openRecord(record)} className="font-medium text-brand-800 underline underline-offset-2 dark:text-brand-500">Open</button></td>
             </tr>)}
             {!data.records.length && <tr><td colSpan={6} className="p-4 text-slate-500">No records match this source and date scope.</td></tr>}
           </tbody>
@@ -298,7 +298,7 @@ function BarangayServiceHeatmap({ data, monthLabel, labels, onSelectBarangay }: 
           </tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-night-border">{barangays.map((barangay) => <tr key={barangay}>
             <th scope="row" className="sticky left-0 bg-white p-3 text-left font-medium dark:bg-night-canvas">
-              <button type="button" onClick={() => onSelectBarangay(barangay)} className="text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-300">{barangay}</button>
+              <button type="button" onClick={() => onSelectBarangay(barangay)} className="text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-500">{barangay}</button>
             </th>
             {Array.from({ length: 12 }, (_, index) => {
               const month = index + 1;
@@ -455,7 +455,7 @@ export function ReportBuilder({ source, year }: { source: 'live' | 'sample'; yea
   };
   const clear = () => { setTitle(''); setBarangayId(''); setAccountId(''); setPetId(''); setParavetId(''); setRecordSearch(''); setResetKey((value) => value + 1); setCategories(reportCategories.map(([key]) => key)); setRequestPath(null); };
   return <section className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-night-border">
-    <div><h2 className="text-lg font-semibold">Build a Consolidated Report</h2><p className="mt-1 text-sm text-slate-500">Select categories and records to assemble one printable report with a Census-sheet-inspired office header. Report data is source-isolated; only supported database records are included.</p></div>
+    <div><h2 className="text-lg font-semibold">Build a consolidated report</h2><p className="mt-1 text-sm text-slate-500">Select categories and records to assemble one printable report with a Census-sheet-inspired office header. Report data is source-isolated; only supported database records are included.</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <label className="text-xs text-slate-500">Report title<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="Municipal veterinary operations report" className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface" /></label>
       <ReportOptionSearch key={`${resetKey}-barangay`} source={source} kind="barangay" label="Barangay" placeholder="Search barangays…" onSelect={setBarangayId} />
@@ -575,7 +575,7 @@ export function ReportsPage() {
 
   return <div className="w-full space-y-7">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div><h2 className="text-xl font-semibold">Registry Statistics</h2><p className="mt-1 text-sm text-slate-500">{t('reports.description')}</p></div>
+      <div><h2 className="text-xl font-semibold">Registry statistics</h2><p className="mt-1 text-sm text-slate-500">{t('reports.description')}</p></div>
       <button type="button" onClick={download} className={btnGhost}>{t('reports.export')}</button>
     </div>
     <div className="flex flex-wrap items-end gap-3">
@@ -608,7 +608,7 @@ export function ReportsPage() {
           <td className="p-3 font-medium"><button type="button" onClick={() => {
             const reference = referenceData.data?.barangays.find((item) => item.name.toLowerCase() === row.barangay.toLowerCase());
             if (reference) setSelectedBarangayId(reference.id);
-          }} className="text-left text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-300">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags} ({percentOf(row.documented_vaccine_flags, row.pets)})</td><td className="p-3">{row.sterilized} ({percentOf(row.sterilized, row.pets)})</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
+          }} className="text-left text-brand-800 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:text-brand-500">{row.barangay}</button></td><td className="p-3">{row.pets}</td><td className="p-3">{row.documented_vaccine_flags} ({percentOf(row.documented_vaccine_flags, row.pets)})</td><td className="p-3">{row.sterilized} ({percentOf(row.sterilized, row.pets)})</td><td className="p-3">{row.laps_records}</td><td className="p-3">{row.without_vaccine_flags}</td>
         </tr>)}
         {!data.barangays.length && <tr><td colSpan={6} className="p-5 text-slate-500">{t('reports.noPets')}</td></tr>}</tbody>
       </table></div>
@@ -619,7 +619,7 @@ export function ReportsPage() {
       <h2 className="text-lg font-semibold">{t('reports.censusSection')}</h2>
       <p className="mt-1 text-sm text-slate-500">{t('reports.censusHelp')}</p>
       <p className="mt-2 text-sm font-medium">{t('reports.censusSummary', { covered: censusCovered, total: censusCoverage.length, year: data.year, pending: censusPending })}</p>
-      <details className="mt-2"><summary className="cursor-pointer text-sm text-brand-800 dark:text-brand-300">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
+      <details className="mt-2"><summary className="cursor-pointer text-sm text-brand-800 dark:text-brand-500">{t('reports.barangay')} · {t('reports.approved')} / {t('reports.pending')}</summary>
         <div className="mt-2 data-table overflow-x-auto"><table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-night-surface"><tr>{(['reports.barangay', 'reports.approved', 'reports.pending', 'reports.rejected', 'reports.owners', 'reports.petCount', 'reports.lastCensus'] as const).map((label) => <th key={label} className="p-3">{t(label)}</th>)}</tr></thead>
           <tbody className="divide-y divide-slate-100 dark:divide-night-border">{censusCoverage.map((row) => <tr key={row.barangay}>
@@ -778,7 +778,7 @@ function WorkbookDrop({ file, disabled, onFile }: { file: File | null; disabled:
   const take = (next?: File) => { if (!next) return; if (!/\.xlsx$/i.test(next.name)) { setError('Choose an Excel workbook (.xlsx).'); return; } setError(''); onFile(next); };
   return <div onDragOver={(event) => { event.preventDefault(); if (!disabled) setOver(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(false); }} onDrop={(event) => { event.preventDefault(); setOver(false); if (!disabled) take(event.dataTransfer.files[0]); }}
     className={`flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-5 py-5 text-center transition-colors sm:flex-row sm:text-left ${over ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30' : 'border-slate-300 bg-slate-50 dark:border-night-border dark:bg-white/[0.02]'}`}>
-    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-brand-600 shadow-[0_8px_20px_-10px_rgb(1_168_90/0.5)] ring-1 ring-slate-200 dark:bg-surface-bar dark:text-brand-300 dark:ring-night-border"><FileSpreadsheet className="h-6 w-6" /></span>
+    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-brand-600 shadow-[0_8px_20px_-10px_rgb(1_168_90/0.5)] ring-1 ring-slate-200 dark:bg-surface-bar dark:text-brand-500 dark:ring-night-border"><FileSpreadsheet className="h-6 w-6" /></span>
     <div className="min-w-0 flex-1">
       <p className="truncate font-semibold">{file ? file.name : 'Select completed monthly workbook'}</p>
       <p className="mt-0.5 text-sm text-slate-500">{file ? `${Math.max(1, Math.round(file.size / 1024))} KB · ready to validate` : 'Drag the .xlsx here or browse. Up to 3 MB.'}</p>
@@ -955,7 +955,7 @@ export function AuditPage() {
   if (month) params.set('month', month);
   const { data,error,loading } = useApi<Activity>(`/activity?${params}`);
   const rows = data?.data ?? [];
-  return <div className="w-full"><h1 className="text-2xl font-semibold">Activity Log<InfoTip>Recent recorded administrative actions.</InfoTip></h1>
+  return <div className="w-full"><h1 className="text-2xl font-semibold">Activity log<InfoTip>Recent recorded administrative actions.</InfoTip></h1>
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="text-xs text-slate-500">Search<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="User, action, details" className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-night-border dark:bg-night-surface" /></label>
       <label className="text-xs text-slate-500">Sort by<Select value={sort} onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }} className="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm dark:border-night-border dark:bg-night-surface"><option value="time">Time</option><option value="user">User</option><option value="action">Action</option></Select></label>

@@ -48,7 +48,7 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
   };
 
   return <section aria-labelledby="owner-sheet-title" className="space-y-3">
-    <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 id="owner-sheet-title" className="font-semibold">Add Owners and Pets<InfoTip>One row per pet. Leave the owner blank for another pet of the owner above.</InfoTip></h2></div><p aria-live="polite" className="text-sm tabular-nums text-slate-500">{grouped.owners.length} owner{grouped.owners.length === 1 ? '' : 's'} · {pets} pet{pets === 1 ? '' : 's'}</p></div>
+    <div className="flex flex-wrap items-end justify-between gap-2"><div><h2 id="owner-sheet-title" className="font-semibold">Add owners and pets<InfoTip>One row per pet. Leave the owner blank for another pet of the owner above.</InfoTip></h2></div><p aria-live="polite" className="text-sm tabular-nums text-slate-500">{grouped.owners.length} owner{grouped.owners.length === 1 ? '' : 's'} · {pets} pet{pets === 1 ? '' : 's'}</p></div>
     <div className="data-table overflow-x-auto">
       <table className="w-full min-w-[78rem] table-fixed text-sm">
         <thead><tr>
@@ -75,12 +75,12 @@ export function OwnerSheet({ onSaved, onReview }: { onSaved: (owners: number) =>
     </div>
     {Object.entries(flags).map(([position, note]) => <div key={position} className="flex flex-wrap items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
       <span>Row {Number(position) + 1}: {note.startsWith('error:') ? note.slice(6) : 'possible existing owner or pets.'}</span>
-      {!note.startsWith('error:') && <button type="button" className="font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-300" onClick={() => onReview(JSON.parse(note) as RegistryDraft)}>Review matches</button>}
+      {!note.startsWith('error:') && <button type="button" className="font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-500" onClick={() => onReview(JSON.parse(note) as RegistryDraft)}>Review matches</button>}
     </div>)}
     {error && <Notice kind="error">{error}</Notice>}
     {areas.error && <Notice kind="error">{areas.error.message}</Notice>}
     <div className="flex flex-wrap items-center gap-2">
-      <button type="button" onClick={() => setRows((all) => [...all, blank()])} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 dark:border-night-border dark:text-brand-300 dark:hover:bg-night-tile"><Plus aria-hidden className="h-4 w-4" />Add row</button>
+      <button type="button" onClick={() => setRows((all) => [...all, blank()])} className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 dark:border-night-border dark:text-brand-500 dark:hover:bg-night-tile"><Plus aria-hidden className="h-4 w-4" />Add row</button>
       <button type="button" onClick={() => setRows((all) => [...all, blank(), blank(), blank(), blank(), blank()])} className="inline-flex h-10 items-center rounded-xl px-3 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-night-tile dark:hover:text-night-text">Add 5 rows</button>
       <button type="button" disabled={busy || !grouped.owners.length} onClick={() => void save()} className={`${btnPrimary} ml-auto`}>{busy ? <Spinner label="Saving owners…" /> : grouped.owners.length ? `Save ${grouped.owners.length} owner${grouped.owners.length === 1 ? '' : 's'}` : 'Save owners'}</button>
     </div>

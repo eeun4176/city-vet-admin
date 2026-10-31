@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  ArrowLeftRight, BarChart3, Bug, CalendarDays, CircleCheck, CircleX, ClipboardCheck, ClipboardList, Database, FileText, Folder, Hourglass,
-  KeyRound, LayoutDashboard, MapPin, PawPrint, ScrollText, ShieldCheck, Stethoscope, Ticket, Users,
+  ArrowLeftRight, BarChart3, Bug, CalendarCheck, CalendarDays, CircleCheck, CircleX, ClipboardList, FileText, Folder, Hourglass,
+  KeyRound, LayoutDashboard, Map as MapIcon, MapPin, PawPrint, PenLine, ScrollText, ShieldCheck, Stethoscope, Syringe, Ticket, Users,
 } from 'lucide-react';
 import type { Capability } from '../../shared/permissions';
 import type { MessageKey } from '../i18n/messages';
@@ -37,42 +37,39 @@ export const NAV: NavSection[] = [
       },
       {
         id: 'census', label: 'nav.census', icon: ClipboardList, feature: 'census', children: [
-          { id: 'census-submit', label: 'nav.censusSubmit', icon: ClipboardList, to: '/census/new', cap: 'census.submit' },
-          { id: 'census-import', label: 'nav.censusImport', icon: ArrowLeftRight, to: '/census/import', cap: 'census.submit' },
-          { id: 'census-mine', label: 'nav.censusMine', icon: ClipboardList, to: '/census/mine', cap: 'census.submit' },
-          {
-            id: 'census-review', label: 'nav.censusReview', icon: ClipboardCheck, cap: 'census.review', children: [
-              { id: 'census-pending', label: 'nav.pending', icon: Hourglass, to: '/census/review/pending' },
-              { id: 'census-approved', label: 'nav.approved', icon: CircleCheck, to: '/census/review/approved' },
-              { id: 'census-rejected', label: 'nav.rejected', icon: CircleX, to: '/census/review/rejected' },
-            ],
-          },
+          // Reviewing what e-Vet Field sends is the daily work, so it comes first; staff entry is occasional and sits one level down.
+          { id: 'census-pending', label: 'nav.pending', icon: Hourglass, to: '/census/review/pending', cap: 'census.review' },
+          { id: 'census-approved', label: 'nav.approved', icon: CircleCheck, to: '/census/review/approved', cap: 'census.review' },
+          { id: 'census-rejected', label: 'nav.rejected', icon: CircleX, to: '/census/review/rejected', cap: 'census.review' },
           { id: 'census-summary', label: 'nav.censusSummary', icon: FileText, to: '/census/summary', cap: 'census.reports' },
           { id: 'census-front', label: 'nav.censusFront', icon: FileText, to: '/census/front-page', cap: 'census.reports' },
+          {
+            id: 'census-entry', label: 'nav.censusEntry', icon: PenLine, children: [
+              { id: 'census-submit', label: 'nav.censusSubmit', icon: ClipboardList, to: '/census/new', cap: 'census.submit' },
+              { id: 'census-import', label: 'nav.censusImport', icon: ArrowLeftRight, to: '/census/import', cap: 'census.submit' },
+              { id: 'census-mine', label: 'nav.censusMine', icon: ClipboardList, to: '/census/mine', cap: 'census.submit' },
+            ],
+          },
         ],
       },
       {
         id: 'field', label: 'nav.field', icon: MapPin, feature: 'operations', children: [
           { id: 'programs', label: 'nav.programs', icon: CalendarDays, to: '/programs', cap: 'programs.manage' },
-          { id: 'program-day', label: 'nav.programDay', icon: MapPin, to: '/program-day', cap: 'program_day.manage' },
+          { id: 'program-day', label: 'nav.programDay', icon: CalendarCheck, to: '/program-day', cap: 'program_day.manage' },
           { id: 'program-interest', label: 'nav.programInterest', icon: ClipboardList, to: '/program-interest', cap: 'program_interest.view' },
           { id: 'stubs', label: 'nav.stubs', icon: Ticket, to: '/stubs', cap: 'stubs.manage' },
-          { id: 'services', label: 'nav.services', icon: Stethoscope, to: '/services', cap: 'services.manage' },
+          { id: 'services', label: 'nav.services', icon: Syringe, to: '/services', cap: 'services.manage' },
         ],
       },
       { id: 'paravets', label: 'nav.paravets', icon: Stethoscope, to: '/paravets', cap: 'paravets.manage', feature: 'field-team' },
-      { id: 'barangays', label: 'nav.barangays', icon: MapPin, to: '/barangays', cap: 'barangays.view' },
+      { id: 'barangays', label: 'nav.barangays', icon: MapIcon, to: '/barangays', cap: 'barangays.view' },
       {
         id: 'insights', label: 'nav.insights', icon: BarChart3, children: [
           { id: 'reports', label: 'nav.reports', icon: BarChart3, to: '/reports', cap: 'reports.view', feature: 'reports' },
           { id: 'quality', label: 'nav.quality', icon: ShieldCheck, to: '/data-quality', cap: 'quality.view', feature: 'data-quality' },
         ],
       },
-      {
-        id: 'data', label: 'nav.data', icon: Database, feature: 'data-management', children: [
-          { id: 'import-export', label: 'nav.importExport', icon: ArrowLeftRight, to: '/import-export', cap: 'data.import' },
-        ],
-      },
+      { id: 'import-export', label: 'nav.importExport', icon: ArrowLeftRight, to: '/import-export', cap: 'data.import', feature: 'data-management' },
       {
         id: 'system', label: 'nav.system', icon: KeyRound, children: [
           { id: 'audit', label: 'nav.audit', icon: ScrollText, to: '/audit', cap: 'audit.view' },

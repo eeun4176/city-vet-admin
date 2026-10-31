@@ -11,7 +11,7 @@ export function NavigationBadge({node,badges,overlay=false}:{node:Pick<NavNode,'
  if(!pending&&!updated)return null;
  const description=parent?'Updates or pending work in this category':[pending?pendingLabel(node.id,pending):'',updated?'New updates from other staff':''].filter(Boolean).join('. ');
  return <span role="img" aria-label={description} title={description} className={`${overlay?'absolute -right-1 -top-1':'ml-auto'} inline-flex shrink-0 items-center gap-1.5`}>
-  {pending>0&&<span aria-hidden className="min-w-5 rounded-full bg-amber-100 px-1.5 py-0.5 text-center text-[10px] font-semibold leading-4 text-amber-900 dark:bg-amber-950 dark:text-amber-200">{pending>99?'99+':pending}</span>}
+  {pending>0&&<span aria-hidden className="min-w-5 rounded-full bg-amber-50 px-1.5 py-0.5 text-center text-[10px] font-semibold leading-4 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">{pending>99?'99+':pending}</span>}
   {updated&&(!overlay||!pending)&&<span aria-hidden className="h-2 w-2 rounded-full bg-brand-600 ring-2 ring-white dark:bg-brand-400 dark:ring-surface-dark"/>}
  </span>;
 }

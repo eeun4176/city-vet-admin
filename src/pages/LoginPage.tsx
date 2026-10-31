@@ -150,7 +150,7 @@ export function LoginPage() {
             </form>
 
             {/* Paravets (first sign-in included) use the Salin app; this page is for staff. */}
-            <a href={SALIN_URL} className="mt-3 flex h-9 w-full items-center justify-center rounded-lg text-center text-[13px] font-medium text-slate-500 hover:text-brand-700 dark:hover:text-brand-300">{t('login.useSalin')}</a>
+            <a href={SALIN_URL} className="mt-3 flex h-9 w-full items-center justify-center rounded-lg text-center text-[13px] font-medium text-slate-500 hover:text-brand-700 dark:hover:text-brand-500">{t('login.useSalin')}</a>
           </>}
         </div>
       </main>

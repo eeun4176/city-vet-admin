@@ -1,4 +1,4 @@
-import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, Download, Info, Search, X, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, Check as CheckIcon, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, CircleDot, CircleSlash, Clock, Download, Info, Search, X, LoaderCircle } from 'lucide-react';
 import { Children, Fragment, isValidElement, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '../i18n';
@@ -10,6 +10,8 @@ export const inputCls = 'w-full rounded-lg border border-slate-200 bg-white px-3
 export const btnPrimary = 'inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/40 disabled:pointer-events-none disabled:opacity-50';
 export const btnGhost = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand-500/40 disabled:pointer-events-none disabled:opacity-50 dark:border-night-border dark:bg-transparent dark:text-night-text dark:hover:bg-night-tile dark:hover:text-night-text';
 export const btnDanger = 'inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-red-500/10 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-500/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-red-500/30 disabled:pointer-events-none disabled:opacity-50 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30';
+// A square icon-only button for repeated row actions; give it an aria-label and a title.
+export const btnIcon = 'grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-night-muted dark:hover:bg-night-tile dark:hover:text-night-text';
 // Segmented tab switcher, as in e-Vet Field: a tinted track with the selected tab raised on a white pill that slides between tabs (seg-track, see lib/segmented.ts).
 export const tabList = 'seg-track no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-night-tile';
 export const tabItem = (selected: boolean) => `inline-flex h-9 flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${selected ? 'bg-white text-slate-900 shadow-sm dark:bg-night-surface dark:text-night-text' : 'text-slate-500 hover:text-slate-900 dark:text-night-muted dark:hover:text-night-text'}`;
@@ -135,7 +137,7 @@ export function Select({ value, onChange, children, className = '', disabled, re
         {heading && !searchable && <p className="shrink-0 px-2.5 pb-1 pt-1 text-xs font-medium text-slate-500">{heading}</p>}
         <div id={listId} role="listbox" aria-label={heading || undefined} className="min-h-0 overflow-y-auto">
           {shown.map((option, index) => <Fragment key={`${option.group ?? ''}:${option.value}`}>
-            {option.group && option.group !== shown[index - 1]?.group && <p role="presentation" className="flex items-center gap-2 px-2.5 pb-1 pt-2 text-xs font-semibold text-brand-700 after:h-px after:flex-1 after:bg-slate-200 dark:text-brand-300 dark:after:bg-night-tile-hover">{option.group}</p>}
+            {option.group && option.group !== shown[index - 1]?.group && <p role="presentation" className="flex items-center gap-2 px-2.5 pb-1 pt-2 text-xs font-semibold text-brand-700 after:h-px after:flex-1 after:bg-slate-200 dark:text-brand-500 dark:after:bg-night-tile-hover">{option.group}</p>}
             <div id={`${listId}-${index}`} role="option" aria-selected={option === current} aria-disabled={option.disabled || undefined} data-active={index === active || undefined} style={{ '--i': Math.min(index, 8) } as CSSProperties}
               onMouseEnter={() => setActive(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(option)}
               className={`menu-item flex min-h-9 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 ${index === active ? 'bg-slate-100 dark:bg-white/[0.06]' : ''} ${option.disabled ? 'cursor-not-allowed opacity-50' : ''} ${option === current ? 'font-medium text-slate-900 dark:text-night-text' : 'text-slate-700 dark:text-night-text'}`}>
@@ -161,24 +163,44 @@ export function Check({ checked, onChange, children, disabled }: { checked: bool
   );
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  approved: 'bg-brand-50 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300',
-  rejected: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-200',
-  withdrawn: 'bg-slate-100 text-slate-600 dark:bg-night-tile dark:text-night-muted',
-};
-
-export function StatusBadge({ status }: { status: string }) {
-  const { t } = useT();
-  return <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold ${STATUS_STYLE[status] ?? STATUS_STYLE.withdrawn}`}>{t(`census.status.${status}` as MessageKey)}</span>;
-}
-
 // Statuses stored in lower case or with underscores ("in_progress") read as "In progress".
 export const statusLabel = (status: string | null | undefined) => status ? status[0].toUpperCase() + status.slice(1).replaceAll('_', ' ') : '';
 
+// Status colours shared with e-Vet Field (salin docs/DESIGN_SYSTEM.md): done green, waiting amber, stopped red, in progress sky, closed grey.
+// Green is Field's soft green with its ink (the FIELD/ADMIN badge); every status also shows an icon and its word, never colour alone.
+export type Tone = 'done' | 'waiting' | 'stopped' | 'active' | 'neutral';
+export const TONE: Record<Tone, string> = {
+  done: 'bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-300',
+  waiting: 'bg-amber-50 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300',
+  stopped: 'bg-red-50 text-red-800 dark:bg-red-400/15 dark:text-red-300',
+  active: 'bg-sky-50 text-sky-800 dark:bg-sky-400/15 dark:text-sky-200',
+  neutral: 'bg-slate-100 text-slate-600 dark:bg-night-tile dark:text-night-muted',
+};
+const TONE_ICON: Record<Tone, typeof Info> = { done: CircleCheck, waiting: Clock, stopped: CircleSlash, active: CircleDot, neutral: CircleDashed };
+const WORD_TONE: Record<string, Tone> = {
+  approved: 'done', completed: 'done', submitted: 'done', redeemed: 'done', validated: 'done', scheduled: 'done', 'handed over': 'done', active: 'done', live: 'done',
+  pending: 'waiting', requested: 'waiting', deferred: 'waiting', postponed: 'waiting', draft: 'waiting', 'partially completed': 'waiting', mixed: 'waiting',
+  rejected: 'stopped', cancelled: 'stopped', voided: 'stopped', 'not eligible': 'stopped', failed: 'stopped',
+  issued: 'active', gathering: 'active', planned: 'active', open: 'active', 'in progress': 'active',
+  closed: 'neutral', withdrawn: 'neutral', merged: 'neutral', archived: 'neutral',
+};
+export const toneOf = (status: string): Tone => WORD_TONE[status.toLowerCase().replaceAll('_', ' ')] ?? (/partially|mixed/i.test(status) ? 'waiting' : 'neutral');
+
+/** A status as in e-Vet Field: a rounded pill with the tone's icon and the word. `tone` overrides the word's usual tone. */
+export function StatusPill({ status, label, tone }: { status: string; label?: ReactNode; tone?: Tone }) {
+  const kind = tone ?? toneOf(status), Icon = TONE_ICON[kind];
+  // self-start: in a flex row the pill would otherwise stretch to the row's height.
+  return <span className={`inline-flex h-6 shrink-0 items-center gap-1 self-start whitespace-nowrap rounded-full px-2.5 text-xs font-semibold ${TONE[kind]}`}><Icon aria-hidden className="h-3.5 w-3.5" />{label ?? statusLabel(status)}</span>;
+}
+
+export function StatusBadge({ status }: { status: string }) {
+  const { t } = useT();
+  return <StatusPill status={status} label={t(`census.status.${status}` as MessageKey)} />;
+}
+
 export function Notice({ kind = 'info', children }: { kind?: 'info' | 'error' | 'success'; children: ReactNode }) {
   const style = kind === 'error' ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200'
-    : kind === 'success' ? 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900 dark:bg-brand-900/40 dark:text-brand-300'
+    : kind === 'success' ? 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900 dark:bg-brand-900/40 dark:text-brand-500'
     : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-night-border dark:bg-night-tile dark:text-night-text';
   return <div role={kind === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${style}`}>{children}</div>;
 }
@@ -198,7 +220,7 @@ export function ComparisonBars({ title, rows, className = '' }: { title?: string
     <ul aria-label={title} className="grid gap-3">{rows.map((row, index) => <li key={index} aria-label={`${row.label}: ${row.value}`} className={`grid grid-cols-[minmax(3rem,8rem)_1fr_auto] items-center gap-2.5 text-xs ${index === top ? 'font-semibold text-slate-900 dark:text-night-text' : 'font-medium text-slate-500 dark:text-night-muted'}`}>
       <span aria-hidden className="truncate capitalize">{row.label}</span>
       <span aria-hidden className="h-3.5 overflow-hidden rounded-full bg-slate-100 print:border dark:bg-night-tile"><span style={{ width: `${Math.max(0, row.value) / max * 100}%`, '--i': index } as CSSProperties} className={`bar-grow block h-full rounded-full print:bg-slate-700 ${index === top ? 'bg-gradient-to-r from-brand-500 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></span>
-      <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-night-muted'}`}>{row.value}</span>
+      <span aria-hidden className={`min-w-[2ch] text-right font-semibold tabular-nums ${index === top ? 'text-brand-700 dark:text-brand-500' : 'text-slate-700 dark:text-night-muted'}`}>{row.value}</span>
     </li>)}</ul>
   </div>;
 }
@@ -216,7 +238,7 @@ export function ColumnChart({ bars, unit = '', legend }: { bars: { label: string
     {/* pt-5 leaves room for the number above the tallest column. */}
     <div aria-hidden className="grid h-40 gap-2 border-b border-slate-200 pt-5 dark:border-night-border" style={columns}>{bars.map((bar, index) => <div key={bar.label} className="flex min-w-0 items-end justify-center gap-1">
       <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-slate-700 dark:text-night-text">{shown(bar.value)}</span><i style={{ height: height(bar.value), '--i': index } as CSSProperties} className={`col-grow block w-full rounded-b-[3px] rounded-t-[7px] print:border print:border-slate-700 ${bar.value === top && top > 0 && bar.second === undefined ? 'bg-gradient-to-t from-brand-600 to-brand-400' : 'bg-brand-200 dark:bg-brand-800'}`} /></div>
-      {bar.second !== undefined && <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-brand-700 dark:text-brand-300">{shown(bar.second)}</span><i style={{ height: height(bar.second), '--i': index } as CSSProperties} className="col-grow block w-full rounded-b-[3px] rounded-t-[7px] bg-gradient-to-t from-brand-600 to-brand-400 print:border print:border-slate-700" /></div>}
+      {bar.second !== undefined && <div className="flex h-full w-full max-w-14 flex-col items-center justify-end"><span className="mb-1 text-[11px] font-semibold tabular-nums text-brand-700 dark:text-brand-500">{shown(bar.second)}</span><i style={{ height: height(bar.second), '--i': index } as CSSProperties} className="col-grow block w-full rounded-b-[3px] rounded-t-[7px] bg-gradient-to-t from-brand-600 to-brand-400 print:border print:border-slate-700" /></div>}
     </div>)}</div>
     <div aria-hidden className="mt-2 grid gap-2 text-center font-mono text-[10.5px] font-medium leading-tight text-slate-500" style={columns}>{bars.map((bar) => <span key={bar.label} className="min-w-0 break-words">{bar.label}{bar.note && <span className="mt-0.5 block font-sans text-[10px] text-slate-400">{bar.note}</span>}</span>)}</div>
     {legend && <p aria-hidden className="mt-3 flex gap-4 text-xs text-slate-500"><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-brand-200 dark:bg-brand-800" />{legend[0]}</span><span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-brand-500" />{legend[1]}</span></p>}

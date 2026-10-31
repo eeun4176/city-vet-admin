@@ -94,7 +94,7 @@ export function CensusFrontPage() {
       {error && <Notice kind="error">{error.message}</Notice>}
       {n && data && (
         <div ref={sheet} className="mx-auto w-full max-w-[180mm] [font-family:Arial,sans-serif] rounded-2xl bg-white p-5 text-black shadow-panel ring-1 ring-slate-200 sm:p-8 dark:ring-white/10 print:rounded-none print:p-0 print:shadow-none print:ring-0">
-          <Letterhead seals title="Census Front Page" />
+          <Letterhead seals title="Census front page" />
           <p className="mt-6 text-sm">BARANGAY: <span className="inline-block min-w-48 border-b border-black px-1 font-semibold">{data.barangay?.name ?? t('census.cityWide')}</span></p>
           <table className="mt-4 w-full border-collapse text-[13px] leading-tight tabular-nums">
             <tbody>

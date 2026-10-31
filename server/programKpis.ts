@@ -3,6 +3,9 @@
  * Every count is in pets. Registered = pets on encoded stubs; attended = pets in submitted attendance
  * (stub or walk-in); a pet is Completed when every selected service was completed, Deferred or Not eligible
  * when all of them were, and Incomplete otherwise. Rates are null when their denominator is 0.
+ * Capacity is planned, not a limit: walk-ins past it are still recorded, so utilization can pass 100%.
+ * Only pets of programs that have a capacity count against capacity, and over-capacity pets are
+ * reported as "above capacity" rather than as negative unused slots.
  */
 
 export type KpiProgram = { id: number; title: string; date: string; status: string; hostBarangayId: number; hostBarangay: string; capacity: number | null };
@@ -25,16 +28,18 @@ export function petOutcome(pet: KpiPet): Outcome {
   return 'incomplete';
 }
 
-type Tally = { capacity: number; registered: number; stubAttended: number; attended: number; walkIns: number; completed: number; deferred: number; notEligible: number; incomplete: number; noShows: number; notYetScanned: number; services: Record<string, number> };
-const tally = (): Tally => ({ capacity: 0, registered: 0, stubAttended: 0, attended: 0, walkIns: 0, completed: 0, deferred: 0, notEligible: 0, incomplete: 0, noShows: 0, notYetScanned: 0, services: Object.fromEntries(SERVICES.map((s) => [s, 0])) });
+// slottedRegistered / slottedAttended: pets of programs that have a capacity, the only ones measured against it.
+type Tally = { capacity: number; registered: number; stubAttended: number; attended: number; slottedRegistered: number; slottedAttended: number; walkIns: number; completed: number; deferred: number; notEligible: number; incomplete: number; noShows: number; notYetScanned: number; services: Record<string, number> };
+const tally = (): Tally => ({ capacity: 0, registered: 0, stubAttended: 0, attended: 0, slottedRegistered: 0, slottedAttended: 0, walkIns: 0, completed: 0, deferred: 0, notEligible: 0, incomplete: 0, noShows: 0, notYetScanned: 0, services: Object.fromEntries(SERVICES.map((s) => [s, 0])) });
 
 function rates(t: Tally) {
   return {
-    capacityUtilization: pct(t.attended, t.capacity),
-    registrationUtilization: pct(t.registered, t.capacity),
+    capacityUtilization: pct(t.slottedAttended, t.capacity),
+    registrationUtilization: pct(t.slottedRegistered, t.capacity),
     attendanceRate: pct(t.stubAttended, t.registered),
     completionRate: pct(t.completed, t.attended),
-    unusedCapacity: t.capacity ? t.capacity - t.attended : null,
+    unusedCapacity: t.capacity ? Math.max(0, t.capacity - t.slottedAttended) : null,
+    overCapacity: t.capacity ? Math.max(0, t.slottedAttended - t.capacity) : 0,
     registrationDropoff: t.registered - t.stubAttended,
   };
 }
@@ -54,9 +59,11 @@ export function programKpis(input: KpiInput) {
   for (const p of input.programs) { total.capacity += p.capacity ?? 0; byProgram.get(p.id)!.capacity = p.capacity ?? 0; }
   for (const s of input.stubs) {
     const over = (programs.get(s.campaignId)?.date ?? '') < input.today;
+    const slotted = (programs.get(s.campaignId)?.capacity ?? null) !== null;
     for (const t of [total, byProgram.get(s.campaignId), area(s.barangayId)]) {
       if (!t) continue;
       t.registered += s.pets;
+      if (slotted) t.slottedRegistered += s.pets;
       if (s.status === 'Redeemed') t.stubAttended += s.pets;
       else if (over) t.noShows += s.pets;
       else t.notYetScanned += s.pets;
@@ -64,12 +71,14 @@ export function programKpis(input: KpiInput) {
   }
   for (const a of input.attendance) {
     const month = monthly[Number(a.attendedOn.slice(5, 7)) - 1];
+    const slotted = (programs.get(a.campaignId)?.capacity ?? null) !== null;
     for (const pet of a.pets) {
       const outcome = petOutcome(pet);
       const done = (pet.processes ?? []).filter((process) => (pet.processOutcomes?.[process] ?? pet.outcome) === 'Completed');
       for (const t of [total, byProgram.get(a.campaignId), area(a.barangayId)]) {
         if (!t) continue;
         t.attended++;
+        if (slotted) t.slottedAttended++;
         if (a.source === 'Walk-in') t.walkIns++;
         t[outcome]++;
         for (const process of done) t.services[process] = (t.services[process] ?? 0) + 1;
@@ -97,7 +106,7 @@ export function programKpis(input: KpiInput) {
 
   const programRows = input.programs.map((p) => {
     const t = byProgram.get(p.id)!, r = rates(t);
-    return { id: p.id, title: p.title, date: p.date, status: p.status, barangay: p.hostBarangay, live: p.date === input.today, capacity: p.capacity, registered: t.registered, attended: t.attended, completed: t.completed, deferred: t.deferred, incomplete: t.incomplete + t.notEligible, noShows: t.noShows, notYetScanned: t.notYetScanned, walkIns: t.walkIns, capacityUtilization: r.capacityUtilization, attendanceRate: r.attendanceRate, unusedCapacity: r.unusedCapacity, aboveCapacity: p.capacity !== null && t.attended > p.capacity };
+    return { id: p.id, title: p.title, date: p.date, status: p.status, barangay: p.hostBarangay, live: p.date === input.today, capacity: p.capacity, registered: t.registered, attended: t.attended, completed: t.completed, deferred: t.deferred, incomplete: t.incomplete + t.notEligible, noShows: t.noShows, notYetScanned: t.notYetScanned, walkIns: t.walkIns, capacityUtilization: r.capacityUtilization, attendanceRate: r.attendanceRate, unusedCapacity: r.unusedCapacity, overCapacity: r.overCapacity, aboveCapacity:p.capacity !== null && t.attended > p.capacity };
   }).sort((a, b) => b.date.localeCompare(a.date));
 
   const overview = {
@@ -105,6 +114,10 @@ export function programKpis(input: KpiInput) {
     completed: total.completed, deferred: total.deferred, notEligible: total.notEligible, incomplete: total.incomplete, noShows: total.noShows, notYetScanned: total.notYetScanned,
     participatingBarangays: new Set(input.attendance.map((a) => a.barangayId)).size, census, dogs, cats, vaccinated,
     ...rates(total),
+    // Summed per program: one program's empty slots don't cancel another's walk-ins above capacity.
+    capacityRegistered: total.slottedRegistered, capacityAttended: total.slottedAttended,
+    unusedCapacity: total.capacity ? programRows.reduce((n, p) => n + (p.unusedCapacity ?? 0), 0) : null,
+    overCapacity: programRows.reduce((n, p) => n + p.overCapacity, 0),
     interestConversion: pct(total.registered, interested), overallConversion: pct(total.completed, interested), censusInterestRate: pct(interested, census),
     dogShare: pct(dogs, census), catShare: pct(cats, census), vaccinationCoverage: pct(vaccinated, census), sterilizedShare: pct(input.registry.filter((p) => p.sterilized).length, census),
   };
@@ -121,7 +134,7 @@ export function programKpis(input: KpiInput) {
 
   const top = barangays.filter((b) => b.attended).slice(0, 3);
   const insights = [
-    overview.capacityUtilization !== null && `${overview.attended} of ${overview.capacity} planned slots were used (${overview.capacityUtilization}% capacity utilization; ${overview.unusedCapacity} unused).`,
+    overview.capacityUtilization !== null && `${overview.capacityAttended} ${overview.capacityAttended === 1 ? 'pet' : 'pets'} attended against ${overview.capacity} planned slots (${overview.capacityUtilization}% capacity utilization; ${overview.unusedCapacity} unused${overview.overCapacity ? `, ${overview.overCapacity} above capacity` : ''}).`,
     overview.attendanceRate !== null && `${overview.attendanceRate}% of registered pets attended; ${overview.noShows} registered pet(s) did not come.`,
     overview.completionRate !== null && `${overview.completionRate}% of attended pets completed every selected service.`,
     overview.census > 0 && `Recorded pets: ${overview.dogShare}% dogs and ${overview.catShare}% cats; ${overview.vaccinationCoverage}% are recorded as vaccinated.`,

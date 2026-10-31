@@ -75,7 +75,7 @@ export function MySubmissionsPage() {
         </div>
       </div>
       {notice && <div className="mt-4"><Notice kind="success">{notice}</Notice></div>}
-      {basketMessage && <p role="status" className="mt-2 text-xs text-brand-700 dark:text-brand-300">{basketMessage}</p>}
+      {basketMessage && <p role="status" className="mt-2 text-xs text-brand-700 dark:text-brand-500">{basketMessage}</p>}
       <ListFilters query={query} setQuery={(value) => { setQuery(value); setPage(1); }} year={year} setYear={(value) => { setYear(value); setPage(1); }} month={month} setMonth={(value) => { setMonth(value); setPage(1); }} sort={sort} setSort={(value) => { setSort(value); setPage(1); }} dir={dir} setDir={(value) => { setDir(value); setPage(1); }} onClear={() => { setQuery(''); setYear(''); setMonth(''); setSort('created'); setDir('desc'); setPage(1); }} />
       <SelectionBar selection={bulk} total={data?.total??0} rows={data?.data??[]}><button className={btnGhost} disabled={!bulk.count(data?.total??0)} onClick={()=>void bulk.resolve<SubmissionSummary>(bulkPath).then(rows=>exportSelectedCsv(rows.map(s=>({...s})),'census-selected')).catch(e=>setBasketMessage(e.message))}>Export selected</button></SelectionBar>
       {loading && <Loading />}
@@ -128,7 +128,7 @@ export function ReviewListPage({ status }: { status?: (typeof REVIEW_STATUSES)[n
     <div className="w-full">
       <h1 className="text-2xl font-semibold tracking-tight">{t('census.review.title')} · {t(`census.status.${current}` as MessageKey)}</h1>
       <ListFilters query={query} setQuery={(value) => { setQuery(value); setPage(1); }} year={year} setYear={(value) => { setYear(value); setPage(1); }} month={month} setMonth={(value) => { setMonth(value); setPage(1); }} sort={sort} setSort={(value) => { setSort(value); setPage(1); }} dir={dir} setDir={(value) => { setDir(value); setPage(1); }} onClear={() => { setQuery(''); setYear(''); setMonth(''); setSort('created'); setDir('desc'); setPage(1); }} />
-      {basketMessage && <p role="status" className="mt-2 text-xs text-brand-700 dark:text-brand-300">{basketMessage}</p>}
+      {basketMessage && <p role="status" className="mt-2 text-xs text-brand-700 dark:text-brand-500">{basketMessage}</p>}
       <SelectionBar selection={bulk} total={data?.total??0} rows={data?.data??[]}><button className={btnGhost} disabled={!bulk.count(data?.total??0)} onClick={()=>void bulk.resolve<SubmissionSummary>(bulkPath).then(rows=>exportSelectedCsv(rows.map(s=>({...s})),'census-selected')).catch(e=>setBasketMessage(e.message))}>Export selected</button></SelectionBar>
       {loading && <Loading />}
       {error && <div className="mt-4"><Notice kind="error">{error.message}</Notice></div>}
@@ -143,7 +143,7 @@ export function ReviewListPage({ status }: { status?: (typeof REVIEW_STATUSES)[n
               {data.data.map((s) => (
                 <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-night-tile/50"><td className="p-3"><input type="checkbox" aria-label={`Select ${s.label}`} checked={bulk.has(s.id)} onChange={()=>bulk.toggle(s.id)}/></td>
                   <td className="px-4 py-3">{s.barangay}</td>
-                  <td className="px-4 py-3"><Link to={`/census/review/${current}/${s.id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-300">{s.label}</Link></td>
+                  <td className="px-4 py-3"><Link to={`/census/review/${current}/${s.id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-500">{s.label}</Link></td>
                   <td className="px-4 py-3">{s.submitter}</td>
                   <td className="px-4 py-3">{formatDate(s.censusDate)}</td>
                   <td className="px-4 py-3"><Counts s={s} /></td>

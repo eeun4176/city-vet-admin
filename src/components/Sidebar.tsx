@@ -119,7 +119,7 @@ export function Sidebar({ nodes, activeId, activeAncestors, collapsed, onToggleC
             </button>
             <div className="menu-item px-2 pb-1.5 pt-1" style={{ '--i': 2 } as CSSProperties}>
               <div role="radiogroup" aria-label={t('settings.appearance')} className={`${tabList} w-full`}>
-                {(['light', 'dark'] as const).map((mode) => <button key={mode} type="button" role="radio" aria-checked={theme === mode} onClick={() => { if (theme !== mode) toggleTheme(); }} className={`${tabItem(theme === mode)} h-8 flex-1 px-2 text-[13px]`}>
+                {(['light', 'dark'] as const).map((mode) => <button key={mode} type="button" role="radio" aria-checked={theme === mode} onClick={() => { if (theme !== mode) toggleTheme(); }} className={`${tabItem(theme === mode)} h-8 flex-1 px-2 text-[13px] ${theme === mode ? '!text-brand-600 dark:!text-brand-500' : ''}`}>
                   {mode === 'light' ? <Sun aria-hidden className="h-4 w-4" /> : <Moon aria-hidden className="h-4 w-4" />}{t(mode === 'light' ? 'theme.light' : 'theme.dark')}
                 </button>)}
               </div>

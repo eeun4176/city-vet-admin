@@ -7,7 +7,7 @@ import { Select } from './ui';
 
 export const sheetCell = 'h-10 w-full min-w-0 bg-transparent px-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:bg-brand-50/60 focus:ring-2 focus:ring-inset focus:ring-brand-500 dark:text-night-text dark:focus:bg-brand-900/20';
 export const sheetHead = 'h-9 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 dark:border-night-border dark:bg-surface-bar';
-export const sheetAdd = 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 disabled:opacity-40 dark:border-night-border dark:text-brand-300 dark:hover:bg-night-tile';
+export const sheetAdd = 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 disabled:opacity-40 dark:border-night-border dark:text-brand-500 dark:hover:bg-night-tile';
 const td = '!h-10 !p-0';
 
 /** A spreadsheet table: the house style shared by the Owners sheet, pet sheets and review tables. */

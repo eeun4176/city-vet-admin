@@ -9,14 +9,14 @@ import { InfoTip, Notice, Spinner, btnGhost, tabItem, tabList } from '../compone
 // Settings sections as e-Vet Field cards: an icon tile, the heading, then the controls. Choices are segmented switchers with the chosen one in green.
 function SectionCard({ icon: Icon, title, id, children }: { icon: LucideIcon; title: string; id: string; children: ReactNode }) {
   return <section aria-labelledby={id} className="rounded-2xl p-5 ring-1 ring-slate-200 dark:ring-night-border">
-    <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-brand-600 dark:bg-night-tile dark:text-brand-300"><Icon aria-hidden className="h-5 w-5" /></span><h2 id={id} className="font-semibold">{title}</h2></div>
+    <div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-brand-600 dark:bg-night-tile dark:text-brand-500"><Icon aria-hidden className="h-5 w-5" /></span><h2 id={id} className="font-semibold">{title}</h2></div>
     <div className="mt-4">{children}</div>
   </section>;
 }
 function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (value: T) => void }) {
   return <div><p id={`${label}-label`} className="mb-2 text-sm font-medium">{label}</p>
     <div role="radiogroup" aria-labelledby={`${label}-label`} className={`${tabList} inline-flex w-auto`}>{options.map(({ value: option, label: text, icon: Icon }) =>
-      <button key={option} type="button" role="radio" aria-checked={value === option} onClick={() => onChange(option)} className={`${tabItem(value === option)} ${value === option ? '!text-brand-600 dark:!text-brand-300' : ''}`}>{Icon && <Icon aria-hidden className="h-4 w-4" />}{text}</button>)}</div>
+      <button key={option} type="button" role="radio" aria-checked={value === option} onClick={() => onChange(option)} className={`${tabItem(value === option)} ${value === option ? '!text-brand-600 dark:!text-brand-500' : ''}`}>{Icon && <Icon aria-hidden className="h-4 w-4" />}{text}</button>)}</div>
   </div>;
 }
 
@@ -53,7 +53,7 @@ export function SettingsPage() {
       <div className="mt-4"><Segmented label={t('settings.language')} value={locale} onChange={(next: Locale) => setLocale(next)} options={[{ value: 'en', label: 'English' }, { value: 'fil', label: 'Filipino' }]} /></div>
     </SectionCard>
 
-    {can('system.backup') && <SectionCard icon={Database} title="Project Data Export" id="backup">
+    {can('system.backup') && <SectionCard icon={Database} title="Project data export" id="backup">
       <p className="text-sm text-slate-500">Download selected records and history. Keep a separate verified database backup for recovery, including account sign-in and stored photo files.</p>
       <button type="button" disabled={exportBusy} aria-busy={exportBusy} onClick={() => void download('/admin/backup', 'ekapon-data-export')} className={`${btnGhost} mt-4`}>{exportBusy ? <Spinner label="Preparing data export…" /> : 'Download data export'}</button>
     </SectionCard>}

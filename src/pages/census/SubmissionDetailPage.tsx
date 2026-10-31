@@ -121,7 +121,7 @@ export function SubmissionDetailPage() {
 
   return (
     <div className="w-full">
-      <Link to={backTo} className="text-sm text-brand-700 hover:underline dark:text-brand-300">← {t('common.back')}</Link>
+      <Link to={backTo} className="text-sm text-brand-700 hover:underline dark:text-brand-500">← {t('common.back')}</Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{submission.label}</h1><StatusBadge status={submission.status} />
       </div>
@@ -134,7 +134,7 @@ export function SubmissionDetailPage() {
 
       {staff && (
         <section className="mt-5 rounded-2xl border border-slate-200 p-4 dark:border-night-border">
-          <h2 className="text-sm font-semibold">Review Status and History</h2>
+          <h2 className="text-sm font-semibold">Review status and history</h2>
           {reviewStatus.error && <div className="mt-3"><Notice kind="error">{reviewStatus.error.message}</Notice></div>}
           {nextStatus === 'rejected' && <label className="mt-3 block text-sm"><span className="font-medium">{t('census.detail.note')}</span>
             <textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} rows={2} className={`${inputCls} mt-1`} />

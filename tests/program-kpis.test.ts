@@ -60,6 +60,20 @@ describe('program KPIs', () => {
     const k = programKpis({ ...input, programs: input.programs.map((p) => (p.id === 10 ? { ...p, capacity: 2 } : p)) });
     expect(k.checks.find((c) => c.label.includes('capacity'))).toMatchObject({ ok: false, detail: 'Past Kapon' });
   });
+
+  it('reports pets above capacity instead of negative unused slots', () => {
+    // 2 pets came to a 1-slot program: 200% is the true figure; the other program's empty slots are not cancelled out.
+    const k = programKpis({ ...input, programs: input.programs.map((p) => (p.id === 10 ? { ...p, capacity: 1 } : p)), attendance: [input.attendance[0]] });
+    expect(k.programs.find((p) => p.id === 10)).toMatchObject({ attended: 2, capacityUtilization: 200, unusedCapacity: 0, overCapacity: 1, aboveCapacity: true });
+    expect(k.overview).toMatchObject({ capacity: 5, capacityAttended: 2, capacityUtilization: 40, unusedCapacity: 4, overCapacity: 1 });
+    expect(k.insights[0]).toContain('1 above capacity');
+  });
+
+  it('measures capacity only on programs that have one', () => {
+    const k = programKpis({ ...input, programs: input.programs.map((p) => (p.id === 10 ? { ...p, capacity: null } : p)) });
+    expect(k.overview).toMatchObject({ capacity: 4, attended: 3, capacityAttended: 0, capacityUtilization: 0, unusedCapacity: 4, overCapacity: 0 });
+    expect(k.programs.find((p) => p.id === 10)).toMatchObject({ capacityUtilization: null, unusedCapacity: null });
+  });
 });
 
 describe('GET /api/v1/program-kpis', () => {
