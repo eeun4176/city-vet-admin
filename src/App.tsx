@@ -89,9 +89,11 @@ function HomeRedirect() {
   return <Navigate to={account ? landingPageForRole(account.type) : '/login'} replace />;
 }
 
-function RequireCapability({ cap, children }: { cap?: Capability; children: ReactElement }) {
-  const { account, can } = useAuth();
-  return !cap || can(cap) ? children : <Navigate to={account ? landingPageForRole(account.type) : '/login'} replace />;
+/** Typing the address of a page the account may not open, or of a feature switched off for its account type, shows "No access" instead of the page. The API refuses the data either way. */
+function RequireCapability({ cap, features = [], children }: { cap?: Capability; features?: (string | undefined)[]; children: ReactElement }) {
+  const { account, can, featureEnabled } = useAuth();
+  if (!account) return <Navigate to="/login" replace />;
+  return (!cap || can(cap)) && features.every((feature) => featureEnabled(feature)) ? children : <NotFoundPage noAccess />;
 }
 
 const routes = flatten(NAV.flatMap((section) => section.nodes)).filter(({ node }) => node.to);
@@ -104,14 +106,14 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<Protected><AppShell /></Protected>}>
           <Route index element={<HomeRedirect />} />
-          {routes.map(({ node }) => (
-            <Route key={node.id} path={node.to} element={<RequireCapability cap={node.cap}>{BUILT[node.to!] ?? <PendingPage />}</RequireCapability>} />
+          {routes.map(({ node, ancestors }) => (
+            <Route key={node.id} path={node.to} element={<RequireCapability cap={node.cap} features={[node.feature, ...ancestors.map((a) => a.feature)]}>{BUILT[node.to!] ?? <PendingPage />}</RequireCapability>} />
           ))}
-          <Route path="/census/mine/:id" element={<RequireCapability cap="census.submit"><SubmissionDetailPage /></RequireCapability>} />
+          <Route path="/census/mine/:id" element={<RequireCapability cap="census.submit" features={['census']}><SubmissionDetailPage /></RequireCapability>} />
           <Route path="/records/view" element={<RecordPreviewPage />} />
           <Route path="/calendar" element={<RequireCapability cap="program_day.manage"><CalendarPage /></RequireCapability>} />
-          <Route path="/census/mine/:id/edit" element={<RequireCapability cap="census.submit"><CensusFormPage /></RequireCapability>} />
-          <Route path="/census/review/:status/:id" element={<RequireCapability cap="census.review"><SubmissionDetailPage /></RequireCapability>} />
+          <Route path="/census/mine/:id/edit" element={<RequireCapability cap="census.submit" features={['census']}><CensusFormPage /></RequireCapability>} />
+          <Route path="/census/review/:status/:id" element={<RequireCapability cap="census.review" features={['census']}><SubmissionDetailPage /></RequireCapability>} />
           <Route path="/settings" element={BUILT['/settings']} />
           <Route path="/account" element={<AccountPage />} />
           {/* No longer in the sidebar (Paravets are managed under Paravets); kept so search results and old links still open. */}

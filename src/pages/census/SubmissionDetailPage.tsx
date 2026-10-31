@@ -11,6 +11,10 @@ import { useApi } from '../../lib/useApi';
 import { SubmissionForms } from './SubmissionForms';
 import { CensusApprovalModal, CensusOwnerReviewCard, savedCensusChoice, type CensusChoice } from './CensusReviewWidgets';
 import { matchAction, censusActionLabel, type CensusAction } from '../../../shared/censusReview';
+import { blockedPage, NotFoundPage } from '../StatusPages';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const REVIEW_LISTS = ['pending', 'approved', 'rejected'];
 
 type ReviewStatusInfo = {
   status: string;
@@ -44,12 +48,14 @@ function Photo({ submissionId, attachmentId, onOpen }: { submissionId: string; a
 /** One submission. Paravets see their own and can correct, withdraw or resend; staff review and decide. */
 export function SubmissionDetailPage() {
   const { t } = useT();
-  const { id = '' } = useParams();
+  const { id = '', status: listStatus } = useParams();
   const { account, can } = useAuth();
   const navigate = useNavigate();
-  const { data, loading, error, reload } = useApi<SubmissionDetail>(`/census/submissions/${id}`);
+  // An edited address is checked before anything is fetched: a real submission ID, and (on review pages) a real list.
+  const validAddress = UUID.test(id) && (listStatus === undefined || REVIEW_LISTS.includes(listStatus));
+  const { data, loading, error, reload } = useApi<SubmissionDetail>(validAddress ? `/census/submissions/${id}` : null);
   const staff = can('census.review');
-  const reviewStatus = useApi<ReviewStatusInfo>(staff ? `/census/submissions/${id}/status` : null);
+  const reviewStatus = useApi<ReviewStatusInfo>(staff && validAddress ? `/census/submissions/${id}/status` : null);
   const [choices, setChoices] = useState<Record<string, CensusChoice>>({});
   const [dirty, setDirty] = useState(false);
   const [changedOwners, setChangedOwners] = useState<Set<string>>(new Set());
@@ -62,6 +68,13 @@ export function SubmissionDetailPage() {
 
   const isParavet = account?.type === 'Paravet';
   const pending = data?.submission.status === 'pending';
+
+  // A submission opened under the wrong list (/census/review/approved/<a pending id>) moves to the address of its real status.
+  useEffect(() => {
+    if (!data || listStatus === undefined) return;
+    const actual = data.submission.status === 'withdrawn' ? 'pending' : data.submission.status;
+    if (actual !== listStatus) navigate(`/census/review/${actual}/${id}`, { replace: true });
+  }, [data, listStatus, id, navigate]);
 
   useEffect(() => {
     if (!data || dirty) return;
@@ -79,8 +92,9 @@ export function SubmissionDetailPage() {
     try { await action(); } catch (err) { setMessage({ kind: 'error', text: err instanceof Error ? err.message : t('common.loadFailed') }); } finally { setBusy(false); }
   }, [t]);
 
+  if (!validAddress) return <NotFoundPage />;
   if (loading && !data) return <Loading />;
-  if (error || !data) return <Notice kind="error">{error?.message ?? t('common.loadFailed')}</Notice>;
+  if (error || !data) return blockedPage(error) ?? <Notice kind="error">{error?.message ?? t('common.loadFailed')}</Notice>;
   const { submission, owners, attachments } = data;
   const backTo = isParavet ? '/census/mine' : `/census/review/${submission.status === 'withdrawn' ? 'pending' : submission.status}`;
 

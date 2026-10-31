@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { useState } from 'react';
 import { ConfirmDialog } from '../components/ui';
 import { findActive } from '../nav/nav';
+import { ApiError } from '../lib/api';
 
 export function PendingPage() {
   const { t } = useT();
@@ -19,15 +20,28 @@ export function PendingPage() {
   );
 }
 
-export function NotFoundPage() {
+/** An edited or old address: the page or record does not exist, or the account cannot open it (`noAccess`). Nothing of the record is shown. */
+export function NotFoundPage({ noAccess = false }: { noAccess?: boolean } = {}) {
   const { t } = useT();
   return (
-    <div className="mx-auto max-w-xl py-12 text-center">
-      <h1 className="text-xl font-semibold">{t('page.notFound')}</h1>
-      <p className="mt-2 text-sm text-slate-500">{t('page.notFoundBody')}</p>
+    <div role="alert" className="mx-auto max-w-xl py-12 text-center">
+      <h1 className="text-xl font-semibold">{t(noAccess ? 'page.noAccess' : 'page.notFound')}</h1>
+      <p className="mt-2 text-sm text-slate-500">{t(noAccess ? 'page.noAccessBody' : 'page.notFoundBody')}</p>
       <Link to="/dashboard" className="mt-5 inline-block rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">{t('page.back')}</Link>
     </div>
   );
+}
+
+/** The same, as one line for a dialog or a notice. */
+export const blockedText = (error: Error) => {
+  const status = error instanceof ApiError ? error.status : 0;
+  return status === 403 ? 'Your account cannot open this record.' : status === 400 || status === 404 ? 'This record cannot be found. The address may have been changed, or the record removed.' : error.message;
+};
+
+/** What a failed record read means for the person: a bad or unknown address is "not found", a refusal is "no access"; anything else (offline, server error) returns null so the page shows its own message and retry. */
+export function blockedPage(error: unknown) {
+  const status = error instanceof ApiError ? error.status : 0;
+  return status === 403 ? <NotFoundPage noAccess /> : status === 400 || status === 404 ? <NotFoundPage /> : null;
 }
 
 export function MaintenancePage() {

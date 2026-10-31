@@ -10,6 +10,7 @@ import { InfoTip, btnIcon, Field,Loading,Modal,Notice,Pagination,Check,ConfirmDi
 import { emptyRegistryPet,ownerFields,petFields,type RegistryDraft,type RegistryOwner,type RegistryPet,type RegistryRecord,type RegistryDetail,type RegistryPreview } from '../../shared/registry';
 import { fieldLabel } from '../../shared/reportBasket';
 import { OwnerSheet } from './OwnerSheet';
+import { blockedText } from './StatusPages';
 
 const nameOf=(r:RegistryRecord)=>String(r.data.petName??r.data.pet_name??r.data.name??r.data.owner_name??r.id);
 const registryLabel=(key:string)=>key==='age'?'Legacy age (original units)':key==='ageMonths'||key==='age_months'?'Age (months)':fieldLabel(key);
@@ -115,7 +116,7 @@ function RegistryDialog({kind,id,editable,onClose,onSaved,onOpen,intake,initialD
    {['edit-owner','edit-pet','link-owner'].includes(draft.mode)&&<Field label="Reason for this change"><textarea required minLength={3} maxLength={1000} className={inputCls} value={draft.reason} onChange={e=>change({...draft,reason:e.target.value})}/></Field>}
    {['create-owner','add-pets','edit-owner'].includes(draft.mode)&&<p className="text-xs text-slate-500">Up to 30 pets can be added in one save. Owners can have more pets across multiple saves; the three-pet limit applies to an individual stub.</p>}
    <div className="flex gap-2">{id&&<button type="button" className={btnGhost} onClick={()=>setDraft(null)}>Back to record</button>}<button className={btnPrimary} disabled={['add-pets','link-owner'].includes(draft.mode)&&!draft.ownerId}>Review before saving</button></div>
-  </form>:detail.loading&&!detail.data?<Loading label="Loading owner, pets, and history…"/>:detail.error?<Notice kind="error">{detail.error.message}</Notice>:detail.data?<RecordView detail={detail.data} kind={kind} editable={editable} onOpen={onOpen} start={start}/>:null}
+  </form>:detail.loading&&!detail.data?<Loading label="Loading owner, pets, and history…"/>:detail.error?<Notice kind="error">{blockedText(detail.error)}</Notice>:detail.data?<RecordView detail={detail.data} kind={kind} editable={editable} onOpen={onOpen} start={start}/>:null}
  </Modal>;
 }
 

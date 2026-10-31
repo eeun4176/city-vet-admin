@@ -222,7 +222,7 @@ export function AppShell() {
           {/* Back sits above the page. */}
           {showBack && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden"><button type="button" onClick={goBack} className="-ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-night-muted dark:hover:bg-night-tile"><ArrowLeft aria-hidden className="h-4 w-4" />{t('common.back')}</button></div>}
           {pendingWrites > 0 && <div className="fixed left-4 bottom-4 z-[60] rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-medium text-brand-800 shadow-lg dark:border-brand-900 dark:bg-surface-dark dark:text-brand-500"><Spinner /></div>}
-          <div key={location.pathname} className="page-transition"><PageErrorBoundary key={`${location.pathname}${location.search}`}><Suspense fallback={<Loading label="Loading page…" />}><Outlet /></Suspense></PageErrorBoundary></div>
+          <div key={location.pathname} className="page-transition"><PageErrorBoundary key={location.pathname} resetKey={location.search}><Suspense fallback={<Loading label="Loading page…" />}><Outlet /></Suspense></PageErrorBoundary></div>
         </main>
       </div>
 

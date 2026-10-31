@@ -3,6 +3,7 @@ import { useApi } from '../lib/useApi';
 import { btnGhost,btnPrimary,Loading,Notice,statusLabel } from '../components/ui';
 import type { RecordPreview } from '../../shared/search';
 import { fieldLabel } from '../../shared/reportBasket';
+import { blockedPage } from './StatusPages';
 const value=(v:unknown)=>v===null||v===undefined||v===''?'Not recorded':typeof v==='boolean'?v?'Yes':'No':String(v);
 function Fields({data}:{data:Record<string,unknown>}){
  const hidden=(key:string)=>key.startsWith('_')||key==='workflow'||key==='id'||key.endsWith('_id')||key.endsWith('Id')&&key!=='systemStubId';
@@ -13,7 +14,7 @@ export function RecordPreviewPage(){
  const detail=useApi<RecordPreview>(`/record-preview?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`);
  const record=detail.data;
  return <div className="w-full space-y-5">
-  {detail.loading&&!record?<Loading label="Loading the source record and checking access…"/>:detail.error?<div className="space-y-4"><Notice kind="error">{detail.error.message}</Notice><p className="text-sm text-slate-500">Its status, your assignment, or access may have changed since it appeared in search.</p><button className={btnGhost} onClick={detail.reload}>Try again</button><Link className={`${btnGhost} ml-2`} to="/dashboard">Dashboard</Link></div>:record&&<>
+  {detail.loading&&!record?<Loading label="Loading the source record and checking access…"/>:detail.error?blockedPage(detail.error)??<div className="space-y-4"><Notice kind="error">{detail.error.message}</Notice><p className="text-sm text-slate-500">Its status, your assignment, or access may have changed since it appeared in search.</p><button className={btnGhost} onClick={detail.reload}>Try again</button><Link className={`${btnGhost} ml-2`} to="/dashboard">Dashboard</Link></div>:record&&<>
    <header className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-500">{record.item.source}</p><h1 className="mt-2 text-2xl font-semibold">{record.item.label}</h1><p className="mt-2 text-sm text-slate-500">{record.item.detail}</p><p className="mt-2 text-sm">{statusLabel(record.item.status)}{record.item.history&&<span className="ml-2 rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">History</span>}</p></div>{record.workspace&&<Link className={btnPrimary} to={record.workspace.to}>{record.workspace.label}</Link>}</header>
    {record.item.history&&<Notice>This is a historical record. Its source and recorded details are preserved; opening it does not restore or merge records.</Notice>}
    <section className="rounded-xl border border-slate-200 p-4 dark:border-night-border"><h2 className="mb-4 font-semibold">Record details</h2><Fields data={record.fields}/></section>
