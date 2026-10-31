@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useVisibleNav } from '../components/AppShell';
 import { useT } from '../i18n';
 import { useAuth } from '../lib/auth';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ConfirmDialog } from '../components/ui';
 import { findActive } from '../nav/nav';
 import { ApiError } from '../lib/api';
@@ -20,15 +21,31 @@ export function PendingPage() {
   );
 }
 
-/** An edited or old address: the page or record does not exist, or the account cannot open it (`noAccess`). Nothing of the record is shown. */
+/**
+ * An edited or old address: the page or record does not exist, or the account cannot open it (`noAccess`).
+ * It is a screen of its own, never a page inside the system: it covers the whole window, and while it shows, the app
+ * behind it (sidebar, search, notifications) is inert, so nothing of the system can be seen, clicked or tabbed to.
+ */
 export function NotFoundPage({ noAccess = false }: { noAccess?: boolean } = {}) {
   const { t } = useT();
-  return (
-    <div role="alert" className="mx-auto max-w-xl py-12 text-center">
-      <h1 className="text-xl font-semibold">{t(noAccess ? 'page.noAccess' : 'page.notFound')}</h1>
-      <p className="mt-2 text-sm text-slate-500">{t(noAccess ? 'page.noAccessBody' : 'page.notFoundBody')}</p>
-      <Link to="/dashboard" className="mt-5 inline-block rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">{t('page.back')}</Link>
-    </div>
+  useEffect(() => {
+    const app = document.getElementById('root');
+    app?.setAttribute('inert', ''); app?.setAttribute('aria-hidden', 'true');
+    const overflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => { app?.removeAttribute('inert'); app?.removeAttribute('aria-hidden'); document.body.style.overflow = overflow; };
+  }, []);
+  return createPortal(
+    <main role="alert" className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-canvas p-4 text-center dark:bg-canvas-dark">
+      <div className="w-full max-w-md">
+        <img src="/cityvet-logo.png" alt="" className="mx-auto h-14 w-14" />
+        <p className="mt-6 font-mono text-sm font-semibold tracking-[0.2em] text-slate-400 dark:text-night-subtle">{noAccess ? '403' : '404'}</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-night-text">{t(noAccess ? 'page.noAccess' : 'page.notFound')}</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-night-muted">{t(noAccess ? 'page.noAccessBody' : 'page.notFoundBody')}</p>
+        <Link to="/dashboard" replace className="mt-6 inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2">{t('page.back')}</Link>
+        <p className="mt-8 text-xs text-slate-400 dark:text-night-subtle">{t('app.name')} {t('app.edition')} · {t('app.city')}</p>
+      </div>
+    </main>,
+    document.body,
   );
 }
 

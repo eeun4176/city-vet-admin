@@ -120,8 +120,9 @@ export function App() {
           <Route path="/accounts" element={<RequireCapability cap="accounts.manage_portal">{BUILT['/accounts']}</RequireCapability>} />
           <Route path="/inbox" element={<InboxPage />} />
           <Route path="/stubs/legacy" element={<RequireCapability cap="registry.write"><RecordsPage dataset="stubs" title="Historical stub records" readOnly /></RequireCapability>} />
-          <Route path="*" element={<NotFoundPage />} />
         </Route>
+        {/* An unknown address never loads the system (no sidebar, search or notifications): only the full-screen "Page not found". */}
+        <Route path="*" element={<Protected><NotFoundPage /></Protected>} />
       </Routes></Suspense>
     </LocaleProvider>
   );
