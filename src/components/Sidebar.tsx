@@ -7,7 +7,7 @@ import { useTheme } from '../lib/theme';
 import { ConfirmDialog, tabItem, tabList } from './ui';
 import { Flyout } from './Flyout';
 import type { NavNode } from '../nav/nav';
-import { NavRail, NavTree, useOpenGroups } from './NavTree';
+import { NavRail, NavTree, useFold, useOpenGroups, wipe } from './NavTree';
 import { NavigationBadge } from './NavigationBadge';
 import type { NavigationBadges } from '../../shared/navigationBadges';
 import { roleLabel } from '../../shared/permissions';
@@ -53,42 +53,42 @@ export function Sidebar({ nodes, activeId, activeAncestors, collapsed, onToggleC
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [menu]);
   const secondLine = account?.type === 'Paravet' ? (account.barangay ?? account.type) : roleLabel(account?.type ?? '');
+  const { rail, folded } = useFold(collapsed);
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white px-[11px] py-4 shadow-sm dark:border-night-border dark:bg-surface-bar">
-      <div className={`relative flex h-10 shrink-0 items-center ${collapsed ? 'justify-center' : ''}`}>
-        {!collapsed && (
-          <div className={`flex min-w-0 flex-1 items-center gap-2.5 pl-1 ${onToggleCollapsed ? 'pr-11' : 'pr-10'}`}>
-            <img src="/cityvet-logo.png" alt="" className="h-9 w-9 shrink-0" />
-            <div className="flex h-9 min-w-0 flex-col justify-center">
-              <p className="flex items-center gap-1.5 text-[18px] font-extrabold leading-5 tracking-[-0.02em] text-slate-900 dark:text-night-text">{t('app.name')}<span className="rounded-md bg-brand-50 px-1.5 text-[10px] font-bold uppercase leading-4 tracking-wide text-brand-700 dark:bg-brand-900 dark:text-brand-300">{t('app.edition')}</span></p>
-              <p className="truncate text-[10.5px] font-medium leading-[14px] text-slate-500 dark:text-night-muted">{t('app.city')}</p>
-            </div>
+      {/* Every row keeps its padding in both states, so icons stay put while the text wipes. */}
+      <div className="relative flex h-10 shrink-0 items-center">
+        <div aria-hidden={folded || undefined} className={`flex flex-1 items-center gap-2.5 pl-1 ${onToggleCollapsed ? 'pr-11' : 'pr-10'} ${wipe(folded)}`}>
+          <img src="/cityvet-logo.png" alt="" className="h-9 w-9 shrink-0" />
+          <div className="flex h-9 min-w-0 flex-col justify-center">
+            <p className="flex items-center gap-1.5 text-[18px] font-extrabold leading-5 tracking-[-0.02em] text-slate-900 dark:text-night-text">{t('app.name')}<span className="rounded-md bg-brand-50 px-1.5 text-[10px] font-bold uppercase leading-4 tracking-wide text-brand-700 dark:bg-brand-900 dark:text-brand-300">{t('app.edition')}</span></p>
+            <p className="truncate text-[10.5px] font-medium leading-[14px] text-slate-500 dark:text-night-muted">{t('app.city')}</p>
           </div>
-        )}
+        </div>
         {onToggleCollapsed && (
           <button type="button" onClick={onToggleCollapsed} aria-label={t(collapsed ? 'nav.expand' : 'nav.collapse')} aria-expanded={!collapsed} title={t(collapsed ? 'nav.expand' : 'nav.collapse')}
-            className={`${foldButton} ${collapsed ? '' : 'absolute right-0 top-0'}`}>
+            className={`${foldButton} absolute right-0 top-0`}>
             {collapsed ? <img src="/cityvet-logo.png" alt="" className="h-9 w-9" /> : <PanelLeft aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px]" />}
           </button>
         )}
       </div>
 
-      <nav aria-label={t('nav.overview')} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 py-0.5">
-        {collapsed ? (
+      <nav aria-label={t('nav.overview')} className="-mx-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 py-0.5">
+        {rail ? (
           <NavRail nodes={nodes} activeId={activeId} activeAncestors={activeAncestors} onNavigate={onNavigate} badges={badges}/>
         ) : (
-          <NavTree nodes={nodes} open={open} toggle={toggle} activeId={activeId} onNavigate={onNavigate} badges={badges}/>
+          <NavTree nodes={nodes} open={open} toggle={toggle} activeId={activeId} onNavigate={onNavigate} badges={badges} folded={folded}/>
         )}
       </nav>
       {badgeError&&<button type="button" onClick={refreshBadges} title="Sidebar updates are unavailable. Retry." className="rounded-xl border border-amber-200 p-2 text-xs text-amber-800 dark:border-amber-900 dark:text-amber-200">{collapsed?'!':'Updates unavailable · Retry'}</button>}
 
       <div className="space-y-1 border-t border-slate-200 pt-3 dark:border-night-border">
-        <NavLink to="/inbox" onClick={onNavigate} title={collapsed ? `${t('nav.inbox')}, ${badges.inbox?.pending??0} unread` : undefined} aria-label={`${t('nav.inbox')}, ${badges.inbox?.pending??0} unread`} className={({ isActive }) => `${accountRow} relative ${isActive ? activeRow : ''} ${collapsed ? 'justify-center px-0' : ''}`}>
-          <Inbox aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px] shrink-0" />{!collapsed && t('nav.inbox')}<NavigationBadge node={{id:'inbox'}} badges={badges} overlay={collapsed}/>
+        <NavLink to="/inbox" onClick={onNavigate} title={collapsed ? `${t('nav.inbox')}, ${badges.inbox?.pending??0} unread` : undefined} aria-label={`${t('nav.inbox')}, ${badges.inbox?.pending??0} unread`} className={({ isActive }) => `${accountRow} relative ${isActive ? activeRow : ''}`}>
+          <Inbox aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px] shrink-0" /><span className={`flex flex-1 items-center gap-3 ${wipe(folded)}`}><span className="flex-1">{t('nav.inbox')}</span>{!rail && <NavigationBadge node={{id:'inbox'}} badges={badges}/>}</span>{rail && <NavigationBadge node={{id:'inbox'}} badges={badges} overlay/>}
         </NavLink>
-        <NavLink to="/settings" onClick={onNavigate} title={collapsed ? t('nav.settings') : undefined} className={({ isActive }) => `${accountRow} ${isActive ? activeRow : ''} ${collapsed ? 'justify-center px-0' : ''}`}>
-          <Settings aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px] shrink-0" />{!collapsed && t('nav.settings')}
+        <NavLink to="/settings" onClick={onNavigate} title={collapsed ? t('nav.settings') : undefined} className={({ isActive }) => `${accountRow} ${isActive ? activeRow : ''}`}>
+          <Settings aria-hidden strokeWidth={1.9} className="h-[18px] w-[18px] shrink-0" /><span className={wipe(folded)}>{t('nav.settings')}</span>
         </NavLink>
       </div>
 
@@ -96,17 +96,17 @@ export function Sidebar({ nodes, activeId, activeAncestors, collapsed, onToggleC
 
       {account && (
         <button ref={menuAnchor} type="button" data-account-menu onClick={() => setMenu((open) => !open)} aria-haspopup="menu" aria-expanded={menu} aria-label={`Account: ${account.name}`} title={collapsed ? account.name : undefined}
-          className={`flex w-full items-center gap-2.5 rounded-xl p-1 text-left hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-night-tile ${collapsed ? 'justify-center' : ''} ${menu ? 'bg-slate-100 dark:bg-night-tile' : ''}`}>
+          className={`flex w-full items-center gap-2.5 rounded-xl p-1 text-left hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:hover:bg-night-tile ${menu ? 'bg-slate-100 dark:bg-night-tile' : ''}`}>
           {account.profilePhoto
             ? <img src={account.profilePhoto} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
             : <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-brand-900 dark:text-brand-300">{initials(account.name)}</span>}
-          {!collapsed && (
+          <span className={`flex flex-1 items-center gap-2.5 ${wipe(folded)}`}>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-sm font-medium text-slate-900 dark:text-night-text">{account.name}</span>
               <span className="block truncate text-[11px] text-slate-400">{secondLine}</span>
             </span>
-          )}
-          {!collapsed && <ChevronsUpDown aria-hidden className="mr-1 h-4 w-4 shrink-0 text-slate-400" />}
+            <ChevronsUpDown aria-hidden className="mr-1 h-4 w-4 shrink-0 text-slate-400" />
+          </span>
         </button>
       )}
       {account && menu && (

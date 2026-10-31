@@ -13,6 +13,31 @@ const childRow = 'flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left t
 const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-night-muted dark:hover:bg-night-tile dark:hover:text-night-text';
 const current = 'bg-brand-500/10 font-medium text-slate-900 dark:text-night-text';
 
+const FOLD_MS = 640; // the aside's width transition in AppShell
+
+/** Text that wipes out right to left while the sidebar folds into the rail, as in e-Vet Field. */
+export const wipe = (folded: boolean) => `min-w-0 whitespace-nowrap transition-[clip-path,opacity] duration-[400ms] ease-spring motion-reduce:transition-none ${folded ? '[clip-path:inset(0_100%_0_0)] opacity-0' : '[clip-path:inset(0_0_0_0)] opacity-100'}`;
+
+/**
+ * Folding never swaps content mid-animation: the tree stays while its labels wipe out, and the icon rail takes over once the
+ * width has stopped moving. Unfolding mounts the tree folded and opens it a frame later, so labels and open groups grow in.
+ */
+export function useFold(collapsed: boolean) {
+  const [rail, setRail] = useState(collapsed);
+  const [folded, setFolded] = useState(collapsed);
+  useEffect(() => {
+    if (collapsed) {
+      setFolded(true);
+      const timer = window.setTimeout(() => setRail(true), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : FOLD_MS);
+      return () => window.clearTimeout(timer);
+    }
+    setRail(false);
+    let frame = requestAnimationFrame(() => { frame = requestAnimationFrame(() => setFolded(false)); });
+    return () => cancelAnimationFrame(frame);
+  }, [collapsed]);
+  return { rail, folded };
+}
+
 export function useOpenGroups(activeAncestors: string[]) {
   const [open, setOpen] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as string[]); } catch { return new Set(); }
@@ -42,10 +67,12 @@ interface TreeProps {
   activeId: string | null;
   onNavigate?: () => void;
   level?: number;
+  /** The sidebar is folding or unfolding: labels wipe and open groups close to the rail's height. */
+  folded?: boolean;
 }
 
 /** Expanded sidebar: top-level rows have an icon, and groups a chevron on the right that turns when they open; children sit on a guide line, without icons, and stagger in. */
-export function NavTree({ nodes, open, toggle, activeId, onNavigate, level = 0,badges }: TreeProps) {
+export function NavTree({ nodes, open, toggle, activeId, onNavigate, level = 0,badges, folded = false }: TreeProps) {
   const { t } = useT();
   return (
     <ul role={level === 0 ? 'tree' : 'group'} className={level === 0 ? 'space-y-1' : `${level === 1 ? 'ml-5' : 'ml-3'} mt-1 space-y-0.5 border-l border-slate-200 pl-2.5 dark:border-night-border`}>
@@ -60,17 +87,22 @@ export function NavTree({ nodes, open, toggle, activeId, onNavigate, level = 0,b
           <li key={node.id} role="treeitem" aria-expanded={hasChildren ? expanded : undefined} aria-selected={node.id === activeId} className={level ? 'nav-stagger' : undefined} style={level ? { '--i': index } as CSSProperties : undefined}>
             {hasChildren ? (
               <button type="button" onClick={() => toggle(node.id)} className={`${row} ${idle} ${expanded ? 'text-slate-900 dark:text-night-text' : ''}`}>
-                {icon}<span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>{chevron}
+                {icon}{level === 0 ? <span className={`flex flex-1 items-center gap-3 ${wipe(folded)}`}><span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>{chevron}</span> : <><span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>{chevron}</>}
               </button>
             ) : (
               <NavLink to={node.to ?? '#'} onClick={onNavigate} aria-current={node.id === activeId ? 'page' : undefined}
                 className={`${row} ${node.id === activeId ? current : idle}`}>
-                {icon}<span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/>
+                {icon}{level === 0 ? <span className={`flex flex-1 items-center gap-3 ${wipe(folded)}`}><span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/></span> : <><span className="min-w-0 flex-1 truncate">{t(node.label)}</span><NavigationBadge node={node} badges={badges}/></>}
               </NavLink>
             )}
-            {hasChildren && expanded && (
+            {hasChildren && expanded && (level === 0 ? (
+              // Open groups close to nothing while the sidebar folds (grid rows 1fr → 0fr), instead of vanishing in one frame.
+              <div className={`grid transition-[grid-template-rows,opacity] duration-[400ms] ease-spring motion-reduce:transition-none ${folded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+                <div className="min-h-0 overflow-hidden"><NavTree nodes={node.children!} open={open} toggle={toggle} activeId={activeId} onNavigate={onNavigate} level={level + 1} badges={badges}/></div>
+              </div>
+            ) : (
               <NavTree nodes={node.children!} open={open} toggle={toggle} activeId={activeId} onNavigate={onNavigate} level={level + 1} badges={badges}/>
-            )}
+            ))}
           </li>
         );
       })}
