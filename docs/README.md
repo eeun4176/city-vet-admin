@@ -12,7 +12,7 @@ e-Vet Admin (code name **e-Kapon**) is the City Veterinary Office's dashboard an
 | [`QR-STUB-WORKFLOW.md`](QR-STUB-WORKFLOW.md) | Stubs and attendance: blank stubs, encoding in e-Vet Field, program day |
 | [`PROJECT-PROGRESS.md`](PROJECT-PROGRESS.md) | Progress log; its first section covers 2026-10-23 to 2026-10-27 |
 
-Documents shared with e-Vet Field are kept in the `salin` repository's `docs/` folder:
+Documents shared with e-Vet Field are kept in the `e-Vet-Field` repository's `docs/` folder (shown below by its folder name, `salin/`):
 
 | Document | What |
 |---|---|
@@ -37,7 +37,7 @@ The phase records in this folder were written between 2026-10-14 and 2026-10-19,
 - **Passwords:** Paravets can reset their password with an emailed code (migrations 030–031); Admins can change their own username (032).
 - **Analytics:** a KPI dashboard (`/program-kpis`) with formulas, column charts, reconciliation checks and CSV/Excel/PDF export.
 - **Phone numbers:** 11 digits starting with 09, stored as plain digits, checked the same way in both apps.
-- **Hosting:** deployed from `eeun4176/city-vet-admin` on Vercel (region `sin1`); up to 5 database connections per instance with reconnect after idle; database time limits (`hosting/07-query-timeouts.sql`); `hosting/08-clear-records.sql` empties test records.
+- **Hosting:** deployed from `eeun4176/e-Vet-Admin` on Vercel (region `sin1`); up to 5 database connections per instance with reconnect after idle; database time limits (`hosting/07-query-timeouts.sql`); `hosting/08-clear-records.sql` empties test records.
 - **Look:** the same colours as e-Vet Field in light and dark mode; status labels in sentence case without a dot.
 
 ## Historical phase records
@@ -46,7 +46,6 @@ These record decisions and checks made during each local phase. Each one begins 
 
 | Document | Phase |
 |---|---|
-| [`2026-10-14_0322_inbox-dashboard-and-cross-module-ux-progress.md`](2026-10-14_0322_inbox-dashboard-and-cross-module-ux-progress.md) | Inbox, dashboard and cross-module UX |
 | [`API-01-auth-and-accounts.md`](API-01-auth-and-accounts.md), [`API-02-dashboard.md`](API-02-dashboard.md), [`API-03-operations-workflows.md`](API-03-operations-workflows.md) | Early API snapshots |
 | [`API-04-inbox-and-dashboard-feedback.md`](API-04-inbox-and-dashboard-feedback.md), [`API-05-reporting-and-census-review.md`](API-05-reporting-and-census-review.md) | Inbox, dashboard counts, reporting and census review contracts |
 | [`ACCEPTANCE-TESTING.md`](ACCEPTANCE-TESTING.md) | Local acceptance checklist |
@@ -57,4 +56,3 @@ These record decisions and checks made during each local phase. Each one begins 
 | [`NAVIGATION-BADGES.md`](NAVIGATION-BADGES.md), [`SEARCH-AND-NAVIGATION.md`](SEARCH-AND-NAVIGATION.md) | Navigation and search |
 | [`PROGRAM-WORKSPACE.md`](PROGRAM-WORKSPACE.md) | Program workspace |
 | [`RELEASE-READINESS.md`](RELEASE-READINESS.md), [`RESIDENT-CODE-INVENTORY.md`](RESIDENT-CODE-INVENTORY.md) | Release readiness, resident code |
-| [`modules/`](modules/README.md) | The Module A–D parallel-development pack |

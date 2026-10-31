@@ -2,9 +2,9 @@
 
 Stack: React dashboard + Vercel serverless functions (`/api`, Node 24.x, TypeScript) + Supabase PostgreSQL. The dashboard and API deploy together. The current empty-install and private-file setup is [hosting/README.md](./hosting/README.md), including all SQL files and a server-variable template. It replaces the legacy fresh-install/default-account steps below. The admin handoff is [system-admin-ready](./system-admin-ready).
 
-> For parallel module development, use the current [Module A–D reference pack](./docs/modules/README.md) and its [integration guide](./docs/modules/Integration%20Guide.md). Inbox lifecycle, dashboard count, and global feedback contracts are documented in [API-04](./docs/API-04-inbox-and-dashboard-feedback.md). The older API snapshots in `docs/API-01-auth-and-accounts.md` and `docs/API-02-dashboard.md` are not authoritative where they differ from current source and tests.
+> Inbox lifecycle, dashboard count, and global feedback contracts are documented in [API-04](./docs/API-04-inbox-and-dashboard-feedback.md). The older API snapshots in `docs/API-01-auth-and-accounts.md` and `docs/API-02-dashboard.md` are not authoritative where they differ from current source and tests.
 >
-> For the analytics/reporting feature contract, see [API-05](./docs/API-05-reporting-and-census-review.md). Project decisions, implementation progress, and verification status are summarized in [PROJECT-PROGRESS](./docs/PROJECT-PROGRESS.md); notable changes are listed in the [changelog](./CHANGELOG.md).
+> For the analytics/reporting feature contract, see [API-05](./docs/API-05-reporting-and-census-review.md). Project decisions, implementation progress, and verification status are summarized in [PROJECT-PROGRESS](./docs/PROJECT-PROGRESS.md).
 
 ## 1. Database (authorized administrator only)
 
